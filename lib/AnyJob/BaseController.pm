@@ -51,7 +51,7 @@ sub sendEvent {
     $data->{node} = $self->node;
 
     my $encodedData = encode_json($data);
-    foreach my $queue (@{$self->config->getObserverQueuesForEvent()}) {
+    foreach my $queue (@{$self->config->getObserverQueuesForEvent($event)}) {
         $self->redis->rpush("anyjob:observer_queue:" . $queue, $encodedData);
     }
 }

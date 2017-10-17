@@ -17,7 +17,7 @@ sub getAllNodes {
 
     my @nodes;
     foreach my $section (keys(%{$self->{data}})) {
-        if (my $node = ($section =~ /^node_(.+)$/)) {
+        if (my ($node) = ($section =~ /^node_(.+)$/)) {
             push @nodes, $node;
         }
     }
@@ -36,7 +36,7 @@ sub getAllJobs {
 
     my @jobs;
     foreach my $section (keys(%{$self->{data}})) {
-        if (my $job = ($section =~ /^job_(.+)$/)) {
+        if (my ($job) = ($section =~ /^job_(.+)$/)) {
             push @jobs, $job;
         }
     }
@@ -55,7 +55,7 @@ sub getAllObservers {
 
     my @observers;
     foreach my $section (keys(%{$self->{data}})) {
-        if (my $observer = ($section =~ /^observer_(.+)$/)) {
+        if (my ($observer) = ($section =~ /^observer_(.+)$/)) {
             push @observers, $observer;
         }
     }

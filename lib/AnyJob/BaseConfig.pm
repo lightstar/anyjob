@@ -58,7 +58,7 @@ sub readFile {
             if ($var =~ s/\\$//) {
                 next;
             }
-            if (my $newSection = ($var =~ /^\[([^\[\]]+)\]$/)) {
+            if (my ($newSection) = ($var =~ /^\[([^\[\]]+)\]$/)) {
                 $section = $newSection;
                 $data->{$section} = {};
             } elsif (my ($key, $val) = ($var =~ /([^=]+)\=(.+)/)) {
