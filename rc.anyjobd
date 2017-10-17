@@ -1,0 +1,64 @@
+#!/bin/sh
+
+ANYJOBD=${ANYJOB_PATH:-"/opt/anyjob"}"/bin/anyjobd.pl $2"
+PIDFILE=${ANYJOBD_PID:-"/var/run/anyjob-daemon.pid"}
+MAXTRIES=${ANYJOBD_KILL_MAX_TRIES:-10000}
+SLEEPTIME=${ANYJOBD_KILL_SLEEP_TIME:-10000}
+PID=`cat $PIDFILE 2>/dev/null`
+
+if which sleepenh >/dev/null 2>&1; then
+    SLEEPTIME=`echo "scale=2; $SLEEPTIME/1000000" | bc`
+    SLEEP="sleepenh $SLEEPTIME"
+else
+    if which usleep > /dev/null 2>&1; then
+        SLEEP="usleep $SLEEPTIME"
+    else
+        echo "Error! No usleep or sleepenh found!"
+        exit
+    fi
+fi
+
+start() {
+    echo "Starting anyjobd..."
+    if kill -0 $PID >/dev/null 2>&1; then
+        echo "anyjobd is already running..."
+    else
+        ulimit -n 10240
+        LANG=en_US.UTF-8 $ANYJOBD
+    fi
+}
+
+stop() {
+    i=0
+    echo "Killing anyjobd..."
+    kill $PID > /dev/null 2>&1
+    while kill -0 $PID > /dev/null 2>&1; do
+        $SLEEP >/dev/null 2>&1
+        i=`expr $i + 1`
+        if [ $i -ge $MAXTRIES ]; then
+            echo "Can't kill anyjobd!"
+            exit 1
+        fi
+    done
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    *)
+        echo "$0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
