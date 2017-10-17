@@ -1,4 +1,4 @@
-package AnyJob::NodeController;
+package AnyJob::Controller::Node;
 
 use strict;
 use warnings;
@@ -7,7 +7,7 @@ use utf8;
 use JSON::XS;
 use File::Basename;
 
-use base 'AnyJob::BaseController';
+use base 'AnyJob::Controller::Base';
 
 sub processQueue {
     my $self = shift;

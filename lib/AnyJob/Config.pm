@@ -6,7 +6,7 @@ use utf8;
 
 use JSON::XS;
 
-use base 'AnyJob::BaseConfig';
+use base 'AnyJob::Config::Base';
 
 sub getAllNodes {
     my $self = shift;

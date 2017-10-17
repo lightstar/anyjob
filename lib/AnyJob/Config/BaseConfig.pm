@@ -1,4 +1,4 @@
-package AnyJob::BaseConfig;
+package AnyJob::Config::Base;
 
 use strict;
 use warnings;

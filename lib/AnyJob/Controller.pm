@@ -5,7 +5,7 @@ use warnings;
 use utf8;
 
 use AnyJob::Daemon;
-use AnyJob::NodeController;
+use AnyJob::Controller::Node;
 
 use base 'AnyJob::Base';
 
@@ -18,11 +18,11 @@ sub new {
     $self->{daemon} = AnyJob::Daemon->new(config => $self->config, process => sub {$self->process()});
 
     if ($self->config->isNodeGlobal()) {
-        require AnyJob::GlobalController;
-        $self->{globalController} = AnyJob::GlobalController->new(parent => $self);
+        require AnyJob::Controller::Global;
+        $self->{globalController} = AnyJob::Controller::Global->new(parent => $self);
     }
 
-    $self->{nodeController} = AnyJob::NodeController->new(parent => $self);
+    $self->{nodeController} = AnyJob::Controller::Node->new(parent => $self);
 
     return $self;
 }

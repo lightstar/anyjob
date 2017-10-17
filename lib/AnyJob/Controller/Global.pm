@@ -1,4 +1,4 @@
-package AnyJob::GlobalController;
+package AnyJob::Controller::Global;
 
 use strict;
 use warnings;
@@ -6,7 +6,7 @@ use utf8;
 
 use JSON::XS;
 
-use base 'AnyJob::BaseController';
+use base 'AnyJob::Controller::Base';
 
 sub processQueue {
     my $self = shift;
