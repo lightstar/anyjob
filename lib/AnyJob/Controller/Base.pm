@@ -56,4 +56,11 @@ sub sendEvent {
     }
 }
 
+sub process {
+    my $self = shift;
+
+    require Carp;
+    Carp::confess("Need to be implemented in descendant");
+}
+
 1;

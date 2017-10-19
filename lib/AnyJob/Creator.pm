@@ -28,7 +28,10 @@ sub createJob {
         return;
     }
 
-    $self->redis->rpush("anyjob:queue:" . $node, encode_json({ type => $type, params => $params }));
+    $self->redis->rpush("anyjob:queue:" . $node, encode_json({
+            type   => $type,
+            params => $params
+        }));
 }
 
 sub createJobSet {
@@ -47,7 +50,10 @@ sub createJobSet {
         $job->{params} ||= {};
     }
 
-    $self->redis->rpush("anyjob:queue", encode_json({ jobset => 1, jobs => $jobs }));
+    $self->redis->rpush("anyjob:queue", encode_json({
+            jobset => 1,
+            jobs   => $jobs
+        }));
 }
 
 1;

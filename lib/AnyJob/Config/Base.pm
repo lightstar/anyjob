@@ -6,22 +6,23 @@ use utf8;
 
 sub new {
     my $class = shift;
-    my $filename = shift;
-    my $global = shift;
+    my $fileName = shift;
+    my $globalSection = shift;
 
     my $self = bless {}, $class;
-    $self->{global} = $global;
+    $self->{global} = $globalSection;
     $self->{data} = {};
-    $self->addConfig($filename);
+    $self->addConfig($fileName);
 
     return $self;
 }
 
 sub addConfig {
     my $self = shift;
-    my $filename = shift;
+    my $fileName = shift;
+    my $fileSection = shift;
 
-    my $data = $self->readFile($filename);
+    my $data = $self->readFile($fileName, $fileSection);
     while (my ($section, $var) = each(%$data)) {
         $self->{data}->{$section} = {};
         while (my ($key, $val) = each(%$var)) {
@@ -38,13 +39,18 @@ sub section {
 
 sub readFile {
     my $self = shift;
-    my $filename = shift;
+    my $fileName = shift;
+    my $fileSection = shift;
+
+    my $data = {};
+    if ($fileSection) {
+        $data->{$fileSection} = {};
+    }
 
     my $fh;
-    my $data = {};
-    if (open($fh, "<", $filename)) {
+    if (open($fh, "<", $fileName)) {
         binmode $fh, ":utf8";
-        my $section;
+        my $section = $fileSection;
         my $var;
         while (my $str = <$fh>) {
             $str =~ s/^\s+//;
@@ -74,7 +80,7 @@ sub readFile {
         close($fh);
     } else {
         require Carp;
-        Carp::confess("Can't open '$filename': $!");
+        Carp::confess("Can't open '$fileName': $!");
     }
 
     return $data;

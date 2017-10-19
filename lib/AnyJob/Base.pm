@@ -5,7 +5,8 @@ use warnings;
 use utf8;
 
 use Redis;
-use Sys::Syslog qw(openlog syslog closelog);
+
+use AnyJob::Logger;
 
 sub new {
     my $class = shift;
@@ -25,7 +26,8 @@ sub new {
     $self->{redis} = Redis->new(server => $self->config->redis, encoding => undef);
     $self->{node} = $self->config->node;
 
-    openlog("anyjob-" . $self->type, "ndelay,nofatal,pid", "local0");
+    my $syslog = $self->config->syslog ? 1 : 0;
+    $self->{logger} = AnyJob::Logger->new(syslog => $syslog, type => $self->{type});
 
     return $self;
 }
@@ -50,18 +52,19 @@ sub type {
     return $self->{type};
 }
 
+sub logger {
+    my $self = shift;
+    return $self->{logger};
+}
+
 sub debug {
     my ($self, $message) = @_;
-    syslog("info", $message);
+    $self->logger->debug($message);
 }
 
 sub error {
     my ($self, $message) = @_;
-    syslog("err", $message);
-}
-
-sub DESTROY {
-    closelog();
+    $self->logger->error($message);
 }
 
 1;

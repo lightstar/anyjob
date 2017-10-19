@@ -8,6 +8,13 @@ use JSON::XS;
 
 use base 'AnyJob::Controller::Base';
 
+sub process {
+    my $self = shift;
+    $self->processQueue();
+    $self->processProgressQueue();
+    $self->processResultQueue();
+}
+
 sub processQueue {
     my $self = shift;
 

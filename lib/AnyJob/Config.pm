@@ -5,8 +5,61 @@ use warnings;
 use utf8;
 
 use JSON::XS;
+use File::Basename;
+use File::Spec;
 
 use base 'AnyJob::Config::Base';
+
+sub new {
+    my $class = shift;
+    my $self = $class->SUPER::new(@_);
+
+    my $fileName = shift;
+    my $baseDir = dirname($fileName);
+
+    if ($self->nodes_dir) {
+        $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->nodes_dir), 'node');
+    }
+
+    if ($self->jobs_dir) {
+        $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->jobs_dir), 'job');
+    }
+
+    if ($self->observers_dir) {
+        $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->observers_dir), 'observer');
+    }
+
+    return $self;
+}
+
+sub node {
+    my $self = shift;
+
+    if (exists($self->{node})) {
+        return $self->{node};
+    }
+
+    $self->{node} = $ENV{ANYJOB_NODE} || "";
+    return $self->{node};
+}
+
+sub addConfigFromDir {
+    my $self = shift;
+    my $dirName = shift;
+    my $sectionPrefix = shift;
+
+    my $dh;
+    if (opendir($dh, $dirName)) {
+        foreach my $fileName (readdir($dh)) {
+            my $fullFileName = File::Spec->catfile($dirName, $fileName);
+            next unless -f $fullFileName and $fileName !~ /^\./ and $fileName =~ /\.cfg$/;
+            my $section = $sectionPrefix . '_' . $fileName;
+            $section =~ s/\.cfg$//;
+            $self->addConfig($fullFileName, $section);
+        }
+        closedir($dh);
+    }
+}
 
 sub getAllNodes {
     my $self = shift;
@@ -137,7 +190,8 @@ sub getJobWorker {
     my $config = $self->getJobConfig($type);
     return undef unless $config;
 
-    return $config->{worker} || $self->worker;
+    return ($config->{worker} || $self->worker,
+        $config->{interpreter} || $self->interpreter);
 }
 
 sub isJobSupported {
@@ -146,15 +200,25 @@ sub isJobSupported {
     my $node = shift;
     $node ||= $self->node;
 
-    my $config = $self->getJobConfig($type);
-    return 0 unless $config;
-
-    if (not $config->{nodes} or $config->{nodes} eq "all") {
-        my $except = $config->{except} || "";
-        return (grep {$_ eq $node} split(/,/, $except)) ? 0 : 1;
+    if (exists($self->{jobSupported}->{$node}->{$type})) {
+        return $self->{jobSupported}->{$node}->{$type};
     }
 
-    return (grep {$_ eq $node} split(/,/, $config->{nodes})) ? 0 : 1;
+    my $result;
+
+    my $config = $self->getJobConfig($type);
+    unless ($config) {
+        $result = 0;
+    } elsif (not $config->{nodes} or $config->{nodes} eq "all") {
+        my $except = $config->{except} || "";
+        $result = (grep {$_ eq $node} split(/\s*,\s*/, $except)) ? 0 : 1;
+    } else {
+        $result =  (grep {$_ eq $node} split(/\s*,\s*/, $config->{nodes})) ? 0 : 1;
+    }
+
+    $self->{jobSupported}->{$node}->{$type} = $result;
+
+    return $result;
 }
 
 sub isNodeGlobal {
@@ -166,6 +230,28 @@ sub isNodeGlobal {
     return 0 unless $config;
 
     return $config->{global} ? 1 : 0;
+}
+
+sub isNodeRegular {
+    my $self = shift;
+    my $node = shift;
+    $node ||= $self->node;
+
+    my $config = $self->getNodeConfig($node);
+    return 0 unless $config;
+
+    return $config->{regular} ? 1 : 0;
+}
+
+sub getNodeObservers {
+    my $self = shift;
+    my $node = shift;
+    $node ||= $self->node;
+
+    my $config = $self->getNodeConfig($node);
+    return [] unless $config and $config->{observers};
+
+    return [ grep {$_} split(/\*,\*/, $config->{observers}) ];
 }
 
 1;

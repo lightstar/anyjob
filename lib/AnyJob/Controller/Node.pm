@@ -9,6 +9,13 @@ use File::Basename;
 
 use base 'AnyJob::Controller::Base';
 
+sub process {
+    my $self = shift;
+    $self->processQueue();
+    $self->processProgressQueue();
+    $self->processResultQueue();
+}
+
 sub processQueue {
     my $self = shift;
 
@@ -93,7 +100,8 @@ sub createJob {
             params => $job->{params}
         });
 
-    $self->debug("Created job '" . $id . "' with type '" . $job->{type} . "' and params " . encode_json($job->{params}));
+    $self->debug("Created job '" . $id . "' with type '" . $job->{type} . "' and params " .
+        encode_json($job->{params}));
 
     $self->runJob($job, $id);
 }
@@ -103,7 +111,7 @@ sub runJob {
     my $job = shift;
     my $id = shift;
 
-    my $worker = $self->config->getJobWorker($job->{type});
+    my ($worker, $interpreter) = $self->config->getJobWorker($job->{type});
     unless ($worker) {
         $self->error("Worker for job with type '" . $job->{type} . "' is not defined and no global worker is set");
         return;
@@ -115,14 +123,16 @@ sub runJob {
     }
 
     unless (defined($pid)) {
-        $self->error("Can't fork to run job '" . $id . "'");
+        $self->error("Can't fork to run job '" . $id . "': " . $!);
         return;
     }
 
-    $self->debug("Run job '" . $id . "' using worker '" . $worker . "'");
+    $self->debug("Run job '" . $id . "' using worker '" . $worker . "'" .
+        ($interpreter ? " using interpreter '" . $interpreter . "'" : ""));
 
+    my $node = $self->node;
     my $dir = dirname($worker);
-    exec("/bin/sh", "-c", "cd $dir; ANYJOB_ID=$id $worker >/dev/null 2>&1");
+    exec("/bin/sh", "-c", "cd '$dir'; ANYJOB_ID='$id' ANYJOB_NODE='$node' $interpreter $worker");
 }
 
 sub finishJob {
@@ -151,7 +161,8 @@ sub finishJob {
             message => $result->{message}
         });
 
-    $self->debug("Job '" . $id . "' " . ($result->{success} ? "successfully finished" : "finished with error") . ": '" . $result->{message} . "'");
+    $self->debug("Job '" . $id . "' " . ($result->{success} ? "successfully finished" : "finished with error") .
+        ": '" . $result->{message} . "'");
 }
 
 sub nextJobId {

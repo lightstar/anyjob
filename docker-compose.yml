@@ -1,0 +1,25 @@
+version: "2"
+services:
+  broadcast:
+    build: .
+    command: /opt/anyjob/bin/anyjobd.pl
+    links:
+     - redis
+    environment:
+     - ANYJOB_NODE=broadcast
+  test:
+    build: .
+    command: /opt/anyjob/bin/anyjobd.pl
+    links:
+     - redis
+    environment:
+     - ANYJOB_NODE=test
+  creator:
+    build: .
+    command: /opt/anyjob/bin/anyjobc.pl
+    links:
+     - redis
+  redis:
+    image: redis
+    ports:
+     - "0.0.0.0:6379:6379"
