@@ -213,7 +213,7 @@ sub isJobSupported {
         my $except = $config->{except} || "";
         $result = (grep {$_ eq $node} split(/\s*,\s*/, $except)) ? 0 : 1;
     } else {
-        $result =  (grep {$_ eq $node} split(/\s*,\s*/, $config->{nodes})) ? 0 : 1;
+        $result = (grep {$_ eq $node} split(/\s*,\s*/, $config->{nodes})) ? 0 : 1;
     }
 
     $self->{jobSupported}->{$node}->{$type} = $result;

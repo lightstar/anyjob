@@ -22,4 +22,6 @@ my $params = {
 $creator->debug("Create job on node '" . $node . "' with type '" . $type . "' and params " . encode_json($params));
 $creator->createJob($node, $type, $params);
 
+sleep(60);
+
 exit(0);

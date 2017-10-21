@@ -16,34 +16,6 @@ sub new {
     return $self;
 }
 
-sub getJob {
-    my $self = shift;
-    my $id = shift;
-
-    my $job = $self->redis->get("anyjob:job:" . $id);
-    unless ($job) {
-        return undef;
-    }
-
-    eval {
-        $job = decode_json($job);
-    };
-    if ($@) {
-        return undef;
-    }
-
-    return $job;
-}
-
-sub sendResult {
-    my $self = shift;
-    my $id = shift;
-    my $result = shift;
-
-    $result->{id} = $id;
-    $self->redis->rpush("anyjob:result_queue:" . $self->node, encode_json($result));
-}
-
 sub sendProgress {
     my $self = shift;
     my $id = shift;

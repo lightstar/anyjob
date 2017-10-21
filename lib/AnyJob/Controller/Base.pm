@@ -44,6 +44,11 @@ sub error {
     $self->{parent}->error($message);
 }
 
+sub getJob {
+    my ($self, $id) = @_;
+    return $self->{parent}->getJob($id);
+}
+
 sub sendEvent {
     my ($self, $event, $data) = @_;
 

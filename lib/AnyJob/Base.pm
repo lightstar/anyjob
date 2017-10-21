@@ -5,6 +5,7 @@ use warnings;
 use utf8;
 
 use Redis;
+use JSON::XS;
 
 use AnyJob::Logger;
 
@@ -65,6 +66,25 @@ sub debug {
 sub error {
     my ($self, $message) = @_;
     $self->logger->error($message);
+}
+
+sub getJob {
+    my $self = shift;
+    my $id = shift;
+
+    my $job = $self->redis->get("anyjob:job:" . $id);
+    unless ($job) {
+        return undef;
+    }
+
+    eval {
+        $job = decode_json($job);
+    };
+    if ($@) {
+        return undef;
+    }
+
+    return $job;
 }
 
 1;

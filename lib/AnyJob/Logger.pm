@@ -6,6 +6,8 @@ use utf8;
 
 use Sys::Syslog qw(openlog syslog closelog);
 
+use AnyJob::DateTime qw(formatDateTime);
+
 my $logger;
 
 sub get {
@@ -54,11 +56,7 @@ sub error {
 
 sub prefix {
     my $self = shift;
-    my ($sec, $min, $hour, $day, $month, $year) = (localtime())[0 .. 5];
-    $month++;
-    $year += 1900;
-    my $datetime = sprintf("%.2d-%.2d-%.4d %.2d:%.2d:%.2d", $day, $month, $year, $hour, $min, $sec);
-    return "[" . $datetime . "] anyjob-" . $self->{type} . "[" . $$ . "]: ";
+    return "[" . formatDateTime() . "] anyjob-" . $self->{type} . "[" . $$ . "]: ";
 }
 
 sub DESTROY {

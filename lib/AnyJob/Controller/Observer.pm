@@ -38,13 +38,8 @@ sub queue {
 
 sub process {
     my $self = shift;
-    $self->processQueue();
-}
 
-sub processQueue {
-    my $self = shift;
-
-    my $limit = $self->config->limit;
+    my $limit = $self->config->limit || 10;
     my $count = 0;
 
     while (my $event = $self->redis->lpop("anyjob:observer_queue:" . $self->queue)) {

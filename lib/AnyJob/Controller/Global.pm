@@ -8,17 +8,14 @@ use JSON::XS;
 
 use base 'AnyJob::Controller::Base';
 
+our @MODULES = qw(
+    Progress
+    );
+
 sub process {
     my $self = shift;
-    $self->processQueue();
-    $self->processProgressQueue();
-    $self->processResultQueue();
-}
 
-sub processQueue {
-    my $self = shift;
-
-    my $limit = $self->config->limit;
+    my $limit = $self->config->limit || 10;
     my $count = 0;
 
     while (my $job = $self->redis->lpop("anyjob:queue")) {
@@ -32,48 +29,6 @@ sub processQueue {
             $self->redis->rpush("anyjob:queue:" . $node, encode_json($job));
         } elsif ($job->{jobset}) {
             $self->createJobSet($job);
-        }
-
-        $count++;
-        last if $count >= $limit;
-    }
-}
-
-sub processResultQueue {
-    my $self = shift;
-
-    my $limit = $self->config->limit;
-    my $count = 0;
-
-    while (my $result = $self->redis->lpop("anyjob:result_queue")) {
-        eval {
-            $result = decode_json($result);
-        };
-        if ($@) {
-            $self->error("Can't decode result: " . $result);
-        } else {
-            $self->debug("Got jobset result: " . encode_json($result));
-        }
-
-        $count++;
-        last if $count >= $limit;
-    }
-}
-
-sub processProgressQueue {
-    my $self = shift;
-
-    my $limit = $self->config->limit;
-    my $count = 0;
-
-    while (my $progress = $self->redis->lpop("anyjob:progress_queue")) {
-        eval {
-            $progress = decode_json($progress);
-        };
-        if ($@) {
-            $self->error("Can't decode progress: " . $progress);
-        } else {
-            $self->debug("Got jobset progress: " . encode_json($progress));
         }
 
         $count++;

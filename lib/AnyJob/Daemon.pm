@@ -5,6 +5,7 @@ use warnings;
 use utf8;
 
 use AnyJob::Daemon::Base;
+use AnyJob::Controller::Factory;
 
 use base 'AnyJob::Base';
 
@@ -23,34 +24,7 @@ sub new {
         process  => sub {$self->process()}
     );
 
-    $self->{controllers} = [];
-
-    if ($self->config->isNodeGlobal()) {
-        require AnyJob::Controller::Global;
-        push @{$self->{controllers}}, AnyJob::Controller::Global->new(parent => $self);
-    }
-
-    if ($self->config->isNodeRegular()) {
-        require AnyJob::Controller::Node;
-        push @{$self->{controllers}}, AnyJob::Controller::Node->new(parent => $self);
-    }
-
-    foreach my $observer (@{$self->config->getNodeObservers()}) {
-        my $observerConfig = $self->config->getObserverConfig($observer);
-        unless ($observerConfig and $observerConfig->{module}) {
-            require Carp;
-            Carp::confess("No config or module for observer '" . $observer . "' provided");
-        }
-
-        my $module = "AnyJob::Observer::" . ucfirst($observerConfig->{module});
-        eval "require " . $module;
-        if ($@) {
-            require Carp;
-            Carp::confess("Module '" . $module . "' does not exists");
-        }
-
-        push @{$self->{controllers}}, $module->new(parent => $self, name => $observer);
-    }
+    $self->{controllers} = AnyJob::Controller::Factory->new(parent => $self)->collect();
 
     return $self;
 }

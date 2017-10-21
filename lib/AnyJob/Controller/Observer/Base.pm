@@ -1,4 +1,4 @@
-package AnyJob::Observer::Base;
+package AnyJob::Controller::Observer::Base;
 
 use strict;
 use warnings;

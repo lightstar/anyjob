@@ -7,19 +7,19 @@ use utf8;
 use JSON::XS;
 use File::Basename;
 
+use AnyJob::DateTime qw(formatDateTime);
+
 use base 'AnyJob::Controller::Base';
+
+our @MODULES = qw(
+    Progress
+    Clean
+    );
 
 sub process {
     my $self = shift;
-    $self->processQueue();
-    $self->processProgressQueue();
-    $self->processResultQueue();
-}
 
-sub processQueue {
-    my $self = shift;
-
-    my $limit = $self->config->limit;
+    my $limit = $self->config->limit || 10;
     my $count = 0;
 
     while (my $job = $self->redis->lpop("anyjob:queue:" . $self->node)) {
@@ -30,48 +30,6 @@ sub processQueue {
             $self->error("Can't decode job: $job");
         } else {
             $self->createJob($job);
-        }
-
-        $count++;
-        last if $count >= $limit;
-    }
-}
-
-sub processResultQueue {
-    my $self = shift;
-
-    my $limit = $self->config->limit;
-    my $count = 0;
-
-    while (my $result = $self->redis->lpop("anyjob:result_queue:" . $self->node)) {
-        eval {
-            $result = decode_json($result);
-        };
-        if ($@) {
-            $self->error("Can't decode result: " . $result);
-        } else {
-            $self->finishJob($result);
-        }
-
-        $count++;
-        last if $count >= $limit;
-    }
-}
-
-sub processProgressQueue {
-    my $self = shift;
-
-    my $limit = $self->config->limit;
-    my $count = 0;
-
-    while (my $progress = $self->redis->lpop("anyjob:progress_queue:" . $self->node)) {
-        eval {
-            $progress = decode_json($progress);
-        };
-        if ($@) {
-            $self->error("Can't decode progress: " . $progress);
-        } else {
-            $self->debug("Got progress: " . encode_json($progress));
         }
 
         $count++;
@@ -135,34 +93,16 @@ sub runJob {
     exec("/bin/sh", "-c", "cd '$dir'; ANYJOB_ID='$id' ANYJOB_NODE='$node' $interpreter $worker");
 }
 
-sub finishJob {
+sub cleanJob {
     my $self = shift;
-    my $result = shift;
+    my $id = shift;
+    my $time = shift;
 
-    my $id = $result->{id};
-
-    my $job = $self->redis->get("anyjob:job:" . $id);
-    eval {
-        $job = decode_json($job);
-    };
-    if ($@) {
-        $self->error("Can't decode job '" . $id . "'");
-        return;
-    }
+    $self->debug("Clean job '" . $id . "' created at " . formatDateTime($time));
 
     $self->redis->zrem("anyjob:job", $id);
     $self->redis->del("anyjob:job:" . $id);
-
-    $self->sendEvent("finish", {
-            id      => $id,
-            type    => $job->{type},
-            params  => $job->{params},
-            success => $result->{success},
-            message => $result->{message}
-        });
-
-    $self->debug("Job '" . $id . "' " . ($result->{success} ? "successfully finished" : "finished with error") .
-        ": '" . $result->{message} . "'");
+    $self->redis->del("anyjob:job:" . $id . ":log");
 }
 
 sub nextJobId {
