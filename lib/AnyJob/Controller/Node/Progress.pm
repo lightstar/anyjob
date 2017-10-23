@@ -44,8 +44,19 @@ sub progressJob {
 
     $self->debug("Progress of job '" . $id . "': " . encode_json($progress));
 
-    if ($progress->{state}) {
+    my $jobChanged = 0;
+
+    if (exists($progress->{state})) {
         $job->{state} = $progress->{state};
+        $jobChanged = 1;
+    }
+
+    if (exists($progress->{progress})) {
+        $job->{progress} = $progress->{progress};
+        $jobChanged = 1;
+    }
+
+    if ($jobChanged) {
         $self->redis->set("anyjob:job:" . $id, encode_json($job));
     }
 
@@ -53,8 +64,13 @@ sub progressJob {
         $self->redis->rpush("anyjob:job:" . $id . ":log", encode_json($progress->{log}));
     }
 
+    if ($job->{jobset}) {
+        $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
+    }
+
     $self->sendEvent("progress", {
             id       => $id,
+            ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
             type     => $job->{type},
             params   => $job->{params},
             progress => $progress
@@ -65,20 +81,12 @@ sub finishJob {
     my $self = shift;
     my $progress = shift;
 
-    my $id = $progress->{id};
+    my $id = delete $progress->{id};
 
     my $job = $self->getJob($id);
     unless ($job) {
         return;
     }
-
-    $self->sendEvent("finish", {
-            id      => $id,
-            type    => $job->{type},
-            params  => $job->{params},
-            success => $progress->{success},
-            message => $progress->{message}
-        });
 
     $self->debug("Job '" . $id . "' " . ($progress->{success} ? "successfully finished" : "finished with error") .
         ": '" . $progress->{message} . "'");
@@ -86,6 +94,19 @@ sub finishJob {
     if (my $time = $self->redis->zscore("anyjob:job", $id)) {
         $self->cleanJob($id, $time);
     }
+
+    if ($job->{jobset}) {
+        $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
+    }
+
+    $self->sendEvent("finish", {
+            id      => $id,
+            ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
+            type    => $job->{type},
+            params  => $job->{params},
+            success => $progress->{success},
+            message => $progress->{message}
+        });
 }
 
 1;

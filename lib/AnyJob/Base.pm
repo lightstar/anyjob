@@ -71,20 +71,32 @@ sub error {
 sub getJob {
     my $self = shift;
     my $id = shift;
+    return $self->getObject("anyjob:job:" . $id);
+}
 
-    my $job = $self->redis->get("anyjob:job:" . $id);
-    unless ($job) {
+sub getJobSet {
+    my $self = shift;
+    my $id = shift;
+    return $self->getObject("anyjob:jobset:" . $id);
+}
+
+sub getObject {
+    my $self = shift;
+    my $key = shift;
+
+    my $object = $self->redis->get($key);
+    unless ($object) {
         return undef;
     }
 
     eval {
-        $job = decode_json($job);
+        $object = decode_json($object);
     };
     if ($@) {
         return undef;
     }
 
-    return $job;
+    return $object;
 }
 
 1;

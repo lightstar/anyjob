@@ -52,14 +52,26 @@ sub createJob {
     $self->redis->zadd("anyjob:job", time(), $id);
     $self->redis->set("anyjob:job:" . $id, encode_json($job));
 
+    $self->debug("Create job '" . $id . "' " .
+        ($job->{jobset} ? "(jobset '" . $job->{jobset} . "') " : "") .
+        "with type '" . $job->{type} . "' and params " . encode_json($job->{params}));
+
+    if ($job->{jobset}) {
+        my $progress = {
+            state  => "begin",
+            node   => $self->node,
+            type   => $job->{type},
+            params => $job->{params}
+        };
+        $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
+    }
+
     $self->sendEvent("create", {
             id     => $id,
+            ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
             type   => $job->{type},
             params => $job->{params}
         });
-
-    $self->debug("Created job '" . $id . "' with type '" . $job->{type} . "' and params " .
-        encode_json($job->{params}));
 
     $self->runJob($job, $id);
 }
@@ -103,6 +115,20 @@ sub cleanJob {
     $self->redis->zrem("anyjob:job", $id);
     $self->redis->del("anyjob:job:" . $id);
     $self->redis->del("anyjob:job:" . $id . ":log");
+}
+
+sub sendJobProgressForJobSet {
+    my $self = shift;
+    my $id = shift;
+    my $progress = shift;
+    my $jobSetId = shift;
+
+    my $jobSetProgress = {
+        id          => $jobSetId,
+        job         => $id,
+        jobProgress => $progress
+    };
+    $self->redis->rpush("anyjob:progress_queue", encode_json($jobSetProgress));
 }
 
 sub nextJobId {

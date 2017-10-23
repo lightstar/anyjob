@@ -11,7 +11,8 @@ our @EXPORT_OK = qw(
     );
 
 sub formatDateTime {
-    my $time = shift || time();
+    my $time = shift;
+    $time ||= time();
 
     my ($sec, $min, $hour, $day, $month, $year) = (localtime($time))[0 .. 5];
     $month++;

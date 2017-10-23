@@ -6,10 +6,13 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::DateTime qw(formatDateTime);
+
 use base 'AnyJob::Controller::Base';
 
 our @MODULES = qw(
     Progress
+    Clean
     );
 
 sub process {
@@ -54,15 +57,36 @@ sub createJobSet {
     }
 
     my $id = $self->nextJobSetId();
-    $self->redis->zadd("anyjob:jobsets", time(), $id);
+    $self->redis->zadd("anyjob:jobset", time(), $id);
     $self->redis->set("anyjob:jobset:" . $id, encode_json($jobSet));
 
     foreach my $job (@{$jobSet->{jobs}}) {
         delete $job->{state};
+    }
+
+    $self->debug("Create jobset '" . $id . "' with jobs " . encode_json($jobSet->{jobs}));
+
+    $self->sendEvent("createJobSet", {
+            id   => $id,
+            jobs => $jobSet->{jobs}
+        });
+
+    foreach my $job (@{$jobSet->{jobs}}) {
         my $node = delete $job->{node};
-        $job->{jobset_id} = $id;
+        $job->{jobset} = $id;
         $self->redis->rpush("anyjob:queue:" . $node, encode_json($job));
     }
+}
+
+sub cleanJobSet {
+    my $self = shift;
+    my $id = shift;
+    my $time = shift;
+
+    $self->debug("Clean jobset '" . $id . "' created at " . formatDateTime($time));
+
+    $self->redis->zrem("anyjob:jobset", $id);
+    $self->redis->del("anyjob:jobset:" . $id);
 }
 
 sub nextJobSetId {

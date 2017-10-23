@@ -35,22 +35,34 @@ sub node {
 }
 
 sub debug {
-    my ($self, $message) = @_;
+    my $self = shift;
+    my $message = shift;
+
     $self->{parent}->debug($message);
 }
 
 sub error {
-    my ($self, $message) = @_;
+    my $self = shift;
+    my $message = shift;
     $self->{parent}->error($message);
 }
 
 sub getJob {
-    my ($self, $id) = @_;
+    my $self = shift;
+    my $id = shift;
     return $self->{parent}->getJob($id);
 }
 
+sub getJobSet {
+    my $self = shift;
+    my $id = shift;
+    return $self->{parent}->getJobSet($id);
+}
+
 sub sendEvent {
-    my ($self, $event, $data) = @_;
+    my $self = shift;
+    my $event = shift;
+    my $data = shift;
 
     $data->{event} = $event;
     $data->{node} = $self->node;

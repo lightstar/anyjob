@@ -31,7 +31,9 @@ sub new {
 }
 
 sub debug {
-    my ($self, $message) = @_;
+    my $self = shift;
+    my $message = shift;
+
     if ($self->{syslog}) {
         syslog("info", $message);
     } else {
@@ -43,7 +45,9 @@ sub debug {
 }
 
 sub error {
-    my ($self, $message) = @_;
+    my $self = shift;
+    my $message = shift;
+
     if ($self->{syslog}) {
         syslog("err", $message);
     } else {

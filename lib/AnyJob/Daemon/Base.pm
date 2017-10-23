@@ -116,12 +116,14 @@ sub stop {
 }
 
 sub debug {
-    my ($self, $message) = @_;
+    my $self = shift;
+    my $message = shift;
     $self->{logger}->debug($message);
 }
 
 sub error {
-    my ($self, $message) = @_;
+    my $self = shift;
+    my $message = shift;
     $self->{logger}->error($message);
 }
 
@@ -165,7 +167,8 @@ sub readInt {
 }
 
 sub writeInt {
-    my ($fileName, $value) = @_;
+    my $fileName = shift;
+    my $value = shift;
 
     my $fh = IO::File->new($fileName, "w");
     return undef unless $fh;
@@ -176,7 +179,8 @@ sub writeInt {
 }
 
 sub isProcRun {
-    my ($pid, $fileName) = @_;
+    my $pid = shift;
+    my $fileName = shift;
 
     return undef unless $pid;
 
