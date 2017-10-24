@@ -63,7 +63,7 @@ sub pushController {
     eval "require " . $module;
     if ($@) {
         require Carp;
-        Carp::confess("Module '" . $module . "' does not exists");
+        Carp::confess("Can't load module '" . $module . "': " . $@);
     }
 
     push @{$self->{controllers}}, $module->new(parent => $self->{parent}, @_);

@@ -2,6 +2,8 @@ FROM perl:5.26
 
 RUN cpanm JSON::XS
 RUN cpanm Redis
+RUN cpanm MIME::Entity
+RUN cpanm Template
 
 RUN mkdir -p /opt/anyjob
 COPY . /opt/anyjob/

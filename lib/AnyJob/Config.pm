@@ -251,7 +251,7 @@ sub getNodeObservers {
     my $config = $self->getNodeConfig($node);
     return [] unless $config and $config->{observers};
 
-    return [ grep {$_} split(/\*,\*/, $config->{observers}) ];
+    return [ grep {$_} split(/\s*,\s*/, $config->{observers}) ];
 }
 
 1;

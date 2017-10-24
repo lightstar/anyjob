@@ -66,6 +66,7 @@ sub sendEvent {
 
     $data->{event} = $event;
     $data->{node} = $self->node;
+    $data->{time} = time();
 
     my $encodedData = encode_json($data);
     foreach my $queue (@{$self->config->getObserverQueuesForEvent($event)}) {

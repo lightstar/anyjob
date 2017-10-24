@@ -1,7 +1,8 @@
 #!/bin/sh
 
-ANYJOBD=${ANYJOB_PATH:-"/opt/anyjob"}"/bin/anyjobd.pl $2"
-PIDFILE=${ANYJOBD_PID:-"/var/run/anyjob-daemon.pid"}
+NODE=${ANYJOB_NODE:-"node"}
+ANYJOBD=${ANYJOB_PATH:-"/opt/anyjob"}"/bin/anyjobd.pl"
+PIDFILE=${ANYJOBD_PID:-"/var/run/anyjobd.pid"}
 MAXTRIES=${ANYJOBD_KILL_MAX_TRIES:-10000}
 SLEEPTIME=${ANYJOBD_KILL_SLEEP_TIME:-10000}
 PID=`cat $PIDFILE 2>/dev/null`
@@ -24,7 +25,7 @@ start() {
         echo "anyjobd is already running..."
     else
         ulimit -n 10240
-        LANG=en_US.UTF-8 $ANYJOBD
+        LANG=en_US.UTF-8 ANYJOB_NODE="$NODE" $ANYJOBD
     fi
 }
 

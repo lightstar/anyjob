@@ -1,0 +1,79 @@
+<html>
+<head>
+    <title>Задание AnyJob</title>
+</head>
+<body>
+
+<h3>
+    [% IF event == 'create' %]Задание создано
+    [% ELSIF event == 'progress' %]Задание выполняется
+    [% ELSIF event == 'finish' %]Задание выполнено
+    [% ELSIF event == 'createJobSet' %]Набор заданий создан
+    [% ELSIF event == 'progressJobSet' %]Набор заданий выполняется
+    [% ELSIF event == 'finishJobSet' %]Набор заданий выполнен
+    [% END %]
+</h3>
+
+<div>
+    [% IF id %]
+        ID: <b>[% id %]</b><br>
+    [% END %]
+
+    [% IF jobset %]
+        ID набора: <b>[% jobset %]</b><br>
+    [% END %]
+
+    [% IF time %]
+        Время события: <b>[% time %]</b>
+    [% END %]
+
+    [% IF type && node %]
+        Задание: <b>[% type %]</b><br>
+        Хост: <b>[% node %]</b><br>
+    [% END %]
+
+    [% IF params && params.size %]
+        Параметры:<br>
+        [% FOR param IN params.pairs %]
+            &nbsp;&nbsp;<b>[% param.key %]</b>: [% param.value %]<br>
+        [% END %]
+    [% END %]
+
+    [% IF jobs && jobs.size %]
+        [% FOREACH job IN jobs %]
+            Задание: <b>[% job.type %]</b><br>
+            Хост: <b>[% job.node %]</b><br>
+            [% IF job.params && job.params.size %]
+                Параметры:<br>
+                [% FOR param IN job.params.pairs %]
+                    &nbsp;&nbsp;<b>[% param.key %]</b>: [% param.value %]<br>
+                [% END %]
+            [% END %]
+            <br>
+        [% END %]
+    [% END %]
+
+    [% IF event == 'progress' || event == 'progressJobSet' %]
+        [% IF progress.state %]
+            Состояние: <b>[% progress.state %]</b><br>
+        [% END %]
+        [% IF progress.progress %]
+            Прогресс: <b>[% progress.progress %]</b><br>
+        [% END %]
+        [% IF progress.log && progress.log.list.size %]
+            Сообщения:<br>
+            [% FOREACH row IN progress.log.list %]
+                [% IF row.time && row.message %]
+                    &nbsp;&nbsp;[[% progress.log.time %]] [% progress.log.message %]<br>
+                [% END %]
+            [% END %]
+        [% END %]
+    [% END %]
+
+    [% IF event == 'finish' %]
+        Результат: <b><span style="color:[% success ? 'green' : 'red' %]">[% message %]</span></b>
+    [% END %]
+</div>
+
+</body>
+</html>

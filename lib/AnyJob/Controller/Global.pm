@@ -52,12 +52,13 @@ sub createJobSet {
     }
 
     $jobSet->{state} = "begin";
+    $jobSet->{time} = time();
     foreach my $job (@{$jobSet->{jobs}}) {
         $job->{state} = "begin";
     }
 
     my $id = $self->nextJobSetId();
-    $self->redis->zadd("anyjob:jobset", time(), $id);
+    $self->redis->zadd("anyjob:jobset", $jobSet->{time}, $id);
     $self->redis->set("anyjob:jobset:" . $id, encode_json($jobSet));
 
     foreach my $job (@{$jobSet->{jobs}}) {

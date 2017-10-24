@@ -1,0 +1,7 @@
+[% IF event == 'create' %]Задание создано
+[% ELSIF event == 'progress' %]Задание выполняется
+[% ELSIF event == 'finish' %]Задание выполнено
+[% ELSIF event == 'createJobSet' %]Набор заданий создан
+[% ELSIF event == 'progressJobSet' %]Набор заданий выполняется
+[% ELSIF event == 'finishJobSet' %]Набор заданий выполнен
+[% END %]

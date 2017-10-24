@@ -49,7 +49,8 @@ sub progressJobInJobSet {
         return;
     }
 
-    $self->debug("Progress jobset '" . $id . "', job's '" . $job->{id} . "' progress: " . encode_json($jobProgress));
+    $self->debug("Progress jobset '" . $id . "', job's '" . $job->{id} . "' progress: " .
+        encode_json($jobProgress));
 
     if (exists($jobProgress->{success})) {
         $job->{state} = "finished";

@@ -47,9 +47,10 @@ sub createJob {
     }
 
     $job->{state} = "begin";
+    $job->{time} = time();
 
     my $id = $self->nextJobId();
-    $self->redis->zadd("anyjob:job", time(), $id);
+    $self->redis->zadd("anyjob:job", $job->{time}, $id);
     $self->redis->set("anyjob:job:" . $id, encode_json($job));
 
     $self->debug("Create job '" . $id . "' " .
