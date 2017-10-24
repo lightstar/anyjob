@@ -1,6 +1,6 @@
 #!/bin/sh
 
-NODE=${ANYJOB_NODE:-"node"}
+NODE=$(cat ${ANYJOB_PATH:-"/opt/anyjob"}/NODE)
 ANYJOBD=${ANYJOB_PATH:-"/opt/anyjob"}"/bin/anyjobd.pl"
 PIDFILE=${ANYJOBD_PID:-"/var/run/anyjobd.pid"}
 MAXTRIES=${ANYJOBD_KILL_MAX_TRIES:-10000}
