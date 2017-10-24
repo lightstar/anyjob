@@ -27,21 +27,21 @@
         Время события: <b>[% time %]</b><br>
     [% END %]
 
+    <br>
+
     [% IF type && node %]
-        <br>
         Задание: <b>[% type %]</b><br>
         Хост: <b>[% node %]</b><br>
-    [% END %]
-
-    [% IF params && params.size %]
-        Параметры:<br>
-        [% FOR param IN params.pairs %]
-            &nbsp;&nbsp;<b>[% param.key %]</b>: [% param.value %]<br>
+        [% IF params && params.size %]
+            Параметры:<br>
+            [% FOR param IN params.pairs %]
+                &nbsp;&nbsp;<b>[% param.key %]</b>: [% param.value %]<br>
+            [% END %]
         [% END %]
+        <br>
     [% END %]
 
     [% IF jobs && jobs.size %]
-        <br>
         [% FOREACH job IN jobs %]
             Задание: <b>[% job.type %]</b><br>
             Хост: <b>[% job.node %]</b><br>
@@ -62,17 +62,16 @@
         [% IF progress.progress %]
             Прогресс: <b>[% progress.progress %]</b><br>
         [% END %]
-        [% IF progress.log && progress.log.list.size %]
+    [% ELSIF event == 'finish' %]
+        [% IF log && log.list.size %]
             Сообщения:<br>
-            [% FOREACH row IN progress.log.list %]
+            [% FOREACH row IN log.list %]
                 [% IF row.time && row.message %]
-                    &nbsp;&nbsp;[[% progress.log.time %]] [% progress.log.message %]<br>
+                    &nbsp;&nbsp;[[% row.time %]] [% row.message %]<br>
                 [% END %]
             [% END %]
+            <br>
         [% END %]
-    [% END %]
-
-    [% IF event == 'finish' %]
         Результат: <b><span style="color:[% success ? 'green' : 'red' %]">[% message %]</span></b>
     [% END %]
 </div>
