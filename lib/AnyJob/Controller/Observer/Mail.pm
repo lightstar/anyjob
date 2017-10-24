@@ -70,8 +70,14 @@ sub preprocessEvent {
 
     if ($event->{event} eq "progress") {
         if ($event->{id} and $event->{progress}->{log}) {
-            $self->{logs}->{$event->{id}} ||= [];
-            push @{$self->{logs}->{$event->{id}}}, $event->{progress}->{log};
+            my $log = $event->{progress}->{log};
+            if ($log->{time} and $log->{message}) {
+                $self->{logs}->{$event->{id}} ||= [];
+                push @{$self->{logs}->{$event->{id}}}, {
+                        time    => formatDateTime($log->{time}),
+                        message => $log->{message}
+                    };
+            }
         }
         return 0;
     }
