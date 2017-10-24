@@ -15,12 +15,12 @@
 </h3>
 
 <div>
-    [% IF id %]
-        ID: <b>[% id %]</b><br>
-    [% END %]
-
     [% IF jobset %]
         ID набора: <b>[% jobset %]</b><br>
+    [% END %]
+
+    [% IF id %]
+        ID: <b>[% id %]</b><br>
     [% END %]
 
     [% IF time %]
@@ -28,6 +28,7 @@
     [% END %]
 
     [% IF type && node %]
+        <br>
         Задание: <b>[% type %]</b><br>
         Хост: <b>[% node %]</b><br>
     [% END %]
