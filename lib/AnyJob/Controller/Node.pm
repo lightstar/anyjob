@@ -113,7 +113,7 @@ sub cleanJob {
     my $id = shift;
     my $time = shift;
 
-    $self->debug("Clean job '" . $id . "' created at " . formatDateTime($time));
+    $self->debug("Clean job '" . $id . "' last updated at " . formatDateTime($time));
 
     $self->redis->zrem("anyjob:job", $id);
     $self->redis->del("anyjob:job:" . $id);

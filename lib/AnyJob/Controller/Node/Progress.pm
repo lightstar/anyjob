@@ -42,6 +42,8 @@ sub progressJob {
         return;
     }
 
+    $self->redis->zadd("anyjob:job", time(), $id);
+
     $self->debug("Progress of job '" . $id . "': " . encode_json($progress));
 
     my $jobChanged = 0;

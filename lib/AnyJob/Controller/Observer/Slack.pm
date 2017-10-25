@@ -60,10 +60,12 @@ sub preprocessEvent {
     my $config = shift;
     my $event = shift;
 
-    $event->{config} = $config;
+    unless ($self->SUPER::preprocessEvent($config, $event)) {
+        return 0;
+    }
 
-    if ($event->{time}) {
-        $event->{time} = formatDateTime($event->{time});
+    if ($self->checkEventProp($event, "noslack")) {
+        return 0;
     }
 
     return 1;

@@ -49,6 +49,8 @@ sub progressJobInJobSet {
         return;
     }
 
+    $self->redis->zadd("anyjob:jobset", time(), $id);
+
     $self->debug("Progress jobset '" . $id . "', job's '" . $job->{id} . "' progress: " .
         encode_json($jobProgress));
 
@@ -119,13 +121,15 @@ sub progressJobSet {
         return;
     }
 
+    $self->redis->zadd("anyjob:jobset", time(), $id);
+
     $self->debug("Progress jobset '" . $id . "': " . encode_json($progress));
 
-    if ($progress->{state}) {
+    if (exists($progress->{state})) {
         $jobSet->{state} = $progress->{state};
     }
 
-    if ($progress->{progress}) {
+    if (exists($progress->{progress})) {
         $jobSet->{progress} = $progress->{progress};
     }
 

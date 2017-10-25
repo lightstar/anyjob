@@ -86,7 +86,7 @@ sub cleanJobSet {
     my $id = shift;
     my $time = shift;
 
-    $self->debug("Clean jobset '" . $id . "' created at " . formatDateTime($time));
+    $self->debug("Clean jobset '" . $id . "' last updated at " . formatDateTime($time));
 
     $self->redis->zrem("anyjob:jobset", $id);
     $self->redis->del("anyjob:jobset:" . $id);

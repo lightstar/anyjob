@@ -12,8 +12,8 @@
         "fields": [
             [% IF type && node %]
                 {
-                    "title": "Задание",
-                    "value": "[% type %] ([% node %])
+                    "title": "[% type %] ([% node %])",
+                    "value": "
                         [% IF params && params.size %]
                             [% FOR param IN params.pairs %]
                                 [% '\n- ' %][% param.key %]: [% param.value %]
@@ -26,8 +26,8 @@
             [% IF jobs && jobs.size %]
                 [% FOREACH job IN jobs %]
                     {
-                        "title": "Задание",
-                        "value": "[% job.type %] ([% job.node %])
+                        "title": "[% job.type %] ([% job.node %])",
+                        "value": "
                             [% IF job.params && job.params.size %]
                                 [% FOREACH param IN job.params.pairs %]
                                     [% '\n- ' %][% param.key %]: [% param.value %]

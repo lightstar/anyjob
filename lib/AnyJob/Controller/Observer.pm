@@ -6,6 +6,8 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::DateTime qw(formatDateTime);
+
 use base 'AnyJob::Controller::Base';
 
 sub new {
@@ -68,6 +70,43 @@ sub processEvent {
 
     require Carp;
     Carp::confess("Need to be implemented in descendant");
+}
+
+sub checkEventProp {
+    my $self = shift;
+    my $event = shift;
+    my $prop = shift;
+
+    if (exists($event->{props}) and $event->{props}->{$prop}) {
+        return 1;
+    }
+
+    if (exists($event->{type})) {
+        my $jobConfig = $self->config->getJobConfig($event->{type});
+        if ($jobConfig and $jobConfig->{$prop}) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+sub preprocessEvent {
+    my $self = shift;
+    my $config = shift;
+    my $event = shift;
+
+    if ($self->checkEventProp($event, "silent")) {
+        return 0;
+    }
+
+    $event->{config} = $config;
+
+    if ($event->{time}) {
+        $event->{time} = formatDateTime($event->{time});
+    }
+
+    return 1;
 }
 
 1;

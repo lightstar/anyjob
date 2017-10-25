@@ -10,8 +10,6 @@ use MIME::Base64;
 use MIME::Entity;
 use Template;
 
-use AnyJob::DateTime qw(formatDateTime);
-
 use base 'AnyJob::Controller::Observer::Base';
 
 sub new {
@@ -72,7 +70,13 @@ sub preprocessEvent {
     my $config = shift;
     my $event = shift;
 
-    $event->{config} = $config;
+    unless ($self->SUPER::preprocessEvent($config, $event)) {
+        return 0;
+    }
+
+    if ($self->checkEventProp($event, "nomail")) {
+        return 0;
+    }
 
     if ($event->{event} eq "progress") {
         if ($event->{id} and $event->{progress}->{log}) {
@@ -85,7 +89,8 @@ sub preprocessEvent {
                     };
             }
         }
-        unless ($config->{progress_events}) {
+
+        unless ($config->{mail_progress} or $self->checkEventProp($event, "mail_progress")) {
             return 0;
         }
     }
@@ -95,10 +100,6 @@ sub preprocessEvent {
             $event->{log} = $self->{logs}->{$event->{id}};
             delete $self->{logs}->{$event->{id}};
         }
-    }
-
-    if ($event->{time}) {
-        $event->{time} = formatDateTime($event->{time});
     }
 
     return 1;
