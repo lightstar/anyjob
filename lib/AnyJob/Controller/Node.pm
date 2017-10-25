@@ -54,15 +54,16 @@ sub createJob {
     $self->redis->set("anyjob:job:" . $id, encode_json($job));
 
     $self->debug("Create job '" . $id . "' " .
-        ($job->{jobset} ? "(jobset '" . $job->{jobset} . "') " : "") .
-        "with type '" . $job->{type} . "' and params " . encode_json($job->{params}));
+        ($job->{jobset} ? "(jobset '" . $job->{jobset} . "') " : "") . "with type '" . $job->{type} .
+        "', params " . encode_json($job->{params}) . " and props " . encode_json($job->{props}));
 
     if ($job->{jobset}) {
         my $progress = {
             state  => "begin",
             node   => $self->node,
             type   => $job->{type},
-            params => $job->{params}
+            params => $job->{params},
+            props  => $job->{props}
         };
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
@@ -71,7 +72,8 @@ sub createJob {
             id     => $id,
             ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
             type   => $job->{type},
-            params => $job->{params}
+            params => $job->{params},
+            props  => $job->{props}
         });
 
     $self->runJob($job, $id);
@@ -115,7 +117,6 @@ sub cleanJob {
 
     $self->redis->zrem("anyjob:job", $id);
     $self->redis->del("anyjob:job:" . $id);
-    $self->redis->del("anyjob:job:" . $id . ":log");
 }
 
 sub sendJobProgressForJobSet {

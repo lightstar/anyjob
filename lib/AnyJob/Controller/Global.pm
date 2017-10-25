@@ -65,11 +65,13 @@ sub createJobSet {
         delete $job->{state};
     }
 
-    $self->debug("Create jobset '" . $id . "' with jobs " . encode_json($jobSet->{jobs}));
+    $self->debug("Create jobset '" . $id . "' with props " . encode_json($jobSet->{props}) .
+        " and jobs " . encode_json($jobSet->{jobs}));
 
     $self->sendEvent("createJobSet", {
-            id   => $id,
-            jobs => $jobSet->{jobs}
+            id    => $id,
+            props => $jobSet->{props},
+            jobs  => $jobSet->{jobs}
         });
 
     foreach my $job (@{$jobSet->{jobs}}) {

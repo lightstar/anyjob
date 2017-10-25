@@ -18,6 +18,7 @@ sub new {
     my $class = shift;
     my %args = @_;
     my $self = $class->SUPER::new(%args);
+
     $self->{tt} = Template->new({
         INCLUDE_PATH => File::Spec->catdir($self->config->path, 'templates/observers/mail'),
         ENCODING     => "UTF-8",
@@ -25,7 +26,9 @@ sub new {
         POST_CHOMP   => 1,
         TRIM         => 1
     });
+
     $self->{logs} = {};
+
     return $self;
 }
 
@@ -34,11 +37,11 @@ sub processEvent {
     my $event = shift;
     $self->SUPER::processEvent($event);
 
-    unless ($self->preprocessEvent($event)) {
+    my $config = $self->observerConfig();
+
+    unless ($self->preprocessEvent($config, $event)) {
         return;
     }
-
-    my $config = $self->config->getObserverConfig($self->name);
 
     unless (defined($config->{from}) and defined($config->{to})) {
         require Carp;
@@ -66,7 +69,10 @@ sub processEvent {
 
 sub preprocessEvent {
     my $self = shift;
+    my $config = shift;
     my $event = shift;
+
+    $event->{config} = $config;
 
     if ($event->{event} eq "progress") {
         if ($event->{id} and $event->{progress}->{log}) {
@@ -79,7 +85,9 @@ sub preprocessEvent {
                     };
             }
         }
-        return 0;
+        unless ($config->{progress_events}) {
+            return 0;
+        }
     }
 
     if ($event->{event} eq "finish") {

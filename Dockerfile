@@ -2,6 +2,8 @@ FROM perl:5.26
 
 RUN cpanm JSON::XS
 RUN cpanm Redis
+RUN cpanm LWP
+RUN cpanm LWP::Protocol::https
 RUN cpanm MIME::Entity
 RUN cpanm Template
 

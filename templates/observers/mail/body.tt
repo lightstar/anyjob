@@ -47,7 +47,7 @@
             Хост: <b>[% job.node %]</b><br>
             [% IF job.params && job.params.size %]
                 Параметры:<br>
-                [% FOR param IN job.params.pairs %]
+                [% FOREACH param IN job.params.pairs %]
                     &nbsp;&nbsp;<b>[% param.key %]</b>: [% param.value %]<br>
                 [% END %]
             [% END %]

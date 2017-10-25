@@ -21,7 +21,9 @@ sub createJob {
     my $node = shift;
     my $type = shift;
     my $params = shift;
+    my $props = shift;
     $params ||= {};
+    $props ||= {};
 
     unless ($self->config->isJobSupported($type, $node)) {
         $self->error("Job with type '" . $type . "' is not supported on node '" . $node . "'");
@@ -30,13 +32,16 @@ sub createJob {
 
     $self->redis->rpush("anyjob:queue:" . $node, encode_json({
             type   => $type,
-            params => $params
+            params => $params,
+            props  => $props
         }));
 }
 
 sub createJobSet {
     my $self = shift;
     my $jobs = shift;
+    my $props = shift;
+    $props ||= {};
 
     unless (scalar(@$jobs)) {
         return;
@@ -48,10 +53,12 @@ sub createJobSet {
             return;
         }
         $job->{params} ||= {};
+        $job->{props} ||= {};
     }
 
     $self->redis->rpush("anyjob:queue", encode_json({
             jobset => 1,
+            props  => $props,
             jobs   => $jobs
         }));
 }

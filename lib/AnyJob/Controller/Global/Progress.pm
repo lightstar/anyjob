@@ -78,8 +78,9 @@ sub progressJobInJobSet {
 
     if ($jobSetFinished) {
         $self->sendEvent("finishJobSet", {
-                id   => $id,
-                jobs => $jobSet->{jobs}
+                id    => $id,
+                props => $jobSet->{props},
+                jobs  => $jobSet->{jobs}
             });
     }
 }
@@ -132,6 +133,7 @@ sub progressJobSet {
 
     $self->sendEvent("progressJobSet", {
             id       => $id,
+            props    => $jobSet->{props},
             progress => $progress
         });
 }

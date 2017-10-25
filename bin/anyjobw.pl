@@ -26,6 +26,14 @@ unless ($job) {
 $worker->debug("Perform job '" . $id . "' on node '" . $worker->node . "': " . encode_json($job));
 $worker->sendProgress($id, { state => "run" });
 
+sleep(2);
+
+$worker->sendLog($id, "Step 1");
+
+sleep(5);
+
+$worker->sendLog($id, "Step 2");
+
 sleep(10);
 
 $worker->debug("Finish performing job '" . $id . "'");

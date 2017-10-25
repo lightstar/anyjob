@@ -25,6 +25,22 @@ sub sendProgress {
     $self->redis->rpush("anyjob:progress_queue:" . $self->node, encode_json($progress));
 }
 
+sub sendLog {
+    my $self = shift;
+    my $id = shift;
+    my $message = shift;
+
+    my $progress = {
+        id  => $id,
+        log => {
+            time    => time(),
+            message => $message
+        }
+    };
+
+    $self->redis->rpush("anyjob:progress_queue:" . $self->node, encode_json($progress));
+}
+
 sub sendJobSetProgress {
     my $self = shift;
     my $id = shift;

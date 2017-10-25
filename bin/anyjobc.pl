@@ -26,20 +26,29 @@ sub createTestJob {
     my $params = {
         test => "param"
     };
+    my $props = {
+        test_prop => "prop"
+    };
 
     $creator->debug("Create job on node '" . $node . "' with type '" . $type .
-        "' and params " . encode_json($params));
+        "', params " . encode_json($params)) . " and props " . encode_json($props);
 
-    $creator->createJob($node, $type, $params);
+    $creator->createJob($node, $type, $params, $props);
 }
 
 sub createTestJobSet {
+    my $props = {
+        test_prop => "prop_jobset"
+    };
     my $jobs = [
         {
             node   => "test",
             type   => "test",
             params => {
                 test => "param1"
+            },
+            props  => {
+                test_prop => "prop1"
             }
         },
         {
@@ -47,11 +56,14 @@ sub createTestJobSet {
             type   => "test",
             params => {
                 test => "param2"
+            },
+            props  => {
+                test_prop => "prop2"
             }
         }
     ];
 
-    $creator->debug("Create jobset with jobs: " . encode_json($jobs));
+    $creator->debug("Create jobset with props " . encode_json($props) . "and jobs: " . encode_json($jobs));
 
-    $creator->createJobSet($jobs);
+    $creator->createJobSet($jobs, $props);
 }

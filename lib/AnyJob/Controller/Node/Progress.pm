@@ -60,10 +60,6 @@ sub progressJob {
         $self->redis->set("anyjob:job:" . $id, encode_json($job));
     }
 
-    if ($progress->{log}) {
-        $self->redis->rpush("anyjob:job:" . $id . ":log", encode_json($progress->{log}));
-    }
-
     if ($job->{jobset}) {
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
@@ -73,6 +69,7 @@ sub progressJob {
             ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
             type     => $job->{type},
             params   => $job->{params},
+            props    => $job->{props},
             progress => $progress
         });
 }
@@ -104,6 +101,7 @@ sub finishJob {
             ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
             type    => $job->{type},
             params  => $job->{params},
+            props   => $job->{props},
             success => $progress->{success},
             message => $progress->{message}
         });

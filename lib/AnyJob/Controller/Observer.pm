@@ -36,6 +36,11 @@ sub queue {
     return $self->{queue};
 }
 
+sub observerConfig {
+    my $self = shift;
+    return $self->config->getObserverConfig($self->name);
+}
+
 sub process {
     my $self = shift;
 
