@@ -27,7 +27,7 @@ sub process {
         };
         if ($@) {
             $self->error("Can't decode job: " . $job);
-        } elsif ($job->{node}) {
+        } elsif (exists($job->{node})) {
             my $node = delete $job->{node};
             $self->redis->rpush("anyjob:queue:" . $node, encode_json($job));
         } elsif ($job->{jobset}) {
@@ -58,7 +58,7 @@ sub createJobSet {
     }
 
     my $id = $self->nextJobSetId();
-    $self->redis->zadd("anyjob:jobset", $jobSet->{time}, $id);
+    $self->redis->zadd("anyjob:jobsets", $jobSet->{time}, $id);
     $self->redis->set("anyjob:jobset:" . $id, encode_json($jobSet));
 
     foreach my $job (@{$jobSet->{jobs}}) {
@@ -88,7 +88,7 @@ sub cleanJobSet {
 
     $self->debug("Clean jobset '" . $id . "' last updated at " . formatDateTime($time));
 
-    $self->redis->zrem("anyjob:jobset", $id);
+    $self->redis->zrem("anyjob:jobsets", $id);
     $self->redis->del("anyjob:jobset:" . $id);
 }
 

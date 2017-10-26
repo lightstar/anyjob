@@ -14,7 +14,7 @@ sub process {
     my $limit = $self->config->limit || 10;
     my $cleanBefore = $self->config->clean_before || 3600;
 
-    my %ids = $self->redis->zrangebyscore("anyjob:jobset", "-inf", time() - $cleanBefore, "WITHSCORES",
+    my %ids = $self->redis->zrangebyscore("anyjob:jobsets", "-inf", time() - $cleanBefore, "WITHSCORES",
         "LIMIT", 0, $limit);
 
     foreach my $id (keys(%ids)) {

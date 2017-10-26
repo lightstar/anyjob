@@ -38,7 +38,7 @@ sub progressJobInJobSet {
     my $id = delete $progress->{id};
 
     my $jobSet = $self->getJobSet($id);
-    unless ($jobSet) {
+    unless (defined($jobSet)) {
         return;
     }
 
@@ -49,7 +49,7 @@ sub progressJobInJobSet {
         return;
     }
 
-    $self->redis->zadd("anyjob:jobset", time(), $id);
+    $self->redis->zadd("anyjob:jobsets", time(), $id);
 
     $self->debug("Progress jobset '" . $id . "', job's '" . $job->{id} . "' progress: " .
         encode_json($jobProgress));
@@ -59,6 +59,9 @@ sub progressJobInJobSet {
         $job->{success} = $jobProgress->{success};
         $job->{message} = $jobProgress->{message};
     } else {
+        if (exists($jobProgress->{node})) {
+            $job->{node} = $jobProgress->{node};
+        }
         if (exists($jobProgress->{state})) {
             $job->{state} = $jobProgress->{state};
         }
@@ -71,7 +74,7 @@ sub progressJobInJobSet {
     my @finishedJobs = grep {$_->{state} eq "finished"} @{$jobSet->{jobs}};
     if (scalar(@finishedJobs) == scalar(@{$jobSet->{jobs}})) {
         $jobSetFinished = 1;
-        if (my $time = $self->redis->zscore("anyjob:jobset", $id)) {
+        if (my $time = $self->redis->zscore("anyjob:jobsets", $id)) {
             $self->cleanJobSet($id, $time);
         }
     } else {
@@ -117,11 +120,11 @@ sub progressJobSet {
     my $id = delete $progress->{id};
 
     my $jobSet = $self->getJobSet($id);
-    unless ($jobSet) {
+    unless (defined($jobSet)) {
         return;
     }
 
-    $self->redis->zadd("anyjob:jobset", time(), $id);
+    $self->redis->zadd("anyjob:jobsets", time(), $id);
 
     $self->debug("Progress jobset '" . $id . "': " . encode_json($progress));
 

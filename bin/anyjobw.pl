@@ -17,14 +17,21 @@ unless ($id) {
 
 my $config_file = $ARGV[0] || ($ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/anyjob.cfg");
 my $worker = AnyJob::Worker->new(config => AnyJob::Config->new($config_file, "anyjob"));
-my $job = $worker->getJob($id);
 
-unless ($job) {
+my $job = $worker->getJob($id);
+unless (defined($job)) {
     exit(1);
 }
 
+if ($worker->node eq "test") {
+    $worker->debug("Redirect job '" . $id . "' on node '" . $worker->node .
+        "' to node 'broadcast': " . encode_json($job));
+    $worker->sendRedirect($id, "broadcast");
+    exit(0);
+}
+
 $worker->debug("Perform job '" . $id . "' on node '" . $worker->node . "': " . encode_json($job));
-$worker->sendProgress($id, { state => "run" });
+$worker->sendRun($id);
 
 sleep(2);
 
@@ -37,6 +44,6 @@ $worker->sendLog($id, "Step 2");
 sleep(10);
 
 $worker->debug("Finish performing job '" . $id . "'");
-$worker->sendProgress($id, { success => 1, message => "done" });
+$worker->sendSuccess($id, "done");
 
 exit(0);

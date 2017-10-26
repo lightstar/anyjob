@@ -43,7 +43,7 @@ sub createJobSet {
     my $props = shift;
     $props ||= {};
 
-    unless (scalar(@$jobs)) {
+    unless (defined($jobs) and scalar(@$jobs)) {
         return;
     }
 

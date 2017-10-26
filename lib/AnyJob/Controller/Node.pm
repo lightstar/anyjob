@@ -28,6 +28,8 @@ sub process {
         };
         if ($@) {
             $self->error("Can't decode job: $job");
+        } elsif ($job->{from}) {
+            $self->runRedirectedJob($job);
         } else {
             $self->createJob($job);
         }
@@ -50,7 +52,7 @@ sub createJob {
     $job->{time} = time();
 
     my $id = $self->nextJobId();
-    $self->redis->zadd("anyjob:job", $job->{time}, $id);
+    $self->redis->zadd("anyjob:jobs:" . $self->node, $job->{time}, $id);
     $self->redis->set("anyjob:job:" . $id, encode_json($job));
 
     $self->debug("Create job '" . $id . "' " .
@@ -69,6 +71,47 @@ sub createJob {
     }
 
     $self->sendEvent("create", {
+            id     => $id,
+            ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
+            type   => $job->{type},
+            params => $job->{params},
+            props  => $job->{props}
+        });
+
+    $self->runJob($job, $id);
+}
+
+sub runRedirectedJob {
+    my $self = shift;
+    my $redirect = shift;
+
+    my $id = delete $redirect->{id};
+
+    my $job = $self->getJob($id);
+    unless (defined($job)) {
+        return;
+    }
+
+    unless ($self->config->isJobSupported($job->{type})) {
+        $self->error("Job with type '" . $job->{type} . "' is not supported on this node");
+        return;
+    }
+
+    $self->redis->zrem("anyjob:jobs:" . $redirect->{from}, $id);
+    $self->redis->zadd("anyjob:jobs:" . $self->node, time(), $id);
+
+    $self->debug("Run redirected job '" . $id . "' " .
+        ($job->{jobset} ? "(jobset '" . $job->{jobset} . "') " : "") . "with type '" . $job->{type} .
+        "', params " . encode_json($job->{params}) . " and props " . encode_json($job->{props}));
+
+    if ($job->{jobset}) {
+        my $progress = {
+            node => $self->node
+        };
+        $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
+    }
+
+    $self->sendEvent("redirect", {
             id     => $id,
             ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
             type   => $job->{type},
@@ -115,7 +158,7 @@ sub cleanJob {
 
     $self->debug("Clean job '" . $id . "' last updated at " . formatDateTime($time));
 
-    $self->redis->zrem("anyjob:job", $id);
+    $self->redis->zrem("anyjob:jobs:" . $self->node, $id);
     $self->redis->del("anyjob:job:" . $id);
 }
 

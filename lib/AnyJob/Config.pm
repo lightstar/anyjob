@@ -64,14 +64,16 @@ sub addConfigFromDir {
 sub getAllNodes {
     my $self = shift;
 
-    if ($self->{nodes}) {
+    if (exists($self->{nodes})) {
         return $self->{nodes};
     }
 
     my @nodes;
     foreach my $section (keys(%{$self->{data}})) {
         if (my ($node) = ($section =~ /^node_(.+)$/)) {
-            push @nodes, $node;
+            unless ($self->{data}->{$section}->{disabled}) {
+                push @nodes, $node;
+            }
         }
     }
 
@@ -83,14 +85,16 @@ sub getAllNodes {
 sub getAllJobs {
     my $self = shift;
 
-    if ($self->{jobs}) {
+    if (exists($self->{jobs})) {
         return $self->{jobs};
     }
 
     my @jobs;
     foreach my $section (keys(%{$self->{data}})) {
         if (my ($job) = ($section =~ /^job_(.+)$/)) {
-            push @jobs, $job;
+            unless ($self->{data}->{$section}->{disabled}) {
+                push @jobs, $job;
+            }
         }
     }
 
@@ -102,14 +106,16 @@ sub getAllJobs {
 sub getAllObservers {
     my $self = shift;
 
-    if ($self->{observers}) {
+    if (exists($self->{observers})) {
         return $self->{observers};
     }
 
     my @observers;
     foreach my $section (keys(%{$self->{data}})) {
         if (my ($observer) = ($section =~ /^observer_(.+)$/)) {
-            push @observers, $observer;
+            unless ($self->{data}->{$section}->{disabled}) {
+                push @observers, $observer;
+            }
         }
     }
     $self->{observers} = \@observers;
@@ -129,9 +135,6 @@ sub getObserversForEvent {
     my $observers = [];
     foreach my $observer (@{$self->getAllObservers()}) {
         my $config = $self->getObserverConfig($observer);
-        if ($config->{disabled}) {
-            next;
-        }
 
         if (not exists($config->{events}) or $config->{events} eq "all" or
             grep {$_ eq $event} split(/\s*,\s*/, $config->{events})
@@ -172,7 +175,7 @@ sub getJobParams {
     my $type = shift;
 
     my $config = $self->getJobConfig($type);
-    return undef unless $config;
+    return undef unless defined($config);
 
     return decode_json($config->{params});
 }
@@ -182,7 +185,7 @@ sub getJobWorker {
     my $type = shift;
 
     my $config = $self->getJobConfig($type);
-    return undef unless $config;
+    return undef unless defined($config);
 
     return ($config->{worker} || $self->worker,
         $config->{interpreter} || $self->interpreter);
@@ -201,9 +204,9 @@ sub isJobSupported {
     my $result;
 
     my $config = $self->getJobConfig($type);
-    unless ($config) {
+    unless (defined($config) and not $config->{disabled}) {
         $result = 0;
-    } elsif (not $config->{nodes} or $config->{nodes} eq "all") {
+    } elsif (not exists($config->{nodes}) or $config->{nodes} eq "all") {
         my $except = $config->{except} || "";
         $result = (grep {$_ eq $node} split(/\s*,\s*/, $except)) ? 0 : 1;
     } else {
@@ -221,7 +224,7 @@ sub isNodeGlobal {
     $node ||= $self->node;
 
     my $config = $self->getNodeConfig($node);
-    return 0 unless $config;
+    return 0 unless defined($config) and not $config->{disabled};
 
     return $config->{global} ? 1 : 0;
 }
@@ -232,7 +235,7 @@ sub isNodeRegular {
     $node ||= $self->node;
 
     my $config = $self->getNodeConfig($node);
-    return 0 unless $config;
+    return 0 unless defined($config) and not $config->{disabled};
 
     return $config->{regular} ? 1 : 0;
 }
@@ -243,7 +246,7 @@ sub getNodeObservers {
     $node ||= $self->node;
 
     my $config = $self->getNodeConfig($node);
-    return [] unless $config and $config->{observers};
+    return [] unless defined($config) and not $config->{disabled} and exists($config->{observers});
 
     return [ grep {$_} split(/\s*,\s*/, $config->{observers}) ];
 }

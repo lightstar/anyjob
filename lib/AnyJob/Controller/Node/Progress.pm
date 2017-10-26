@@ -22,6 +22,8 @@ sub process {
             $self->error("Can't decode progress: " . $progress);
         } elsif (exists($progress->{success})) {
             $self->finishJob($progress);
+        } elsif (exists($progress->{redirect})) {
+            $self->redirectJob($progress);
         } else {
             $self->progressJob($progress);
         }
@@ -38,13 +40,13 @@ sub progressJob {
     my $id = delete $progress->{id};
 
     my $job = $self->getJob($id);
-    unless ($job) {
+    unless (defined($job)) {
         return;
     }
 
-    $self->redis->zadd("anyjob:job", time(), $id);
+    $self->redis->zadd("anyjob:jobs:" . $self->node, time(), $id);
 
-    $self->debug("Progress of job '" . $id . "': " . encode_json($progress));
+    $self->debug("Progress job '" . $id . "': " . encode_json($progress));
 
     my $jobChanged = 0;
 
@@ -76,6 +78,33 @@ sub progressJob {
         });
 }
 
+sub redirectJob {
+    my $self = shift;
+    my $progress = shift;
+
+    my $id = delete $progress->{id};
+
+    my $job = $self->getJob($id);
+    unless (defined($job)) {
+        return;
+    }
+
+    unless ($self->config->isJobSupported($job->{type}, $progress->{redirect})) {
+        $self->error("Job with type '" . $job->{type} . "' is not supported on node '" . $progress->{redirect} . "'");
+        return;
+    }
+
+    $self->redis->zadd("anyjob:jobs:" . $self->node, time(), $id);
+
+    $self->debug("Redirect job '" . $id . "': " . encode_json($progress));
+
+    my $redirect = {
+        id   => $id,
+        from => $self->node
+    };
+    $self->redis->rpush("anyjob:queue:" . $progress->{redirect}, encode_json($redirect));
+}
+
 sub finishJob {
     my $self = shift;
     my $progress = shift;
@@ -83,14 +112,14 @@ sub finishJob {
     my $id = delete $progress->{id};
 
     my $job = $self->getJob($id);
-    unless ($job) {
+    unless (defined($job)) {
         return;
     }
 
     $self->debug("Job '" . $id . "' " . ($progress->{success} ? "successfully finished" : "finished with error") .
         ": '" . $progress->{message} . "'");
 
-    if (my $time = $self->redis->zscore("anyjob:job", $id)) {
+    if (my $time = $self->redis->zscore("anyjob:jobs:" . $self->node, $id)) {
         $self->cleanJob($id, $time);
     }
 

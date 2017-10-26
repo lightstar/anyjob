@@ -21,8 +21,27 @@ sub sendProgress {
     my $id = shift;
     my $progress = shift;
 
+    unless (ref($progress) eq "HASH") {
+        $progress = { progress => $progress };
+    }
+
     $progress->{id} = $id;
     $self->redis->rpush("anyjob:progress_queue:" . $self->node, encode_json($progress));
+}
+
+sub sendState {
+    my $self = shift;
+    my $id = shift;
+    my $state = shift;
+
+    $self->sendProgress($id, { state => $state })
+}
+
+sub sendRun {
+    my $self = shift;
+    my $id = shift;
+
+    $self->sendState($id, "run");
 }
 
 sub sendLog {
@@ -30,15 +49,36 @@ sub sendLog {
     my $id = shift;
     my $message = shift;
 
-    my $progress = {
-        id  => $id,
-        log => {
-            time    => time(),
-            message => $message
-        }
-    };
+    $self->sendProgress($id, {
+            log => {
+                time    => time(),
+                message => $message
+            }
+        });
+}
 
-    $self->redis->rpush("anyjob:progress_queue:" . $self->node, encode_json($progress));
+sub sendRedirect {
+    my $self = shift;
+    my $id = shift;
+    my $node = shift;
+
+    $self->sendProgress($id, { redirect => $node });
+}
+
+sub sendSuccess {
+    my $self = shift;
+    my $id = shift;
+    my $message = shift;
+
+    $self->sendProgress($id, { success => 1, message => $message });
+}
+
+sub sendFailure {
+    my $self = shift;
+    my $id = shift;
+    my $message = shift;
+
+    $self->sendProgress($id, { success => 0, message => $message });
 }
 
 sub sendJobSetProgress {
@@ -46,8 +86,20 @@ sub sendJobSetProgress {
     my $id = shift;
     my $progress = shift;
 
+    unless (ref($progress) eq "HASH") {
+        $progress = { progress => $progress };
+    }
+
     $progress->{id} = $id;
     $self->redis->rpush("anyjob:progress_queue", encode_json($progress));
+}
+
+sub sendJobSetState {
+    my $self = shift;
+    my $id = shift;
+    my $state = shift;
+
+    $self->sendJobSetProgress($id, { state => $state })
 }
 
 1;

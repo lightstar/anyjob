@@ -1,4 +1,5 @@
 [% IF event == 'create' %]Задание создано
+[% ELSIF event == 'redirect' %]Задание перенаправлено
 [% ELSIF event == 'progress' %]Задание выполняется
 [% ELSIF event == 'finish' %]Задание выполнено
 [% ELSIF event == 'createJobSet' %]Набор заданий создан

@@ -108,8 +108,8 @@ sub saveLog {
         return;
     }
 
-    $self->redis->zadd("anyjob:observer_data:" . $self->name . ":log", time(), $event->{id});
-    $self->redis->rpush("anyjob:observer_data:" . $self->name . ":log:" . $event->{id},
+    $self->redis->zadd("anyjob:observer:" . $self->name . ":log", time(), $event->{id});
+    $self->redis->rpush("anyjob:observer:" . $self->name . ":log:" . $event->{id},
         encode_json($event->{progress}->{log}));
 }
 
@@ -121,12 +121,12 @@ sub collectLogs {
         return [];
     }
 
-    my $time = $self->redis->zscore("anyjob:observer_data:" . $self->name . ":log", $event->{id});
+    my $time = $self->redis->zscore("anyjob:observer:" . $self->name . ":log", $event->{id});
     unless ($time) {
         return [];
     }
 
-    my @logs = $self->redis->lrange("anyjob:observer_data:" . $self->name . ":log:" . $event->{id}, "0", "-1");
+    my @logs = $self->redis->lrange("anyjob:observer:" . $self->name . ":log:" . $event->{id}, "0", "-1");
     foreach my $log (@logs) {
         eval {
             $log = decode_json($log);
@@ -152,7 +152,7 @@ sub cleanLogs {
     my $limit = $self->config->limit || 10;
     my $cleanBefore = $self->config->clean_before || 3600;
 
-    my %ids = $self->redis->zrangebyscore("anyjob:observer_data:" . $self->name . ":log", "-inf",
+    my %ids = $self->redis->zrangebyscore("anyjob:observer:" . $self->name . ":log", "-inf",
         time() - $cleanBefore, "WITHSCORES", "LIMIT", 0, $limit);
 
     foreach my $id (keys(%ids)) {
@@ -168,8 +168,8 @@ sub cleanLog {
     $self->debug("Clean logs in observer '" . $self->name . "' for job '" . $id . "' last updated at " .
         formatDateTime($time));
 
-    $self->redis->zrem("anyjob:observer_data:" . $self->name . ":log", $id);
-    $self->redis->del("anyjob:observer_data:" . $self->name . ":log:" . $id);
+    $self->redis->zrem("anyjob:observer:" . $self->name . ":log", $id);
+    $self->redis->del("anyjob:observer:" . $self->name . ":log:" . $id);
 }
 
 1;
