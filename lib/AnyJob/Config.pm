@@ -129,10 +129,14 @@ sub getObserversForEvent {
     my $observers = [];
     foreach my $observer (@{$self->getAllObservers()}) {
         my $config = $self->getObserverConfig($observer);
-        if (not $config->{events} or $config->{events} eq "all" or
+        if ($config->{disabled}) {
+            next;
+        }
+
+        if (not exists($config->{events}) or $config->{events} eq "all" or
             grep {$_ eq $event} split(/\s*,\s*/, $config->{events})
         ) {
-            if (not $config->{nodes} or $config->{nodes} eq "all" or
+            if (not exists($config->{nodes}) or $config->{nodes} eq "all" or
                 grep {$_ eq $self->node} split(/\s*,\s*/, $config->{nodes})
             ) {
                 push @$observers, $observer;

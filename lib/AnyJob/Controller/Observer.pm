@@ -108,8 +108,8 @@ sub saveLog {
         return;
     }
 
-    $self->redis->zadd("anyevent:observer_data:" . $self->name . ":log", time(), $event->{id});
-    $self->redis->rpush("anyevent:observer_data:" . $self->name . ":log:" . $event->{id},
+    $self->redis->zadd("anyjob:observer_data:" . $self->name . ":log", time(), $event->{id});
+    $self->redis->rpush("anyjob:observer_data:" . $self->name . ":log:" . $event->{id},
         encode_json($event->{progress}->{log}));
 }
 
@@ -126,8 +126,16 @@ sub collectLogs {
         return [];
     }
 
-    my @logs = $self->redis->lrange("anyevent:observer_data:" . $self->name . ":log:" . $event->{id});
+    my @logs = $self->redis->lrange("anyjob:observer_data:" . $self->name . ":log:" . $event->{id}, "0", "-1");
     foreach my $log (@logs) {
+        eval {
+            $log = decode_json($log);
+        };
+        if ($@) {
+            $self->error("Can't decode log: " . $log);
+            return [];
+        }
+
         if (exists($log->{time})) {
             $log->{time} = formatDateTime($log->{time});
         }
@@ -161,7 +169,7 @@ sub cleanLog {
         formatDateTime($time));
 
     $self->redis->zrem("anyjob:observer_data:" . $self->name . ":log", $id);
-    $self->redis->del("anyevent:observer_data:" . $self->name . ":log:" . $id);
+    $self->redis->del("anyjob:observer_data:" . $self->name . ":log:" . $id);
 }
 
 1;
