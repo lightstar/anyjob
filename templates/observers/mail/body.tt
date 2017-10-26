@@ -32,7 +32,7 @@
 
     [% IF type && node %]
         Задание: <b>[% type %]</b><br>
-        Хост: <b>[% node %]</b><br>
+        Хост: <b>[% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %]</b><br>
         [% IF params && params.size %]
             Параметры:<br>
             [% FOR param IN params.pairs %]

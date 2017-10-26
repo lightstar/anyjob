@@ -59,8 +59,8 @@ sub progressJobInJobSet {
         $job->{success} = $jobProgress->{success};
         $job->{message} = $jobProgress->{message};
     } else {
-        if (exists($jobProgress->{node})) {
-            $job->{node} = $jobProgress->{node};
+        if (exists($jobProgress->{redirect})) {
+            $job->{node} = $jobProgress->{redirect};
         }
         if (exists($jobProgress->{state})) {
             $job->{state} = $jobProgress->{state};

@@ -13,7 +13,7 @@
         "fields": [
             [% IF type && node %]
                 {
-                    "title": "[% type %] ([% node %])",
+                    "title": "[% type %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])",
                     "value": "
                         [% IF params && params.size %]
                             [% FOR param IN params.pairs %]

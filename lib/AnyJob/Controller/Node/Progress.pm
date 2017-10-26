@@ -98,6 +98,19 @@ sub redirectJob {
 
     $self->debug("Redirect job '" . $id . "': " . encode_json($progress));
 
+    if ($job->{jobset}) {
+        $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
+    }
+
+    $self->sendEvent("redirect", {
+            id       => $id,
+            ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
+            type     => $job->{type},
+            params   => $job->{params},
+            props    => $job->{props},
+            progress => $progress
+        });
+
     my $redirect = {
         id   => $id,
         from => $self->node

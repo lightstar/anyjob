@@ -104,21 +104,6 @@ sub runRedirectedJob {
         ($job->{jobset} ? "(jobset '" . $job->{jobset} . "') " : "") . "with type '" . $job->{type} .
         "', params " . encode_json($job->{params}) . " and props " . encode_json($job->{props}));
 
-    if ($job->{jobset}) {
-        my $progress = {
-            node => $self->node
-        };
-        $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
-    }
-
-    $self->sendEvent("redirect", {
-            id     => $id,
-            ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
-            type   => $job->{type},
-            params => $job->{params},
-            props  => $job->{props}
-        });
-
     $self->runJob($job, $id);
 }
 
