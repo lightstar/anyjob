@@ -117,16 +117,16 @@ sub getAllObservers {
     return $self->{observers};
 }
 
-sub getObserverQueuesForEvent {
+sub getObserversForEvent {
     my $self = shift;
     my $event = shift;
 
-    $self->{observerQueues} ||= {};
-    if (exists($self->{observerQueues}->{$event})) {
-        return $self->{observerQueues}->{$event};
+    $self->{eventObservers} ||= {};
+    if (exists($self->{eventObservers}->{$event})) {
+        return $self->{eventObservers}->{$event};
     }
 
-    my $observerQueues = [];
+    my $observers = [];
     foreach my $observer (@{$self->getAllObservers()}) {
         my $config = $self->getObserverConfig($observer);
         if (not $config->{events} or $config->{events} eq "all" or
@@ -135,13 +135,13 @@ sub getObserverQueuesForEvent {
             if (not $config->{nodes} or $config->{nodes} eq "all" or
                 grep {$_ eq $self->node} split(/\s*,\s*/, $config->{nodes})
             ) {
-                push @$observerQueues, $config->{queue};
+                push @$observers, $observer;
             }
         }
     }
 
-    $self->{observerQueues}->{$event} = $observerQueues;
-    return $observerQueues;
+    $self->{eventObservers}->{$event} = $observers;
+    return $observers;
 }
 
 sub getJobConfig {
@@ -161,16 +161,6 @@ sub getObserverConfig {
     my $self = shift;
     my $name = shift;
     return $self->section("observer_" . $name);
-}
-
-sub getObserverQueue {
-    my $self = shift;
-    my $name = shift;
-
-    my $config = $self->getObserverConfig($name);
-    return undef unless $config;
-
-    return $config->{queue};
 }
 
 sub getJobParams {

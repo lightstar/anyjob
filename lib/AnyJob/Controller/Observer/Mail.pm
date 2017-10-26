@@ -25,8 +25,6 @@ sub new {
         TRIM         => 1
     });
 
-    $self->{logs} = {};
-
     return $self;
 }
 
@@ -79,16 +77,7 @@ sub preprocessEvent {
     }
 
     if ($event->{event} eq "progress") {
-        if ($event->{id} and $event->{progress}->{log}) {
-            my $log = $event->{progress}->{log};
-            if ($log->{time} and $log->{message}) {
-                $self->{logs}->{$event->{id}} ||= [];
-                push @{$self->{logs}->{$event->{id}}}, {
-                        time    => formatDateTime($log->{time}),
-                        message => $log->{message}
-                    };
-            }
-        }
+        $self->saveLog($event);
 
         unless ($config->{mail_progress} or $self->checkEventProp($event, "mail_progress")) {
             return 0;
@@ -96,10 +85,7 @@ sub preprocessEvent {
     }
 
     if ($event->{event} eq "finish") {
-        if ($event->{id} and exists($self->{logs}->{$event->{id}})) {
-            $event->{log} = $self->{logs}->{$event->{id}};
-            delete $self->{logs}->{$event->{id}};
-        }
+        $event->{log} = $self->collectLogs($event);
     }
 
     return 1;
