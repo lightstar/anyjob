@@ -134,14 +134,21 @@ sub run {
         return;
     }
 
+    $self->debug("Perform job '" . $id . "' on node '" . $self->node . "': " . encode_json($job));
+
+    $self->sendRun($id);
+
     my $method = $config->{method} || $workerSection->{method} || "run";
     eval {
         no strict 'refs';
-        $module->$method($self, $id, $job);
+        $module->new(worker => $self, id => $id, job => $job)->$method();
     };
     if ($@) {
         $self->error("Error running method '" . $method . "' in module '" . $module . "': " . $@);
+        return;
     }
+
+    $self->debug("Finish perform job '" . $id . "'");
 }
 
 1;

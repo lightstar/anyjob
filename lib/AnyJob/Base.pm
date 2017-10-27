@@ -59,12 +59,14 @@ sub logger {
 }
 
 sub debug {
-    my ($self, $message) = @_;
+    my $self = shift;
+    my $message = shift;
     $self->logger->debug($message);
 }
 
 sub error {
-    my ($self, $message) = @_;
+    my $self = shift;
+    my $message = shift;
     $self->logger->error($message);
 }
 
