@@ -10,8 +10,8 @@ use JSON::XS;
 use AnyJob::Config;
 use AnyJob::Creator;
 
-my $config_file = $ARGV[0] || ($ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/anyjob.cfg");
-my $creator = AnyJob::Creator->new(config => AnyJob::Config->new($config_file, "anyjob"));
+my $configFile = $ARGV[0] || ($ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/anyjob.cfg");
+my $creator = AnyJob::Creator->new(config => AnyJob::Config->new($configFile, "anyjob"));
 
 createTestJob();
 createTestJobSet();
@@ -22,12 +22,12 @@ exit(0);
 
 sub createTestJob {
     my $node = "test";
-    my $type = "test";
+    my $type = "example";
     my $params = {
-        test => "param"
+        param => "value"
     };
     my $props = {
-        test_prop => "prop"
+        prop => "prop"
     };
 
     $creator->debug("Create job on node '" . $node . "' with type '" . $type .
@@ -38,27 +38,27 @@ sub createTestJob {
 
 sub createTestJobSet {
     my $props = {
-        test_prop => "prop_jobset"
+        prop => "prop"
     };
     my $jobs = [
         {
             node   => "test",
-            type   => "test",
+            type   => "example",
             params => {
-                test => "param1"
+                param => "value1"
             },
             props  => {
-                test_prop => "prop1"
+                prop => "prop1"
             }
         },
         {
             node   => "broadcast",
-            type   => "test",
+            type   => "example",
             params => {
-                test => "param2"
+                param => "value2"
             },
             props  => {
-                test_prop => "prop2"
+                prop => "prop2"
             }
         }
     ];

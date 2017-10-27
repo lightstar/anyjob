@@ -112,9 +112,10 @@ sub runJob {
     my $job = shift;
     my $id = shift;
 
-    my ($worker, $interpreter) = $self->config->getJobWorker($job->{type});
-    unless ($worker) {
-        $self->error("Worker for job with type '" . $job->{type} . "' is not defined and no global worker is set");
+    my ($workDir, $exec, $lib) = $self->config->getJobWorker($job->{type});
+    unless (defined($workDir) and defined($exec)) {
+        $self->error("Worker or work directory for job with type '" . $job->{type} .
+            "' are not defined and no global values are set");
         return;
     }
 
@@ -128,12 +129,12 @@ sub runJob {
         return;
     }
 
-    $self->debug("Run job '" . $id . "' using worker '" . $worker . "'" .
-        ($interpreter ? " using interpreter '" . $interpreter . "'" : ""));
+    $self->debug("Run job '" . $id . "' executing '" . $exec . "' in work directory '" . $workDir . "'" .
+        (defined($lib) ? " including libs in '" . $lib . "'" : ""));
 
-    my $node = $self->node;
-    my $dir = dirname($worker);
-    exec("/bin/sh", "-c", "cd '$dir'; ANYJOB_ID='$id' ANYJOB_NODE='$node' $interpreter $worker");
+    exec("/bin/sh", "-c",
+        "cd '" . $workDir . "'; " .
+            (defined($lib) ? "ANYJOB_WORKER_LIB='" . $lib . "' " : "") . "ANYJOB_ID='" . $id . "' " . $exec);
 }
 
 sub cleanJob {

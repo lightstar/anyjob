@@ -6,6 +6,8 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::Utils qw(moduleName);
+
 use base 'AnyJob::Base';
 
 sub new {
@@ -100,6 +102,46 @@ sub sendJobSetState {
     my $state = shift;
 
     $self->sendJobSetProgress($id, { state => $state })
+}
+
+sub run {
+    my $self = shift;
+    my $id = shift;
+
+    my $job = $self->getJob($id);
+    unless (defined($job)) {
+        $self->error("Job '" . $id . "' not found");
+        return;
+    }
+
+    my $config = $self->config->getJobConfig($job->{type});
+    unless (defined($config)) {
+        $self->error("No config for job type '" . $job->{type} . "'");
+        return;
+    }
+
+    my $workerSection = $self->config->section("worker") || {};
+
+    my $module = moduleName($config->{module} || $workerSection->{module} || $job->{type});
+    my $prefix = $config->{prefix} || $workerSection->{prefix} || "AnyJob::Worker";
+    if (defined($prefix)) {
+        $module = $prefix . "::" . $module;
+    }
+
+    eval "require $module";
+    if ($@) {
+        $self->error("Can't load module '" . $module . "': " . $@);
+        return;
+    }
+
+    my $method = $config->{method} || $workerSection->{method} || "run";
+    eval {
+        no strict 'refs';
+        $module->$method($self, $id, $job);
+    };
+    if ($@) {
+        $self->error("Error running method '" . $method . "' in module '" . $module . "': " . $@);
+    }
 }
 
 1;

@@ -17,15 +17,15 @@ sub new {
     my $fileName = shift;
     my $baseDir = dirname($fileName);
 
-    if ($self->nodes_dir) {
+    if (defined($self->nodes_dir)) {
         $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->nodes_dir), 'node');
     }
 
-    if ($self->jobs_dir) {
+    if (defined($self->jobs_dir)) {
         $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->jobs_dir), 'job');
     }
 
-    if ($self->observers_dir) {
+    if (defined($self->observers_dir)) {
         $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->observers_dir), 'observer');
     }
 
@@ -187,8 +187,11 @@ sub getJobWorker {
     my $config = $self->getJobConfig($type);
     return undef unless defined($config);
 
-    return ($config->{worker} || $self->worker,
-        $config->{interpreter} || $self->interpreter);
+    my $workerSection = $self->section("worker") || {};
+
+    return ($config->{work_dir} || $workerSection->{work_dir},
+        $config->{exec} || $workerSection->{exec},
+        $config->{lib} || $workerSection->{lib});
 }
 
 sub isJobSupported {

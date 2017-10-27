@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use utf8;
 
+use AnyJob::Utils qw(moduleName);
+
 sub new {
     my $class = shift;
     my %args = @_;
@@ -59,7 +61,11 @@ sub pushController {
     my $type = shift;
     my $name = shift;
 
-    my $module = "AnyJob::Controller::" . ucfirst($type) . ($name ? "::" . ucfirst($name) : "");
+    my $module = "AnyJob::Controller::" . moduleName($type);
+    if (defined($name)) {
+        $module .= "::" . moduleName($name);
+    }
+
     eval "require " . $module;
     if ($@) {
         require Carp;
