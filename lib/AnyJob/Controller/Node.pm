@@ -159,7 +159,7 @@ sub sendJobProgressForJobSet {
         job         => $id,
         jobProgress => $progress
     };
-    $self->redis->rpush("anyjob:progress_queue", encode_json($jobSetProgress));
+    $self->redis->rpush("anyjob:progressq", encode_json($jobSetProgress));
 }
 
 sub nextJobId {

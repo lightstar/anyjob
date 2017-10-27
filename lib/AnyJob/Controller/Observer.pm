@@ -38,7 +38,7 @@ sub process {
     my $limit = $self->config->limit || 10;
     my $count = 0;
 
-    while (my $event = $self->redis->lpop("anyjob:observer_queue:" . $self->name)) {
+    while (my $event = $self->redis->lpop("anyjob:observerq:" . $self->name)) {
         eval {
             $event = decode_json($event);
         };
@@ -61,25 +61,6 @@ sub processEvent {
 
     require Carp;
     Carp::confess("Need to be implemented in descendant");
-}
-
-sub checkEventProp {
-    my $self = shift;
-    my $event = shift;
-    my $prop = shift;
-
-    if (exists($event->{props}) and $event->{props}->{$prop}) {
-        return 1;
-    }
-
-    if (exists($event->{type})) {
-        my $jobConfig = $self->config->getJobConfig($event->{type});
-        if ($jobConfig and $jobConfig->{$prop}) {
-            return 1;
-        }
-    }
-
-    return 0;
 }
 
 sub preprocessEvent {

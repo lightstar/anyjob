@@ -6,6 +6,8 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::Events qw(isValidEvent);
+
 sub new {
     my $class = shift;
     my %args = @_;
@@ -61,17 +63,46 @@ sub getJobSet {
 
 sub sendEvent {
     my $self = shift;
+    my $name = shift;
     my $event = shift;
-    my $data = shift;
 
-    $data->{event} = $event;
-    $data->{node} = $self->node;
-    $data->{time} = time();
-
-    my $encodedData = encode_json($data);
-    foreach my $observer (@{$self->config->getObserversForEvent($event)}) {
-        $self->redis->rpush("anyjob:observer_queue:" . $observer, $encodedData);
+    unless (isValidEvent($name)) {
+        $self->error("Unknown event '" . $name . "'");
     }
+
+    $event->{event} = $name;
+    $event->{node} = $self->node;
+    $event->{time} = time();
+
+    my $encodedData = encode_json($event);
+
+    foreach my $observer (@{$self->config->getObserversForEvent($name)}) {
+        $self->redis->rpush("anyjob:observerq:" . $observer, $encodedData);
+    }
+
+    my $privateObserver = $self->checkEventProp($event, "pobserver");
+    if (defined($privateObserver)) {
+        $self->redis->rpush("anyjob:observerq:private:" . $privateObserver, $encodedData);
+    }
+}
+
+sub checkEventProp {
+    my $self = shift;
+    my $event = shift;
+    my $prop = shift;
+
+    if (exists($event->{props}) and exists($event->{props}->{$prop})) {
+        return $event->{props}->{$prop};
+    }
+
+    if (exists($event->{type})) {
+        my $jobConfig = $self->config->getJobConfig($event->{type});
+        if ($jobConfig and exists($jobConfig->{$prop})) {
+            return $jobConfig->{$prop};
+        }
+    }
+
+    return undef;
 }
 
 sub process {

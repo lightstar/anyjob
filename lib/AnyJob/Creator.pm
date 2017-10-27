@@ -22,13 +22,14 @@ sub createJob {
     my $type = shift;
     my $params = shift;
     my $props = shift;
-    $params ||= {};
-    $props ||= {};
 
     unless ($self->config->isJobSupported($type, $node)) {
         $self->error("Job with type '" . $type . "' is not supported on node '" . $node . "'");
         return;
     }
+
+    $params ||= {};
+    $props ||= {};
 
     $self->redis->rpush("anyjob:queue:" . $node, encode_json({
             type   => $type,
@@ -41,19 +42,25 @@ sub createJobSet {
     my $self = shift;
     my $jobs = shift;
     my $props = shift;
-    $props ||= {};
 
     unless (defined($jobs) and scalar(@$jobs)) {
         return;
     }
+
+    $props ||= {};
 
     foreach my $job (@$jobs) {
         unless ($self->config->isJobSupported($job->{type}, $job->{node})) {
             $self->error("Job with type '" . $job->{type} . "' is not supported on node '" . $job->{node} . "'");
             return;
         }
+
         $job->{params} ||= {};
         $job->{props} ||= {};
+
+        if (exists($props->{pobserver})) {
+            $job->{props}->{pobserver} = $props->{pobserver};
+        }
     }
 
     $self->redis->rpush("anyjob:queue", encode_json({
@@ -61,6 +68,31 @@ sub createJobSet {
             props  => $props,
             jobs   => $jobs
         }));
+}
+
+sub receivePrivateEvents {
+    my $self = shift;
+    my $name = shift;
+
+    my $limit = $self->config->limit || 10;
+    my $count = 0;
+    my @events;
+
+    while (my $event = $self->redis->lpop("anyjob:observerq:private:" . $name)) {
+        eval {
+            $event = decode_json($event);
+        };
+        if ($@) {
+            $self->error("Can't decode event: " . $event);
+        } else {
+            push @events, $event;
+        }
+
+        $count++;
+        last if $count >= $limit;
+    }
+
+    return \@events;
 }
 
 1;

@@ -57,9 +57,21 @@ sub params {
     return $self->{job}->{params};
 }
 
+sub param {
+    my $self = shift;
+    my $name = shift;
+    return $self->{job}->{params}->{$name};
+}
+
 sub props {
     my $self = shift;
     return $self->{job}->{props};
+}
+
+sub prop {
+    my $self = shift;
+    my $name = shift;
+    return $self->{job}->{props}->{$name};
 }
 
 sub node {

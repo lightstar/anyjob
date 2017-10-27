@@ -28,7 +28,7 @@ sub sendProgress {
     }
 
     $progress->{id} = $id;
-    $self->redis->rpush("anyjob:progress_queue:" . $self->node, encode_json($progress));
+    $self->redis->rpush("anyjob:progressq:" . $self->node, encode_json($progress));
 }
 
 sub sendState {
@@ -93,7 +93,7 @@ sub sendJobSetProgress {
     }
 
     $progress->{id} = $id;
-    $self->redis->rpush("anyjob:progress_queue", encode_json($progress));
+    $self->redis->rpush("anyjob:progressq", encode_json($progress));
 }
 
 sub sendJobSetState {

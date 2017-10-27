@@ -14,7 +14,7 @@ sub process {
     my $limit = $self->config->limit || 10;
     my $count = 0;
 
-    while (my $progress = $self->redis->lpop("anyjob:progress_queue")) {
+    while (my $progress = $self->redis->lpop("anyjob:progressq")) {
         eval {
             $progress = decode_json($progress);
         };
