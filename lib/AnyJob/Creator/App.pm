@@ -10,14 +10,24 @@ use Dancer2::Plugin::AnyJob;
 set port => anyjob->config->creator->{port} || 80;
 set public_dir => path(app->location, 'web');
 set static_handler => true;
+set serializer => 'JSON';
+set charset => 'UTF-8';
 
 get '/' => sub {
-        createTestJob();
-        createTestJobSet();
         send_file '/index.html';
     };
 
-start;
+get '/test' => sub {
+        createTestJob();
+        createTestJobSet();
+        forward '/';
+    };
+
+get '/jobs' => sub {
+        return {
+            jobs => anyjob->getAllJobs()
+        };
+    };
 
 sub createTestJob {
     my $node = "test";

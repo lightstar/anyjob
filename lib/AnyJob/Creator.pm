@@ -16,6 +16,51 @@ sub new {
     return $self;
 }
 
+sub getAllJobs {
+    my $self = shift;
+
+    if (exists($self->{jobs})) {
+        return $self->{jobs};
+    }
+
+    my $allNodes = $self->config->getAllNodes();
+
+    my @jobs;
+    foreach my $type (@{$self->config->getAllJobs()}) {
+        my @nodes;
+        foreach my $node (@$allNodes) {
+            if ($self->config->isJobSupported($type, $node)) {
+                push @nodes, $node;
+            }
+        }
+
+        unless (scalar(@nodes)) {
+            next;
+        }
+
+        my $config = $self->config->getJobConfig($type);
+        my $params = $config->{params} || "[]";
+        utf8::encode($params);
+
+        eval {
+            $params = decode_json($params);
+        };
+        if ($@) {
+            $self->error("Can't decode params of job '" . $type . "': " . $config->{params});
+            next;
+        }
+
+        push @jobs, {
+                type   => $type,
+                nodes  => \@nodes,
+                params => $params
+            };
+    }
+
+    $self->{jobs} = \@jobs;
+    return \@jobs;
+}
+
 sub createJob {
     my $self = shift;
     my $node = shift;

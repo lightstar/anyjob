@@ -5,6 +5,10 @@ use strict;
 use warnings;
 use utf8;
 
+use Dancer2;
+
 use AnyJob::Creator::App;
+
+start;
 
 exit(0);
