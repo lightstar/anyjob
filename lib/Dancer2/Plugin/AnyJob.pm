@@ -9,8 +9,10 @@ use AnyJob::Creator;
 
 use Dancer2::Plugin;
 
+our $VERSION = "0.1";
+
 my $creator;
-sub anyjob {
+sub creator {
     if (defined($creator)) {
         return $creator;
     }
@@ -20,6 +22,18 @@ sub anyjob {
     return $creator;
 }
 
-plugin_keywords 'anyjob';
+sub config {
+    return creator->config;
+}
+
+sub debug {
+    creator->debug($_[1]);
+}
+
+sub error {
+    creator->error($_[1]);
+}
+
+plugin_keywords qw(creator config debug error);
 
 1;

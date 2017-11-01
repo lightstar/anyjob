@@ -4,10 +4,10 @@ use strict;
 use warnings;
 use utf8;
 
-use Dancer2;
+use Dancer2 qw(!config !debug !error);
 use Dancer2::Plugin::AnyJob;
 
-set port => anyjob->config->creator->{port} || 80;
+set port => config->creator->{port} || 80;
 set public_dir => path(app->location, 'web');
 set static_handler => true;
 set serializer => 'JSON';
@@ -25,7 +25,7 @@ get '/test' => sub {
 
 get '/jobs' => sub {
         return {
-            jobs => anyjob->getAllJobs()
+            jobs => creator->getAllJobs()
         };
     };
 
@@ -39,10 +39,10 @@ sub createTestJob {
         prop => "prop"
     };
 
-    anyjob->debug("Create job on node '" . $node . "' with type '" . $type .
+    debug("Create job on node '" . $node . "' with type '" . $type .
         "', params " . encode_json($params)) . " and props " . encode_json($props);
 
-    anyjob->createJob($node, $type, $params, $props);
+    creator->createJob($node, $type, $params, $props);
 }
 
 sub createTestJobSet {
@@ -72,9 +72,9 @@ sub createTestJobSet {
         }
     ];
 
-    anyjob->debug("Create jobset with props " . encode_json($props) . "and jobs: " . encode_json($jobs));
+    debug("Create jobset with props " . encode_json($props) . "and jobs: " . encode_json($jobs));
 
-    anyjob->createJobSet($jobs, $props);
+    creator->createJobSet($jobs, $props);
 }
 
 1;
