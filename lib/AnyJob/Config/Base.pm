@@ -52,18 +52,39 @@ sub readFile {
         binmode $fh, ":utf8";
         my $section = $fileSection;
         my $var;
+        my $docMarker;
         while (my $str = <$fh>) {
             $str =~ s/^\s+//;
             $str =~ s/\s+$//;
             next if $str =~ /^\#/;
-            unless ($var) {
+
+            unless (defined($var)) {
                 $var = $str;
             } else {
                 $var .= $str;
             }
+
+            unless (defined($docMarker)) {
+                ($docMarker) = ($var =~ /<<([A-Z\d]+)$/);
+                if (defined($docMarker)) {
+                    $var =~ s/<<$docMarker$//;
+                    next;
+                }
+            }
+
+            if (defined($docMarker)) {
+                if ($str ne $docMarker) {
+                    next;
+                } else {
+                    $var =~ s/$docMarker$//;
+                    $docMarker = undef;
+                }
+            }
+
             if ($var =~ s/\\$//) {
                 next;
             }
+
             if (my ($newSection) = ($var =~ /^\[([^\[\]]+)\]$/)) {
                 $section = $newSection;
                 $data->{$section} = {};
@@ -75,6 +96,7 @@ sub readFile {
                 $val =~ s/\s+$//;
                 $data->{$section}->{$key} = $val;
             }
+
             $var = undef;
         }
         close($fh);

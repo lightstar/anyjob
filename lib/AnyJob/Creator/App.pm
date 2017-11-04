@@ -25,7 +25,8 @@ get '/test' => sub {
 
 get '/jobs' => sub {
         return {
-            jobs => creator->getAllJobs()
+            jobs => creator->getAllJobs(),
+            props => creator->getAllProps()
         };
     };
 

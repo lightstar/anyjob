@@ -80,7 +80,7 @@ sub sendEvent {
         $self->redis->rpush("anyjob:observerq:" . $observer, $encodedData);
     }
 
-    my $privateObserver = $self->checkEventProp($event, "pobserver");
+    my $privateObserver = $self->checkEventProp($event, "observer", "private");
     if (defined($privateObserver)) {
         $self->redis->rpush("anyjob:observerq:private:" . $privateObserver, $encodedData);
     }
@@ -90,12 +90,13 @@ sub checkEventProp {
     my $self = shift;
     my $event = shift;
     my $prop = shift;
+    my $private = shift;
 
     if (exists($event->{props}) and exists($event->{props}->{$prop})) {
         return $event->{props}->{$prop};
     }
 
-    if (exists($event->{type})) {
+    if (not defined($private) and exists($event->{type})) {
         my $jobConfig = $self->config->getJobConfig($event->{type});
         if ($jobConfig and exists($jobConfig->{$prop})) {
             return $jobConfig->{$prop};

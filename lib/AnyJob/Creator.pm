@@ -46,7 +46,7 @@ sub getAllJobs {
             $params = decode_json($params);
         };
         if ($@) {
-            $self->error("Can't decode params of job '" . $type . "': " . $config->{params});
+            $self->error("Can't decode params of job '" . $type . "': " . $params);
             next;
         }
 
@@ -57,8 +57,28 @@ sub getAllJobs {
             };
     }
 
+    @jobs = sort { $a->{type} cmp $b->{type} } @jobs;
+
     $self->{jobs} = \@jobs;
     return \@jobs;
+}
+
+sub getAllProps {
+    my $self = shift;
+
+    my $config = $self->config->creator || {};
+    my $props = $config->{props} || "[]";
+    utf8::encode($props);
+
+    eval {
+        $props = decode_json($props);
+    };
+    if ($@) {
+        $self->error("Can't decode props: " . $props);
+        return [];
+    }
+
+    return $props;
 }
 
 sub createJob {

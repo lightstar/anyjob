@@ -5,23 +5,29 @@
         <form>
             <div class="form-group">
                 <label class="sr-only" for="type">Задача:</label>
-                <select id="type" class="form-control" data-ng-model="job"
-                        data-ng-options="job.type for job in jobs track by job.type">
+                <select id="type" class="form-control"
+                        data-ng-model="data.job"
+                        data-ng-options="job as job.type for job in jobs track by job.type"
+                        data-ng-change="resetData()">
                     <option value="">--выберите задачу--</option>
                 </select>
             </div>
-            <div data-ng-if="job != null">
+            <div data-ng-if="data.job != null">
                 <div class="form-group">
                     <span>Запустить на:</span>
-                    <label class="checkbox-inline" data-ng-repeat="node in job.nodes">
-                        <input type="checkbox" id="node-{{node}}"> {{node}}
+                    <label class="checkbox-inline" data-ng-repeat="node in data.job.nodes">
+                        <input type="checkbox"
+                               data-ng-model="data.nodes[node]"> {{node}}
                     </label>
                 </div>
-                <div class="form-group" data-ng-repeat="param in job.params track by param.name">
-                    <div data-job-param data-param="param"></div>
+                <div class="form-group" data-ng-repeat="param in data.job.params track by param.name">
+                    <div data-field data-param="param" data-params="data.params"></div>
+                </div>
+                <div class="form-group" data-ng-repeat="prop in props track by prop.name">
+                    <div data-field data-param="prop" data-params="data.props"></div>
                 </div>
                 <div class="form-group">
-                    <button type="submit" class="btn btn-default">Создать</button>
+                    <button type="submit" class="btn btn-default" data-ng-click="createJob()">Создать</button>
                 </div>
             </div>
         </form>
