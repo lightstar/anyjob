@@ -17,65 +17,29 @@ get '/' => sub {
         send_file '/index.html';
     };
 
-get '/test' => sub {
-        createTestJob();
-        createTestJobSet();
-        forward '/';
-    };
-
 get '/jobs' => sub {
         return {
-            jobs => creator->getAllJobs(),
-            props => creator->getAllProps()
+            jobs  => config->getAllJobs(),
+            props => config->getAllProps()
         };
     };
 
-sub createTestJob {
-    my $node = "test";
-    my $type = "example";
-    my $params = {
-        param => "value"
-    };
-    my $props = {
-        prop => "prop"
-    };
+post '/create' => sub {
+        # Хак, потребовавшийся из-за непонятного бага Dancer2.
+        # По идее serializer в объекте request должен установиться автоматически, но не устанавливается.
+        request->{serializer} = app->config->{serializer};
+        my $jobs = request->data;
 
-    debug("Create job on node '" . $node . "' with type '" . $type .
-        "', params " . encode_json($params)) . " and props " . encode_json($props);
-
-    creator->createJob($node, $type, $params, $props);
-}
-
-sub createTestJobSet {
-    my $props = {
-        prop => "prop"
-    };
-    my $jobs = [
-        {
-            node   => "test",
-            type   => "example",
-            params => {
-                param => "value1"
-            },
-            props  => {
-                prop => "prop1"
-            }
-        },
-        {
-            node   => "broadcast",
-            type   => "example",
-            params => {
-                param => "value2"
-            },
-            props  => {
-                prop => "prop2"
-            }
+        if (defined(my $error = creator->createJobs($jobs))) {
+            return {
+                success => 0,
+                error   => $error
+            };
         }
-    ];
 
-    debug("Create jobset with props " . encode_json($props) . "and jobs: " . encode_json($jobs));
-
-    creator->createJobSet($jobs, $props);
-}
+        return {
+            success => 1
+        };
+    };
 
 1;

@@ -16,69 +16,148 @@ sub new {
     return $self;
 }
 
-sub getAllJobs {
+sub checkJobs {
     my $self = shift;
+    my $jobs = shift;
 
-    if (exists($self->{jobs})) {
-        return $self->{jobs};
+    if (ref($jobs) ne "ARRAY" or scalar(@$jobs) == 0) {
+        return "no jobs";
     }
 
-    my $allNodes = $self->config->getAllNodes();
+    foreach my $job (@$jobs) {
+        if (not defined($job->{type}) or ref($job->{type}) ne "") {
+            return "no job type";
+        }
 
-    my @jobs;
-    foreach my $type (@{$self->config->getAllJobs()}) {
-        my @nodes;
-        foreach my $node (@$allNodes) {
-            if ($self->config->isJobSupported($type, $node)) {
-                push @nodes, $node;
+        my $config = $self->config->getJobConfig($job->{type});
+        unless (defined($config)) {
+            return "unknown job type '" . $job->{type} . "'";
+        }
+
+        if (not defined($job->{nodes}) or ref($job->{nodes}) ne "ARRAY" or scalar(@{$job->{nodes}}) == 0) {
+            return "no nodes for job with type '" . $job->{type} . "'";
+        }
+
+        foreach my $node (@{$job->{nodes}}) {
+            if (ref($node) ne "") {
+                return "wrong node for job with type '" . $job->{type} . "'";
+            }
+
+            unless ($self->config->isJobSupported($job->{type}, $node)) {
+                return "job with type '" . $job->{type} . "' is not supported on node '" . $node . "'";
             }
         }
 
-        unless (scalar(@nodes)) {
-            next;
+        if (not defined($job->{params}) or ref($job->{params}) ne "HASH") {
+            return "no params for job with type '" . $job->{type} . "'";
         }
 
-        my $config = $self->config->getJobConfig($type);
-        my $params = $config->{params} || "[]";
-        utf8::encode($params);
-
-        eval {
-            $params = decode_json($params);
-        };
-        if ($@) {
-            $self->error("Can't decode params of job '" . $type . "': " . $params);
-            next;
+        unless (defined($self->checkParams($job->{params}, $self->config->getJobParams($job->{type})))) {
+            return "wrong params of job with type '" . $job->{type} . "'";
         }
 
-        push @jobs, {
-                type   => $type,
-                nodes  => \@nodes,
-                params => $params
-            };
+        if (not defined($job->{props}) or ref($job->{props}) ne "HASH") {
+            return "no props for job with type '" . $job->{type} . "'";
+        }
+
+        unless (defined($self->checkParams($job->{props}, $self->config->getProps()))) {
+            return "wrong props of job with type '" . $job->{type} . "'";
+        }
     }
 
-    @jobs = sort { $a->{type} cmp $b->{type} } @jobs;
-
-    $self->{jobs} = \@jobs;
-    return \@jobs;
+    return undef;
 }
 
-sub getAllProps {
+sub checkParams {
     my $self = shift;
+    my $jobParams = shift;
+    my $params = shift;
 
-    my $config = $self->config->creator || {};
-    my $props = $config->{props} || "[]";
-    utf8::encode($props);
+    foreach my $name (keys(%$jobParams)) {
+        if (ref($jobParams->{$name}) ne "") {
+            return undef;
+        }
 
-    eval {
-        $props = decode_json($props);
-    };
-    if ($@) {
-        $self->error("Can't decode props: " . $props);
-        return [];
+        my ($param) = grep {$_->{name} eq $name} @$params;
+        unless (defined($param)) {
+            return undef;
+        }
+
+        unless ($self->checkParamType($param->{type}, $jobParams->{$name}, $param->{data})) {
+            return undef;
+        }
     }
 
-    return $props;
+    return 1;
+}
+
+sub checkParamType {
+    my $self = shift;
+    my $type = shift;
+    my $value = shift;
+    my $data = shift;
+
+    if ($type eq "flag" and $value ne "0" and $value ne "1") {
+        return undef;
+    }
+
+    if ($type eq "combo" and ref($data) eq "ARRAY" and not grep {$_ eq $value} @$data) {
+        return undef;
+    }
+
+    return 1;
+}
+
+sub createJobs {
+    my $self = shift;
+    my $jobs = shift;
+    my $props = shift;
+    my $observer = shift;
+    $props ||= {};
+
+    my $error = $self->checkJobs($jobs);
+    if (defined($error)) {
+        return $error;
+    }
+
+    unless (ref($props) eq "HASH" and defined($self->checkParams($props, $self->config->getProps()))) {
+        return "wrong props";
+    }
+
+    if (defined($observer)) {
+        $props->{observer} = $observer;
+    }
+
+    my $separatedJobs = [];
+    foreach my $job (@$jobs) {
+        if (defined($observer)) {
+            $job->{props}->{observer} = $observer;
+        }
+
+        foreach my $name (keys(%$props)) {
+            unless (exists($job->{props}->{$name})) {
+                $job->{props}->{$name} = $props->{$name};
+            }
+        }
+
+        foreach my $node (@{$job->{nodes}}) {
+            push @$separatedJobs, {
+                    node   => $node,
+                    type   => $job->{type},
+                    params => $job->{params},
+                    props  => $job->{props}
+                };
+        }
+    }
+
+    if (scalar(@$separatedJobs) == 1) {
+        $self->createJob($separatedJobs->[0]->{node}, $separatedJobs->[0]->{type},
+            $separatedJobs->[0]->{params}, $separatedJobs->[0]->{props});
+    } elsif (scalar(@$separatedJobs) > 1) {
+        $self->createJobSet($separatedJobs, $props);
+    }
+
+    return undef;
 }
 
 sub createJob {
@@ -87,6 +166,11 @@ sub createJob {
     my $type = shift;
     my $params = shift;
     my $props = shift;
+
+    unless (defined($type) and defined($node) and $type ne "" and $node ne "") {
+        $self->error("Called createJob with wrong parameters");
+        return;
+    }
 
     unless ($self->config->isJobSupported($type, $node)) {
         $self->error("Job with type '" . $type . "' is not supported on node '" . $node . "'");
@@ -108,13 +192,19 @@ sub createJobSet {
     my $jobs = shift;
     my $props = shift;
 
-    unless (defined($jobs) and scalar(@$jobs)) {
+    unless (defined($jobs) and scalar(@$jobs) > 0) {
+        $self->error("Called createJobSet with wrong jobs");
         return;
     }
 
     $props ||= {};
 
     foreach my $job (@$jobs) {
+        unless (defined($job->{type}) and defined($job->{node}) and $job->{type} ne "" and $job->{node} ne "") {
+            $self->error("Called createJobSet with wrong jobs");
+            return;
+        }
+
         unless ($self->config->isJobSupported($job->{type}, $job->{node})) {
             $self->error("Job with type '" . $job->{type} . "' is not supported on node '" . $job->{node} . "'");
             return;
@@ -123,8 +213,8 @@ sub createJobSet {
         $job->{params} ||= {};
         $job->{props} ||= {};
 
-        if (exists($props->{pobserver})) {
-            $job->{props}->{pobserver} = $props->{pobserver};
+        if (exists($props->{observer})) {
+            $job->{props}->{observer} = $props->{pobserver};
         }
     }
 
@@ -138,6 +228,11 @@ sub createJobSet {
 sub receivePrivateEvents {
     my $self = shift;
     my $name = shift;
+
+    unless (defined($name) and $name ne "") {
+        $self->error("Called receivePrivateEvents with wrong name");
+        return [];
+    }
 
     my $limit = $self->config->limit || 10;
     my $count = 0;

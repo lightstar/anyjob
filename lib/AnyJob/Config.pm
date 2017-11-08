@@ -72,14 +72,18 @@ sub getAllNodes {
     foreach my $section (keys(%{$self->{data}})) {
         if (my ($node) = ($section =~ /^node_(.+)$/)) {
             unless ($self->{data}->{$section}->{disabled}) {
-                push @nodes, $node;
+                push @nodes, {
+                        node => $node,
+                        sort => $self->{data}->{$section}->{sort} || 0
+                    };
             }
         }
     }
 
-    $self->{nodes} = \@nodes;
+    @nodes = map {$_->{node}} sort {$a->{sort} <=> $b->{sort} or $a->{node} cmp $b->{node}} @nodes;
 
-    return $self->{nodes};
+    $self->{nodes} = \@nodes;
+    return \@nodes;
 }
 
 sub getAllJobs {
@@ -91,16 +95,33 @@ sub getAllJobs {
 
     my @jobs;
     foreach my $section (keys(%{$self->{data}})) {
-        if (my ($job) = ($section =~ /^job_(.+)$/)) {
-            unless ($self->{data}->{$section}->{disabled}) {
-                push @jobs, $job;
+        if (my ($type) = ($section =~ /^job_(.+)$/)) {
+            if ($self->{data}->{$section}->{disabled}) {
+                next
             }
+
+            my $nodes = $self->getJobNodes($type);
+            if (scalar(@$nodes) == 0) {
+                next;
+            }
+
+            push @jobs, {
+                    type   => $type,
+                    nodes  => $nodes,
+                    group  => $self->{data}->{$section}->{group} || "",
+                    params => $self->getJobParams($type),
+                    sort   => $self->{data}->{$section}->{sort} || 0
+                };
         }
     }
 
-    $self->{jobs} = \@jobs;
+    @jobs = sort {$a->{sort} <=> $b->{sort} or $a->{type} cmp $b->{type}} @jobs;
+    foreach my $job (@jobs) {
+        delete $job->{sort};
+    }
 
-    return $self->{jobs};
+    $self->{jobs} = \@jobs;
+    return \@jobs;
 }
 
 sub getAllObservers {
@@ -118,9 +139,9 @@ sub getAllObservers {
             }
         }
     }
-    $self->{observers} = \@observers;
 
-    return $self->{observers};
+    $self->{observers} = \@observers;
+    return \@observers;
 }
 
 sub getObserversForEvent {
@@ -170,14 +191,51 @@ sub getObserverConfig {
     return $self->section("observer_" . $name);
 }
 
+sub getJobNodes {
+    my $self = shift;
+    my $type = shift;
+
+    my @nodes;
+    foreach my $node (@{$self->getAllNodes()}) {
+        if ($self->isJobSupported($type, $node)) {
+            push @nodes, $node;
+        }
+    }
+
+    return \@nodes;
+}
+
 sub getJobParams {
     my $self = shift;
     my $type = shift;
 
-    my $config = $self->getJobConfig($type);
-    return undef unless defined($config);
+    if (exists($self->{jobParams}->{$type})) {
+        return $self->{jobParams}->{$type};
+    }
 
-    return decode_json($config->{params});
+    $self->{jobParams}->{$type} = [];
+
+    my $config = $self->getJobConfig($type);
+    unless (defined($config)) {
+        return [];
+    }
+
+    my $params = $config->{params} || "[]";
+    utf8::encode($params);
+
+    eval {
+        $params = decode_json($params);
+    };
+    if ($@) {
+        return [];
+    }
+
+    unless (ref($params) eq "ARRAY") {
+        return [];
+    }
+
+    $self->{jobParams}->{$type} = $params;
+    return $params;
 }
 
 sub getJobWorker {
@@ -252,6 +310,33 @@ sub getNodeObservers {
     return [] unless defined($config) and not $config->{disabled} and exists($config->{observers});
 
     return [ grep {$_} split(/\s*,\s*/, $config->{observers}) ];
+}
+
+sub getProps {
+    my $self = shift;
+
+    if (exists($self->{props})) {
+        return $self->{props};
+    }
+
+    $self->{props} = [];
+
+    my $props = $self->props || "[]";
+    utf8::encode($props);
+
+    eval {
+        $props = decode_json($props);
+    };
+    if ($@) {
+        return [];
+    }
+
+    unless (ref($props) eq "ARRAY") {
+        return [];
+    }
+
+    $self->{props} = $props;
+    return $props;
 }
 
 1;
