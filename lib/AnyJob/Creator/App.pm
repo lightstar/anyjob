@@ -17,7 +17,7 @@ get '/' => sub {
         send_file '/index.html';
     };
 
-get '/jobs' => sub {
+get '/config' => sub {
         return {
             jobs  => config->getAllJobs(),
             props => config->getAllProps()

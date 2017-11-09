@@ -2,13 +2,15 @@ app.directive('field', function () {
     return {
         restrict: 'A',
         scope: {
-            param: '=',
-            params: '='
+            type: '<',
+            label: '<',
+            name: '<',
+            values: '<'
         },
 
         link: function ($scope, element, attrs) {
-            $scope.id = 'id-' + guidGenerator();
-            $scope.contentUrl = 'app/shared/field/' + attrs.$normalize($scope.param.type) + '.html';
+            $scope.id = guidGenerator();
+            $scope.contentUrl = 'app/shared/field/' + attrs.$normalize($scope.type) + '.html';
         },
 
         template: '<div ng-include="contentUrl"></div>'

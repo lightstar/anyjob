@@ -313,7 +313,7 @@ sub getNodeObservers {
     return [ grep {$_} split(/\s*,\s*/, $config->{observers}) ];
 }
 
-sub getProps {
+sub getAllProps {
     my $self = shift;
 
     if (exists($self->{props})) {
