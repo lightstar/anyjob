@@ -108,6 +108,7 @@ sub getAllJobs {
             push @jobs, {
                     type   => $type,
                     nodes  => $nodes,
+                    label  => $self->{data}->{$section}->{label} || $type,
                     group  => $self->{data}->{$section}->{group} || "",
                     params => $self->getJobParams($type),
                     sort   => $self->{data}->{$section}->{sort} || 0

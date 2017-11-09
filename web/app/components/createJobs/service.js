@@ -1,9 +1,9 @@
-app.service('creatorService',
-    function () {
+app.service('createService',
+    function ($http) {
         var jobs = [];
         var props = [];
 
-        function loadJobs($http, callback) {
+        function loadJobs(callback) {
             $http.get("jobs")
                 .then(function (response) {
                     jobs = response.data.jobs || [];
@@ -16,7 +16,7 @@ app.service('creatorService',
                 });
         }
 
-        function createJobs($http, jobs, callback) {
+        function createJobs(jobs, callback) {
             $http.post("create", jobs)
                 .then(function (response) {
                     var success = response.data.success || 0;
