@@ -19,3 +19,21 @@ function deleteEmptyFields() {
         }
     }
 }
+
+function serverError(data, status) {
+    if (typeof(data) === "object" && data !== null) {
+        if (data.message) {
+            return data.message;
+        } else if (data.error) {
+            return data.error;
+        } else if (data.exception) {
+            return "exception arised '" + data.exception + "'";
+        }
+    }
+
+    if (typeof(data) === "string" && data !== "") {
+        return data + " (" + status + ")";
+    }
+
+    return "unknown error (" + status + ")";
+}

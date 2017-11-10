@@ -1,24 +1,24 @@
 <div class="form-group" data-ng-if="config.groups.length > 0">
-    <label class="sr-only" for="group-{{id}}">Группа:</label>
+    <label class="sr-only" for="group-{{id}}">Group:</label>
     <select id="group-{{id}}" class="form-control"
             data-ng-model="job.group"
             data-ng-options="group for group in config.groups"
-            data-ng-change="job.proto = null; resetJob()">
-        <option value="">--без группы--</option>
+            data-ng-change="job.proto = null; reset()">
+        <option value="">--no group--</option>
     </select>
 </div>
 <div class="form-group" data-ng-if="config.jobsByGroup[job.group].length > 0">
-    <label class="sr-only" for="job-{{id}}">Задача:</label>
+    <label class="sr-only" for="job-{{id}}">Job:</label>
     <select id="job-{{id}}" class="form-control"
             data-ng-model="job.proto"
             data-ng-options="jobProto.label for jobProto in config.jobsByGroup[job.group] track by jobProto.type"
-            data-ng-change="resetJob()">
-        <option value="">--выберите задачу--</option>
+            data-ng-change="reset()">
+        <option value="">--choose job--</option>
     </select>
 </div>
 <div data-ng-if="job.proto != null">
     <div class="form-group">
-        <span>Запустить на:</span>
+        <span>Run on:</span>
         <label class="checkbox-inline" data-ng-repeat="node in job.proto.nodes">
             <input type="checkbox"
                    data-ng-model="job.nodes[node]"> {{node}}

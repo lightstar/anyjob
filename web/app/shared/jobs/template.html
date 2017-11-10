@@ -3,14 +3,14 @@
         <div class="panel panel-default" data-ng-repeat="job in jobs">
             <div class="panel-heading" role="tab">
                     <span role="button" data-ng-click="job.isCollapsed = !job.isCollapsed">
-                        {{(job.proto === undefined || job.proto === null) ? 'Новая задача' : job.proto.label}}
+                        {{(job.proto === undefined || job.proto === null) ? 'New job' : job.proto.label}}
                     </span>
                 <span class="pull-right glyphicon glyphicon-minus-sign text-danger" role="button"
-                      data-ng-click="removeJob($index)"></span>
+                      data-ng-click="remove($index)"></span>
             </div>
 
             <div class="panel-collapse collapse" role="tabpanel" data-uib-collapse="job.isCollapsed"
-                 data-expanding="collapseJobs($index)">
+                 data-expanding="collapse($index)">
                 <div class="panel-body">
                     <div data-job data-config="config" data-result="job"></div>
                 </div>
@@ -21,11 +21,11 @@
     <div class="form-group">
         <div class="pull-right" style="padding-right: 16px;">
                 <span class="glyphicon glyphicon-plus-sign text-success" role="button"
-                      data-ng-click="addJob()"></span>
+                      data-ng-click="add()"></span>
         </div>
 
         <div class="pull-left">
-            <button class="btn btn-default" data-ng-click="action()">{{label}}</button>
+            <button class="btn btn-default" data-ng-click="action()" data-ng-disabled="!isValid">{{label}}</button>
         </div>
     </div>
 </form>

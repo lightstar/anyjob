@@ -1,12 +1,13 @@
-app.controller('createJobs', function ($scope, $http, configService, createService) {
+app.controller('createJobs', function ($scope, $http, createService) {
+    $scope.jobs = [];
+    $scope.control = {reset:null};
 
     $scope.create = function () {
         var jobs = [];
 
-        for (var i = 0; i < $scope.jobs.length; i++) {
-            var job = $scope.jobs[i];
+        angular.forEach($scope.jobs, function(job) {
             if (job.proto === null) {
-                continue;
+                return;
             }
 
             deleteEmptyFields(job.nodes, job.params, job.props);
@@ -22,35 +23,18 @@ app.controller('createJobs', function ($scope, $http, configService, createServi
                 params: job.params,
                 props: job.props
             });
-        }
+        });
 
         console.log("jobs: " + JSON.stringify(jobs));
 
-        if (jobs.length === 0) {
-            return;
-        }
-
-        createService.create(jobs, function (success, error, status, statusText) {
-            if (status !== 200) {
-                alert("Error: " + (statusText || "unknown") + " (" + status + ")");
-            } else if (success !== 1) {
-                if (error !== "") {
-                    alert("Error: " + error);
-                } else {
-                    alert("Error: unknown");
-                }
+        createService.create(jobs, function (error) {
+            if (error !== "") {
+                $scope.alert("Error: " + error, "danger", true);
             } else {
-                alert("Jobs created");
+                var message = jobs.length > 1 ? "Jobs created" : "Job created";
+                $scope.alert(message, "success");
+                $scope.control.reset();
             }
         });
     };
-
-    configService.load(function (config, status, statusText) {
-        if (status === 200) {
-            $scope.config = config;
-            $scope.jobs = [];
-        } else {
-            alert("Error: " + (statusText || "unknown") + " (" + status + ")");
-        }
-    });
 });

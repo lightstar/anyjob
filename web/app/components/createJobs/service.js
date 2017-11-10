@@ -3,10 +3,9 @@ app.service('createService',
         function create(jobs, callback) {
             $http.post("create", jobs)
                 .then(function (response) {
-                    callback(response.data.success || 0, response.data.error || "",
-                        response.status, response.statusText);
+                    callback(response.data.success === 1 ? "" : (response.data.error || "неизвестная ошибка"));
                 }, function (response) {
-                    callback(0, "", response.status, response.statusText);
+                    callback(serverError(response.data, response.status));
                 });
         }
 

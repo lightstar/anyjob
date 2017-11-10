@@ -1,0 +1,4 @@
+<div data-uib-alert data-ng-repeat="alert in alerts" data-ng-class="'alert alert-' + alert.type"
+     data-close="close($index)" data-dismiss-on-timeout="{{alert.persist ? 1000000000 : timeout}}">
+    {{alert.msg}}
+</div>

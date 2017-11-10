@@ -3,6 +3,7 @@ app.directive('jobs', function () {
         restrict: 'A',
         scope: {
             config: '<config',
+            control: '=control',
             label: '@label',
             action: '&action',
             jobs: '=result'
@@ -10,16 +11,14 @@ app.directive('jobs', function () {
 
         link: function ($scope) {
             $scope.id = guidGenerator();
+            $scope.isValid = true;
 
-            $scope.jobs.splice(0, $scope.jobs.length);
-            $scope.jobs.push({isCollapsed: false});
-
-            $scope.addJob = function () {
-                $scope.collapseJobs();
+            $scope.add = function () {
+                $scope.collapse();
                 $scope.jobs.push({isCollapsed: false});
             };
 
-            $scope.collapseJobs = function (exceptIndex) {
+            $scope.collapse = function (exceptIndex) {
                 angular.forEach($scope.jobs, function (job, index) {
                     if (index !== exceptIndex) {
                         job.isCollapsed = true;
@@ -27,11 +26,18 @@ app.directive('jobs', function () {
                 });
             };
 
-            $scope.removeJob = function (index) {
+            $scope.remove = function (index) {
                 if ($scope.jobs.length > 1) {
                     $scope.jobs.splice(index, 1);
                 }
             };
+
+            $scope.control.reset = function() {
+                $scope.jobs.splice(0, $scope.jobs.length);
+                $scope.add();
+            };
+
+            $scope.control.reset();
         },
 
         templateUrl: 'app/shared/jobs/template.html'

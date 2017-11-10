@@ -9,7 +9,7 @@ app.directive('job', function () {
         link: function ($scope) {
             $scope.id = guidGenerator();
 
-            $scope.resetJob = function () {
+            $scope.reset = function () {
                 $scope.job.nodes = {};
                 $scope.job.params = {};
                 $scope.job.props = {};
@@ -17,7 +17,7 @@ app.directive('job', function () {
 
             $scope.job.group = null;
             $scope.job.proto = null;
-            $scope.resetJob();
+            $scope.reset();
         },
 
         templateUrl: 'app/shared/job/template.html'

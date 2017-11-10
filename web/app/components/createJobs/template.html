@@ -1,6 +1,8 @@
-<div data-jobs data-config="config" data-label="Создать" data-action="create()" data-result="jobs"
-     data-ng-if="config !== undefined && config !== null && config.jobs.length > 0"></div>
+<div data-alerts data-control="rootAlerts"></div>
 
-<div data-ng-if="config === undefined || config === null || config.jobs.length === 0">
-    <h4>Загрузка...</h4>
+<div data-jobs data-config="config" data-control="control" data-label="Create" data-action="create()"
+     data-result="jobs" data-ng-if="config && config.jobs.length > 0"></div>
+
+<div data-ng-if="!config || config.jobs.length === 0">
+    <h4>Loading...</h4>
 </div>
