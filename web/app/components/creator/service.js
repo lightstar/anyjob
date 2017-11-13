@@ -1,4 +1,4 @@
-app.service('createService',
+app.service('creatorService',
     function ($http) {
         function create(jobs, callback) {
             $http.post("create", jobs)

@@ -1,4 +1,4 @@
-app.controller('createJobs', function ($scope, $http, createService) {
+app.controller('creatorController', function ($scope, $http, creatorService) {
     $scope.jobs = [];
     $scope.control = {reset:null};
 
@@ -25,9 +25,7 @@ app.controller('createJobs', function ($scope, $http, createService) {
             });
         });
 
-        console.log("jobs: " + JSON.stringify(jobs));
-
-        createService.create(jobs, function (error) {
+        creatorService.create(jobs, function (error) {
             if (error !== "") {
                 $scope.alert("Error: " + error, "danger", true);
             } else {

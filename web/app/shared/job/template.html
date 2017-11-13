@@ -17,20 +17,24 @@
     </select>
 </div>
 <div data-ng-if="job.proto != null">
-    <div class="form-group">
+    <div class="form-group" data-ng-class="{'has-error': !isAnyNode}">
         <span>Run on:</span>
         <label class="checkbox-inline" data-ng-repeat="node in job.proto.nodes">
-            <input type="checkbox"
-                   data-ng-model="job.nodes[node]"> {{node}}
+            <input type="checkbox" data-ng-model="job.nodes[node]" data-ng-change="validate()"> {{node}}
         </label>
+        <span class="help-block has-error" data-ng-show="!isAnyNode">Choose at least one node</span>
     </div>
     <div class="form-group"
-         data-ng-repeat="param in job.proto.params track by param.name">
+         data-ng-repeat="param in job.proto.params track by param.name"
+         data-ng-class="{'has-error': !validParams[param.name]}">
         <div data-field data-type="param.type" data-label="param.label" data-name="param.name"
-             data-values="job.params"></div>
+             data-values="job.params" data-change="validate()"></div>
+        <span class="help-block" data-ng-show="!validParams[param.name]">Parameter is required</span>
     </div>
-    <div class="form-group" data-ng-repeat="prop in config.props track by prop.name">
+    <div class="form-group" data-ng-repeat="prop in config.props track by prop.name"
+         data-ng-class="{'has-error': !validProps[prop.name]}">
         <div data-field data-type="prop.type" data-label="prop.label" data-name="prop.name"
-             data-values="job.props"></div>
+             data-values="job.props" data-change="validate()"></div>
+        <span class="help-block" data-ng-show="!validProps[prop.name]">Property is required</span>
     </div>
 </div>

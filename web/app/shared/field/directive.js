@@ -5,6 +5,7 @@ app.directive('field', function () {
             type: '<',
             label: '<',
             name: '<',
+            change: '&',
             values: '<'
         },
 

@@ -1,10 +1,10 @@
 app.config(function ($routeProvider) {
     $routeProvider
-        .when('/createJobs', {
-            templateUrl: 'app/components/createJobs/template.html',
-            controller: 'createJobs'
+        .when('/creator', {
+            templateUrl: 'app/components/creator/template.html',
+            controller: 'creatorController'
         })
         .otherwise({
-            redirectTo: '/createJobs'
+            redirectTo: '/creator'
         });
 });

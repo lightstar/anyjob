@@ -1,0 +1,14 @@
+.panel-job {
+    transition: opacity 0.5s linear;
+}
+
+.panel-job.ng-enter,
+.panel-job.ng-enter-prepare,
+.panel-job.ng-leave.ng-leave-active {
+    opacity: 0;
+}
+
+.panel-job.ng-enter.ng-enter-active,
+.panel-job.ng-leave {
+    opacity: 1
+}

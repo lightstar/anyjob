@@ -11,11 +11,14 @@ app.directive('jobs', function () {
 
         link: function ($scope) {
             $scope.id = guidGenerator();
-            $scope.isValid = true;
+            $scope.isValid = false;
 
             $scope.add = function () {
                 $scope.collapse();
                 $scope.jobs.push({isCollapsed: false});
+                if ($scope.isValid) {
+                    $scope.isValid = false;
+                }
             };
 
             $scope.collapse = function (exceptIndex) {
@@ -30,6 +33,19 @@ app.directive('jobs', function () {
                 if ($scope.jobs.length > 1) {
                     $scope.jobs.splice(index, 1);
                 }
+                $scope.validate();
+            };
+
+            $scope.validate = function() {
+                var isValid = true;
+
+                angular.forEach($scope.jobs, function(job) {
+                    if (!job.isValid) {
+                        isValid = false;
+                    }
+                });
+
+                $scope.isValid = isValid;
             };
 
             $scope.control.reset = function() {

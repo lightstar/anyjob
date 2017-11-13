@@ -1,6 +1,6 @@
 <form>
     <div class="panel-group" role="tablist">
-        <div class="panel panel-default" data-ng-repeat="job in jobs">
+        <div class="panel panel-default panel-job" data-ng-repeat="job in jobs">
             <div class="panel-heading" role="tab">
                     <span role="button" data-ng-click="job.isCollapsed = !job.isCollapsed">
                         {{(job.proto === undefined || job.proto === null) ? 'New job' : job.proto.label}}
@@ -12,7 +12,7 @@
             <div class="panel-collapse collapse" role="tabpanel" data-uib-collapse="job.isCollapsed"
                  data-expanding="collapse($index)">
                 <div class="panel-body">
-                    <div data-job data-config="config" data-result="job"></div>
+                    <div data-job data-config="config" data-result="job" data-valid-changed="validate()"></div>
                 </div>
             </div>
         </div>
