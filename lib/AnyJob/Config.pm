@@ -340,4 +340,13 @@ sub getAllProps {
     return $props;
 }
 
+sub checkAuth {
+    my $self = shift;
+    my $user = shift;
+    my $pass = shift;
+
+    my $config = $self->section("auth") || {};
+    return (exists($config->{$user}) and $config->{$user} eq $pass) ? 1 : 0;
+}
+
 1;

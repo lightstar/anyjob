@@ -17,7 +17,7 @@ sub creator {
         return $creator;
     }
 
-    my $configFile = $ARGV[0] || ($ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/anyjob.cfg");
+    my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/anyjob.cfg";
     $creator = AnyJob::Creator->new(config => AnyJob::Config->new($configFile, "anyjob"));
     return $creator;
 }

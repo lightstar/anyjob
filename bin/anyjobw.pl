@@ -19,7 +19,7 @@ unless ($ENV{ANYJOB_ID}) {
     exit(1);
 }
 
-my $configFile = $ARGV[0] || ($ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/anyjob.cfg");
+my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/anyjob.cfg";
 my $worker = AnyJob::Worker->new(config => AnyJob::Config->new($configFile, "anyjob"));
 $worker->run($ENV{ANYJOB_ID});
 

@@ -1,8 +1,9 @@
 app.run(function ($http, $rootScope) {
-        function init(jobs, props, error) {
+        function init(jobs, props, auth, error) {
             var config = {
                 jobs: jobs,
                 props: props,
+                auth: auth,
                 error: error,
                 groups: [],
                 jobsByGroup: {null: []}
@@ -24,12 +25,12 @@ app.run(function ($http, $rootScope) {
             $rootScope.config = config;
         }
 
-        init([], [], "");
+        init([], [], {user: "", pass: ""}, "");
         $http.get("config")
             .then(function (response) {
-                init(response.data.jobs, response.data.props, "");
+                init(response.data.jobs, response.data.props, response.data.auth, "");
             }, function (response) {
-                init([], [], serverError(response.data, response.status));
+                init([], [], {user: "", pass: ""}, serverError(response.data, response.status));
                 $rootScope.alert("Error: " + $rootScope.config.error, "danger", true);
             });
     }

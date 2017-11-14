@@ -35,4 +35,12 @@ app.controller('creatorController', function ($scope, $http, creatorService) {
             }
         });
     };
+
+    $scope.$watch('config.auth', function(auth) {
+        if (auth.user !== "") {
+            creatorService.observe(auth, function (messages) {
+                console.log("Received observe message: " + JSON.stringify(messages));
+            });
+        }
+    });
 });

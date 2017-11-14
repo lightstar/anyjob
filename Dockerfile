@@ -7,6 +7,10 @@ RUN cpanm LWP::Protocol::https
 RUN cpanm MIME::Entity
 RUN cpanm Template
 RUN cpanm Dancer2
+RUN cpanm Dancer2::Plugin::Auth::HTTP::Basic::DWIW
+RUN cpanm Dancer2::Plugin::WebSocket
+RUN cpanm Twiggy
+RUN cpanm CGI::Deurl::XS
 
 RUN mkdir -p /opt/anyjob
 COPY . /opt/anyjob/

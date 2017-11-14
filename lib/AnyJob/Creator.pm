@@ -111,8 +111,8 @@ sub checkParamType {
 sub createJobs {
     my $self = shift;
     my $jobs = shift;
-    my $props = shift;
     my $observer = shift;
+    my $props = shift;
     $props ||= {};
 
     my $error = $self->checkJobs($jobs);
@@ -214,7 +214,7 @@ sub createJobSet {
         $job->{props} ||= {};
 
         if (exists($props->{observer})) {
-            $job->{props}->{observer} = $props->{pobserver};
+            $job->{props}->{observer} = $props->{observer};
         }
     }
 
@@ -245,6 +245,7 @@ sub receivePrivateEvents {
         if ($@) {
             $self->error("Can't decode event: " . $event);
         } else {
+            $self->stripObserverFromEvent($event);
             push @events, $event;
         }
 
@@ -253,6 +254,22 @@ sub receivePrivateEvents {
     }
 
     return \@events;
+}
+
+sub stripObserverFromEvent {
+    my $self = shift;
+    my $event = shift;
+
+    if (exists($event->{props}->{observer})) {
+        delete $event->{props}->{observer};
+    }
+    if (exists($event->{jobs})) {
+        foreach my $job (@{$event->{jobs}}) {
+            if (exists($job->{props}->{observer})) {
+                delete $job->{props}->{observer};
+            }
+        }
+    }
 }
 
 1;

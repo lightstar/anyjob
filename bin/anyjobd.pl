@@ -8,7 +8,7 @@ use utf8;
 use AnyJob::Config;
 use AnyJob::Daemon;
 
-my $configFile = $ARGV[0] || ($ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/anyjob.cfg");
+my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/anyjob.cfg";
 my $daemon = AnyJob::Daemon->new(config => AnyJob::Config->new($configFile, "anyjob"));
 $daemon->run();
 

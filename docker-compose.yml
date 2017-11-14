@@ -16,7 +16,7 @@ services:
      - ANYJOB_NODE=test
   creator:
     build: .
-    command: /opt/anyjob/bin/anyjobc.pl
+    command: /usr/local/bin/plackup -s Twiggy -p 80 /opt/anyjob/bin/anyjobc.pl
     links:
      - redis
     ports:

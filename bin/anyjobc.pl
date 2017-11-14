@@ -5,10 +5,12 @@ use strict;
 use warnings;
 use utf8;
 
-use Dancer2;
+use Plack::Builder;
 
-use AnyJob::Creator::App;
+use AnyJob::App::Creator;
+use AnyJob::App::Observer;
 
-start;
-
-exit(0);
+builder {
+        mount '/' => AnyJob::App::Creator->to_app;
+        mount(AnyJob::App::Observer->websocket_mount);
+    }
