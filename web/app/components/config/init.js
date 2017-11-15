@@ -1,8 +1,9 @@
 app.run(function ($http, $rootScope) {
-        function init(jobs, props, auth, error) {
+        function init(jobs, props, eventTemplate, auth, error) {
             var config = {
                 jobs: jobs,
                 props: props,
+                eventTemplate: eventTemplate,
                 auth: auth,
                 error: error,
                 groups: [],
@@ -25,12 +26,12 @@ app.run(function ($http, $rootScope) {
             $rootScope.config = config;
         }
 
-        init([], [], {user: "", pass: ""}, "");
+        init([], [], "", {user: "", pass: ""}, "");
         $http.get("config")
             .then(function (response) {
-                init(response.data.jobs, response.data.props, response.data.auth, "");
+                init(response.data.jobs, response.data.props, response.data.eventTemplate, response.data.auth, "");
             }, function (response) {
-                init([], [], {user: "", pass: ""}, serverError(response.data, response.status));
+                init([], [], "", {user: "", pass: ""}, serverError(response.data, response.status));
                 $rootScope.alert("Error: " + $rootScope.config.error, "danger", true);
             });
     }

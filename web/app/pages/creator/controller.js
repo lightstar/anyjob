@@ -1,4 +1,4 @@
-app.controller('creatorController', function ($scope, $http, creatorService) {
+app.controller('creatorController', function ($scope, $http, $compile, creatorService) {
     $scope.jobs = [];
     $scope.events = [];
     $scope.control = {reset: null};
@@ -43,8 +43,10 @@ app.controller('creatorController', function ($scope, $http, creatorService) {
         }
 
         creatorService.observe(auth, function (events) {
-            angular.forEach(events, function (event) {
-                $scope.events.push(event);
+            $scope.$apply(function() {
+                angular.forEach(events, function (event) {
+                    $scope.events.push(event);
+                });
             });
         });
     });

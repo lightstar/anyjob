@@ -31,9 +31,10 @@ get '/' => http_basic_auth required => sub {
 get '/config' => http_basic_auth required => sub {
             my ($user, $pass) = http_basic_auth_login;
             return {
-                jobs  => config->getAllJobs(),
-                props => config->getAllProps(),
-                auth  => {
+                jobs          => config->getAllJobs(),
+                props         => config->getAllProps(),
+                eventTemplate => config->getAppObserverEventTemplate(),
+                auth          => {
                     user => $user,
                     pass => $pass
                 }

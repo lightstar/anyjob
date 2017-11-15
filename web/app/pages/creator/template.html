@@ -1,8 +1,12 @@
 <div data-alerts data-control="rootAlerts"></div>
 
-<div data-jobs data-config="config" data-control="control" data-label="Create" data-action="create()"
-     data-result="jobs" data-ng-if="config && config.jobs.length > 0"></div>
-
 <div data-ng-if="!config || config.jobs.length === 0">
     <h4>Loading...</h4>
+</div>
+
+<div data-ng-if="config && config.jobs.length > 0">
+    <div data-observer data-config="config" data-control="control" data-events="events"></div>
+
+    <div data-jobs data-config="config" data-control="control" data-label="Create" data-action="create()"
+     data-result="jobs"></div>
 </div>

@@ -1,0 +1,13 @@
+.panel-observer {
+    transition: height 0.5s linear;
+    overflow: auto;
+    height: 150px;
+}
+
+.panel-observer.ng-hide {
+    height: 0;
+}
+
+.event {
+    margin: 10px;
+}

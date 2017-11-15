@@ -56,6 +56,6 @@ app.directive('jobs', function () {
             $scope.control.reset();
         },
 
-        templateUrl: 'app/shared/jobs/template.html'
+        templateUrl: 'app/components/jobs/template.html'
     };
 });

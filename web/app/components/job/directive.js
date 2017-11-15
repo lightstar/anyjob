@@ -63,7 +63,7 @@ app.directive('job', function () {
             $scope.validate = function () {
                 var isValid = true;
 
-                if ($scope.job.group === null || $scope.job.proto === null) {
+                if ($scope.job.proto === null) {
                     isValid = false;
                 } else {
                     var isAnyNode = validateNodes();
@@ -88,6 +88,6 @@ app.directive('job', function () {
             $scope.reset();
         },
 
-        templateUrl: 'app/shared/job/template.html'
+        templateUrl: 'app/components/job/template.html'
     };
 });

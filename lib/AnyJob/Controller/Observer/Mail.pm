@@ -44,23 +44,30 @@ sub processEvent {
         Carp::confess("No origin or destination address");
     }
 
-    my $letter = MIME::Entity->build(
-        From     => '=?UTF-8?B?' . encode_base64($self->getFromTitle($config), '') . '?= <' . $config->{from} . '>',
-        To       => '<' . $config->{to} . '>',
-        Subject  => '=?UTF-8?B?' . encode_base64($self->getSubject($config, $event), '') . '?=',
-        Encoding => 'base64',
-        Data     => $self->getBody($config, $event),
-        Type     => 'text/html',
-        Charset  => 'UTF-8'
-    );
+    my $from = $config->{from};
+    my $fromTitle = encode_base64($self->getFromTitle($config), '');
+    my $subject = encode_base64($self->getSubject($config, $event), '');
+    my $body = $self->getBody($config, $event);
 
-    my $fh;
-    unless (open($fh, "|/usr/sbin/sendmail -f " . $config->{from} . " -t")) {
-        require Carp;
-        Carp::confess("Can't open sendmail");
+    foreach my $to (split(/\s*,\s*/, $config->{to})) {
+        my $letter = MIME::Entity->build(
+            From     => '=?UTF-8?B?' . $fromTitle . '?= <' . $from . '>',
+            To       => '<' . $to . '>',
+            Subject  => '=?UTF-8?B?' . $subject . '?=',
+            Encoding => 'base64',
+            Data     => $body,
+            Type     => 'text/html',
+            Charset  => 'UTF-8'
+        );
+
+        my $fh;
+        unless (open($fh, "|/usr/sbin/sendmail -f " . $from . " -t")) {
+            require Carp;
+            Carp::confess("Can't open sendmail");
+        }
+        $letter->print($fh);
+        close($fh);
     }
-    $letter->print($fh);
-    close($fh);
 }
 
 sub preprocessEvent {

@@ -8,6 +8,8 @@ use JSON::XS;
 use File::Basename;
 use File::Spec;
 
+use AnyJob::Utils qw(getFileContent);
+
 use base 'AnyJob::Config::Base';
 
 sub new {
@@ -347,6 +349,17 @@ sub checkAuth {
 
     my $config = $self->section("auth") || {};
     return (exists($config->{$user}) and $config->{$user} eq $pass) ? 1 : 0;
+}
+
+sub getAppObserverEventTemplate {
+    my $self = shift;
+
+    unless (exists($self->{appEventTemplate})) {
+        $self->{appEventTemplate} =
+            getFileContent(File::Spec->catdir($self->templates_path, 'observers/app/event.html'));
+    }
+
+    return $self->{appEventTemplate};
 }
 
 1;

@@ -11,7 +11,7 @@ app.directive('field', function () {
 
         link: function ($scope, element, attrs) {
             $scope.id = guidGenerator();
-            $scope.contentUrl = 'app/shared/field/' + attrs.$normalize($scope.type) + '.html';
+            $scope.contentUrl = 'app/components/field/' + attrs.$normalize($scope.type) + '.html';
         },
 
         template: '<div ng-include="contentUrl"></div>'

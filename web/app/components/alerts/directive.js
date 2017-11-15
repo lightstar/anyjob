@@ -22,6 +22,6 @@ app.directive('alerts', function () {
             };
         },
 
-        templateUrl: 'app/shared/alerts/template.html'
+        templateUrl: 'app/components/alerts/template.html'
     };
 });
