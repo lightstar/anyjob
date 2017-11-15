@@ -8,6 +8,12 @@
     height: 0;
 }
 
-.event {
+.panel-observer .close {
+    position: relative;
+    top: 8px;
+    right: 13px;
+}
+
+.panel-observer .event {
     margin: 10px;
 }

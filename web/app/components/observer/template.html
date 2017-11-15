@@ -1,4 +1,9 @@
-<div class="panel panel-default panel-observer ng-hide" data-ng-show="events.length > 0">
+<div class="panel panel-default panel-observer ng-hide" data-ng-show="!closed">
+    <button class="close" data-ng-click="close()">
+        <span class="sr-only">Close</span>
+        <span>×</span>
+    </button>
+
     <div class="event" data-ng-repeat="event in events | orderBy:'+':true track by $index">
         <div data-observer-event></div>
     </div>
