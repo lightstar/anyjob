@@ -1,11 +1,12 @@
 app.controller('creatorController', function ($scope, $http, creatorService) {
     $scope.jobs = [];
-    $scope.control = {reset:null};
+    $scope.events = [];
+    $scope.control = {reset: null};
 
     $scope.create = function () {
         var jobs = [];
 
-        angular.forEach($scope.jobs, function(job) {
+        angular.forEach($scope.jobs, function (job) {
             if (job.proto === null) {
                 return;
             }
@@ -36,11 +37,15 @@ app.controller('creatorController', function ($scope, $http, creatorService) {
         });
     };
 
-    $scope.$watch('config.auth', function(auth) {
-        if (auth.user !== "") {
-            creatorService.observe(auth, function (messages) {
-                console.log("Received observe message: " + JSON.stringify(messages));
-            });
+    $scope.$watch('config.auth', function (auth) {
+        if (auth.user === "") {
+            return;
         }
+
+        creatorService.observe(auth, function (events) {
+            angular.forEach(events, function (event) {
+                $scope.events.push(event);
+            });
+        });
     });
 });
