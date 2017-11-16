@@ -30,8 +30,8 @@
 
     <br>
 
-    [% IF type && node %]
-        Задание: <b>[% type %]</b><br>
+    [% IF job && node %]
+        Задание: <b>[% job.label %]</b><br>
         Хост: <b>[% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %]</b><br>
         [% IF params && params.size %]
             Параметры:<br>

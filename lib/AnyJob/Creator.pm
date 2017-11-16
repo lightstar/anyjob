@@ -4,7 +4,10 @@ use strict;
 use warnings;
 use utf8;
 
+use File::Spec;
 use JSON::XS;
+
+use AnyJob::Utils qw(getFileContent);
 
 use base 'AnyJob::Base';
 
@@ -106,6 +109,17 @@ sub checkParamType {
     }
 
     return 1;
+}
+
+sub getAppEventTemplate {
+    my $self = shift;
+
+    unless (exists($self->{appEventTemplate})) {
+        $self->{appEventTemplate} =
+            getFileContent(File::Spec->catdir($self->config->templates_path, 'observers/app/event.html'));
+    }
+
+    return $self->{appEventTemplate};
 }
 
 sub createJobs {

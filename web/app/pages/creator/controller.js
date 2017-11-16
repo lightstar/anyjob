@@ -1,7 +1,7 @@
 app.controller('creatorController', function ($scope, $http, $compile, creatorService) {
     $scope.jobs = [];
     $scope.events = [];
-    $scope.control = {reset: null};
+    $scope.control = {reset: null, event: null};
 
     $scope.create = function () {
         var jobs = [];
@@ -37,15 +37,15 @@ app.controller('creatorController', function ($scope, $http, $compile, creatorSe
         });
     };
 
-    $scope.$watch('config.auth', function (auth) {
-        if (auth.user === "") {
+    $scope.$watchGroup(['config.auth','control.event'], function () {
+        if ($scope.config.auth.user === "" || $scope.control.event === null) {
             return;
         }
 
-        creatorService.observe(auth, function (events) {
+        creatorService.observe($scope.config.auth, function (events) {
             $scope.$apply(function() {
                 angular.forEach(events, function (event) {
-                    $scope.events.push(event);
+                    $scope.control.event(event);
                 });
             });
         });

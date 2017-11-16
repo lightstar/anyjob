@@ -73,6 +73,9 @@ sub preprocessEvent {
     }
 
     $event->{config} = $config;
+    if (exists($event->{type})) {
+        $event->{job} = $self->config->getJobConfig($event->{type});
+    }
 
     if ($event->{time}) {
         $event->{time} = formatDateTime($event->{time});

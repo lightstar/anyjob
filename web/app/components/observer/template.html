@@ -1,10 +1,15 @@
-<div class="panel panel-default panel-observer ng-hide" data-ng-show="!closed">
-    <button class="close" data-ng-click="close()">
-        <span class="sr-only">Close</span>
-        <span>×</span>
-    </button>
+<div class="panel panel-info panel-observer ng-hide" data-ng-show="!isHidden">
+    <div class="panel-heading" role="tab">
+        <span role="button" data-ng-click="isCollapsed = !isCollapsed">
+            Events
+        </span>
+    </div>
 
-    <div class="event" data-ng-repeat="event in events | orderBy:'+':true track by $index">
-        <div data-observer-event></div>
+    <div class="panel-collapse collapse" role="tabpanel" data-uib-collapse="isCollapsed">
+        <div class="panel-body" data-ng-class="bigClass">
+            <div class="event" data-ng-repeat="event in events | orderBy:'+':true track by event.$index">
+                <div data-observer-event></div>
+            </div>
+        </div>
     </div>
 </div>

@@ -11,9 +11,9 @@
             [% END %]",
         "color": "[% event == 'finish' ? (success ? 'good' : 'danger') : (event == 'finishJobSet' ? 'good' : '') %]",
         "fields": [
-            [% IF type && node %]
+            [% IF job && node %]
                 {
-                    "title": "[% type %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])",
+                    "title": "[% job.label %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])",
                     "value": "
                         [% IF params && params.size %]
                             [% FOR param IN params.pairs %]

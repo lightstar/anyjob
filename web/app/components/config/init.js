@@ -1,12 +1,13 @@
 app.run(function ($http, $rootScope) {
-        function init(jobs, props, eventTemplate, auth, error) {
+        function init(jobs, props, observer, auth, error) {
             var config = {
                 jobs: jobs,
                 props: props,
-                eventTemplate: eventTemplate,
+                observer: observer,
                 auth: auth,
                 error: error,
                 groups: [],
+                jobsByType: {},
                 jobsByGroup: {null: []}
             };
 
@@ -20,18 +21,19 @@ app.run(function ($http, $rootScope) {
                     config.jobsByGroup[job.group] = [];
                 }
 
+                config.jobsByType[job.type] = job;
                 config.jobsByGroup[job.group].push(job);
             });
 
             $rootScope.config = config;
         }
 
-        init([], [], "", {user: "", pass: ""}, "");
+        init([], [], {eventTemplate:""}, {user: "", pass: ""}, "");
         $http.get("config")
             .then(function (response) {
-                init(response.data.jobs, response.data.props, response.data.eventTemplate, response.data.auth, "");
+                init(response.data.jobs, response.data.props, response.data.observer, response.data.auth, "");
             }, function (response) {
-                init([], [], "", {user: "", pass: ""}, serverError(response.data, response.status));
+                init([], [], {eventTemplate:""}, {user: "", pass: ""}, serverError(response.data, response.status));
                 $rootScope.alert("Error: " + $rootScope.config.error, "danger", true);
             });
     }

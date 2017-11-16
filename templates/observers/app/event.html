@@ -1,1 +1,32 @@
-[{{event.time*1000 | date:'dd-MM-yyyy HH:mm:ss'}}] {{event.type}} ({{event.node}}): {{event.event}}
+<span data-ng-class="event.class">
+    [{{event.time*1000 | date:'dd-MM-yyyy HH:mm:ss'}}]
+
+    <span data-ng-switch="event.event">
+        <span data-ng-switch-when="createJobSet">Набор заданий создан.</span>
+        <span data-ng-switch-when="progressJobSet">Набор заданий выполняется.</span>
+        <span data-ng-switch-when="finishJobSet">Набор заданий выполнен.</span>
+    </span>
+
+    <span data-ng-if="event.type && event.node">
+        {{config.jobsByType[event.type].label}}
+        ({{event.node}}<span data-ng-if="event.progress && event.progress.redirect"> -> {{event.progress.redirect}}</span>).
+    </span>
+
+    <span data-ng-if="event.event === 'create'">
+        Создано.
+    </span>
+
+    <span data-ng-if="event.event === 'redirect'">
+        Перенаправлено.
+    </span>
+
+    <span data-ng-if="event.event === 'progress' || event.event === 'progressJobSet'">
+        <span data-ng-if="event.progress.state">Состояние: {{event.progress.state}}.</span>
+        <span data-ng-if="event.progress.progress">Прогресс: {{event.progress.progress}}.</span>
+        <span data-ng-if="event.progress.log && event.progress.log.message">{{event.progress.log.message}}.</span>
+    </span>
+
+    <span data-ng-if="event.event === 'finish'">
+        Выполнено: {{event.message}}.
+    </span>
+</span>
