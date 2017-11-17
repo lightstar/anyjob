@@ -7,7 +7,7 @@ PORT=${ANYJOBC_PORT:-"8080"}
 ANYJOBC=${ANYJOB_PATH:-"/opt/anyjob"}"/bin/anyjobc.psgi"
 MAXTRIES=${ANYJOBC_KILL_MAX_TRIES:-10000}
 SLEEPTIME=${ANYJOBC_KILL_SLEEP_TIME:-10000}
-PID=`ps ax | grep $PLACKUP | grep -v grep | cut -d ' ' -f1`
+PID=`ps ax | grep $PLACKUP | grep -v grep | sed -r 's/^\s*//' | cut -d ' ' -f1`
 
 if which sleepenh >/dev/null 2>&1; then
     SLEEPTIME=`echo "scale=2; $SLEEPTIME/1000000" | bc`
