@@ -322,7 +322,12 @@ sub getAllProps {
 
     $self->{props} = [];
 
-    my $props = $self->props || "[]";
+    my $config = $self->section("app");
+    unless (defined($config) and defined($config->{props})) {
+        return [];
+    }
+
+    my $props = $config->{props};
     utf8::encode($props);
 
     eval {

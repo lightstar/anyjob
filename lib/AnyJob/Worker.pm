@@ -108,6 +108,11 @@ sub run {
     my $self = shift;
     my $id = shift;
 
+    if ($self->config->node eq '') {
+        $self->error("No node");
+        return;
+    }
+
     my $job = $self->getJob($id);
     unless (defined($job)) {
         $self->error("Job '" . $id . "' not found");
@@ -117,6 +122,11 @@ sub run {
     my $config = $self->config->getJobConfig($job->{type});
     unless (defined($config)) {
         $self->error("No config for job type '" . $job->{type} . "'");
+        return;
+    }
+
+    unless ($self->config->isJobSupported($job->{type})) {
+        $self->error("Job with type '" . $job->{type} . "' is not supported on this node");
         return;
     }
 

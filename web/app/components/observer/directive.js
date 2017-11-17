@@ -39,16 +39,24 @@ app.directive('observer', function ($timeout) {
             var preprocessEvent = function(event) {
                 event.$index = index++;
 
-                if (event.event === 'create' || event.event === 'createJobSet') {
-                    event.class = 'text-primary';
-                } else if (event.event === 'progress' || event.event === 'redirect' || event.event === 'progressJobSet') {
-                    event.class = 'text-info';
-                } else if (event.event === 'finish') {
-                    event.class = event.success ? 'text-success' : 'text-danger';
-                } else if (event.event === 'finishJobSet') {
-                    event.class = 'text-success';
-                } else {
-                    event.class = '';
+                switch(event.event) {
+                    case 'create':
+                    case 'createJobSet':
+                        event.class = 'text-primary';
+                        break;
+                    case 'progress':
+                    case 'redirect':
+                    case 'progressJobSet':
+                        event.class = 'text-info';
+                        break;
+                    case 'finish':
+                        event.class = event.success ? 'text-success' : 'text-danger';
+                        break;
+                    case 'finishJobSet':
+                        event.class = 'text-success';
+                        break;
+                    default:
+                        event.class = '';
                 }
             };
 

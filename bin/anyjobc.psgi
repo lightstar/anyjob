@@ -8,9 +8,11 @@ use utf8;
 use Plack::Builder;
 
 use AnyJob::App::Creator;
+use AnyJob::App::Slack;
 use AnyJob::App::Observer;
 
 builder {
         mount '/' => AnyJob::App::Creator->to_app;
+        mount '/slack' => AnyJob::App::Slack->to_app;
         mount(AnyJob::App::Observer->websocket_mount);
     }

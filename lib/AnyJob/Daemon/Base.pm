@@ -26,7 +26,8 @@ sub new {
 
     $self->{detached} ||= 0;
     $self->{pidfile} ||= "/var/run/daemon.pid";
-    $self->{delay} ||= 10000000;
+    $self->{delay} ||= 1;
+    $self->{delay} = int($self->{delay} * 1000000);
     $self->{script} = basename($0);
 
     unless ($self->canRun()) {

@@ -1,0 +1,67 @@
+#!/bin/sh
+
+PLACKUP=${ANYJOBC_PLACKUP:-"/usr/bin/plackup"}
+SERVER=${ANYJOBC_SERVER:-"Twiggy"}
+HOST=${ANYJOBC_HOST:-"127.0.0.1"}
+PORT=${ANYJOBC_PORT:-"8080"}
+ANYJOBC=${ANYJOB_PATH:-"/opt/anyjob"}"/bin/anyjobc.psgi"
+MAXTRIES=${ANYJOBC_KILL_MAX_TRIES:-10000}
+SLEEPTIME=${ANYJOBC_KILL_SLEEP_TIME:-10000}
+PID=`ps ax | grep $PLACKUP | grep -v grep | cut -d ' ' -f1`
+
+if which sleepenh >/dev/null 2>&1; then
+    SLEEPTIME=`echo "scale=2; $SLEEPTIME/1000000" | bc`
+    SLEEP="sleepenh $SLEEPTIME"
+else
+    if which usleep > /dev/null 2>&1; then
+        SLEEP="usleep $SLEEPTIME"
+    else
+        echo "Error! No usleep or sleepenh found!"
+        exit
+    fi
+fi
+
+start() {
+    echo "Starting anyjobc..."
+    if kill -0 $PID >/dev/null 2>&1; then
+        echo "anyjobc is already running..."
+    else
+        ulimit -n 10240
+        $PLACKUP --server $SERVER --host $HOST --port $PORT --no-default-middleware $ANYJOBC >/dev/null 2>&1 &
+    fi
+}
+
+stop() {
+    i=0
+    echo "Killing anyjobc..."
+    kill $PID > /dev/null 2>&1
+    while kill -0 $PID > /dev/null 2>&1; do
+        $SLEEP >/dev/null 2>&1
+        i=`expr $i + 1`
+        if [ $i -ge $MAXTRIES ]; then
+            echo "Can't kill anyjobc!"
+            exit 1
+        fi
+    done
+}
+
+restart() {
+    stop
+    start
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        restart
+        ;;
+    *)
+        echo "$0 {start|stop|restart}"
+        exit 1
+        ;;
+esac

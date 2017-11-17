@@ -32,7 +32,8 @@ websocket_on_open sub {
             return;
         }
 
-        my $timer = AnyEvent->timer(after => 1, interval => 1, cb => sub {
+        my $delay = config->app->{observer_delay} || 1;
+        my $timer = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
                 my $events = creator->receivePrivateEvents("u" . $user);
                 if (scalar(@$events)) {
                     $conn->send($events);
