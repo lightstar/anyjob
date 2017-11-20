@@ -4,10 +4,8 @@ use strict;
 use warnings;
 use utf8;
 
-use File::Spec;
+use Text::ParseWords qw(parse_line);
 use JSON::XS;
-
-use AnyJob::Utils qw(getFileContent);
 
 use base 'AnyJob::Base';
 
@@ -91,6 +89,15 @@ sub checkParams {
         }
     }
 
+    foreach my $param (@$params) {
+        my $name = $param->{name};
+        my $value = $jobParams->{$name};
+
+        if ($param->{required} and (not defined($value) or $value eq "")) {
+            return undef;
+        }
+    }
+
     return 1;
 }
 
@@ -111,15 +118,57 @@ sub checkParamType {
     return 1;
 }
 
-sub getAppEventTemplate {
+sub parseJobLine {
     my $self = shift;
+    my $line = shift;
 
-    unless (exists($self->{appEventTemplate})) {
-        $self->{appEventTemplate} =
-            getFileContent(File::Spec->catdir($self->config->templates_path, 'observers/app/event.html'));
+    my @args = parse_line('\s+', 0, $line || '');
+    unless (scalar(@args) > 0) {
+        return (undef, "empty line");
     }
 
-    return $self->{appEventTemplate};
+    my $job = {
+        type   => shift(@args),
+        nodes  => [],
+        params => {},
+        props  => {}
+    };
+
+    my $config = $self->config->getJobConfig($job->{type});
+    unless (defined($config)) {
+        return (undef, "unknown job type '" . $job->{type} . "'");
+    }
+
+    if (scalar(@args) > 0 and index($args[0], '=') == 1) {
+        $job->{nodes} = [ split(/\s*,\s*/, shift(@args)) ];
+    } elsif (defined($config->{defaultNodes})) {
+        $job->{nodes} = [ split(/\s*,\s*/, $config->{defaultNodes}) ];
+    }
+
+    my $params = { map {$_->{name} => $_} $self->config->getJobParams($job->{type}) };
+    my $props = { map {$_->{name} => $_} $self->config->getProps() };
+
+    foreach my $arg (@args) {
+        my ($name, $value) = split(/=/, $arg);
+
+        unless (defined($name)) {
+            return (undef, "wrong arg '" . $arg . "'");
+        }
+
+        unless (defined($value)) {
+            $value = 1;
+        }
+
+        if (exists($params->{$name})) {
+            $job->{params}->{$name} = $value;
+        } elsif (exists($props->{$name})) {
+            $job->{props}->{$name} = $value;
+        } elsif ($name eq "nodes") {
+            $job->{nodes} = [ split(/\s*,\s*/, $value) ];
+        }
+    }
+
+    return ($job, undef);
 }
 
 sub createJobs {

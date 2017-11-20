@@ -19,7 +19,7 @@
 <div data-ng-if="job.proto != null">
     <div class="form-group" data-ng-class="{'has-error': !isAnyNode}">
         <span>Run on:</span>
-        <label class="checkbox-inline" data-ng-repeat="node in job.proto.nodes">
+        <label class="checkbox-inline" data-ng-repeat="node in job.proto.nodes.available">
             <input type="checkbox" data-ng-model="job.nodes[node]" data-ng-change="validate()"> {{node}}
         </label>
         <span class="help-block has-error" data-ng-show="!isAnyNode">Choose at least one node</span>

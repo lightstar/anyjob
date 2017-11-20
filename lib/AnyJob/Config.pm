@@ -107,9 +107,12 @@ sub getAllJobs {
 
             push @jobs, {
                     type   => $type,
-                    nodes  => $nodes,
+                    nodes  => {
+                        available => $nodes,
+                        default   => { map {$_ => 1} split(/\s*,\s*/, $self->{data}->{$section}->{defaultNodes} || '') }
+                    },
                     label  => $self->{data}->{$section}->{label} || $type,
-                    group  => $self->{data}->{$section}->{group} || "",
+                    group  => $self->{data}->{$section}->{group} || '',
                     params => $self->getJobParams($type),
                     sort   => $self->{data}->{$section}->{sort} || 0
                 };
@@ -313,7 +316,7 @@ sub getNodeObservers {
     return [ grep {$_} split(/\s*,\s*/, $config->{observers}) ];
 }
 
-sub getAllProps {
+sub getProps {
     my $self = shift;
 
     if (exists($self->{props})) {
@@ -350,8 +353,8 @@ sub checkAuth {
     my $user = shift;
     my $pass = shift;
 
-    my $config = $self->section("auth") || {};
-    return (exists($config->{$user}) and $config->{$user} eq $pass) ? 1 : 0;
+    my $config = $self->section('auth') || {};
+    return (exists($config->{$user}) and crypt($pass, $config->{$user}) eq $config->{$user}) ? 1 : 0;
 }
 
 1;

@@ -15,6 +15,9 @@ set charset => 'UTF-8';
 set plugins => {
         'Auth::HTTP::Basic::DWIW' => {
             realm => 'AnyJob'
+        },
+        'AnyJob'                  => {
+            creatorName => 'web'
         }
     };
 
@@ -32,9 +35,9 @@ get '/config' => http_basic_auth required => sub {
             my ($user, $pass) = http_basic_auth_login;
             return {
                 jobs     => config->getAllJobs(),
-                props    => config->getAllProps(),
+                props    => config->getProps(),
                 observer => {
-                    eventTemplate => creator->getAppEventTemplate(),
+                    eventTemplate => creator->getWebAppEventTemplate(),
                 },
                 auth     => {
                     user => $user,
@@ -48,10 +51,11 @@ post '/create' => http_basic_auth required => sub {
             # По идее serializer в объекте request должен установиться автоматически, но не устанавливается.
             request->{serializer} = app->config->{serializer};
             my $jobs = request->data;
+            creator->preprocessWebAppJobs($jobs);
 
             my ($user) = http_basic_auth_login;
 
-            if (defined(my $error = creator->createJobs($jobs, "u" . $user))) {
+            if (defined(my $error = creator->createJobs($jobs, 'u' . $user))) {
                 return {
                     success => 0,
                     error   => $error

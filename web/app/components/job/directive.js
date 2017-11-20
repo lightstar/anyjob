@@ -41,6 +41,26 @@ app.directive('job', function () {
                 return isAllValid;
             };
 
+            var setDefaultNodes = function () {
+                angular.forEach($scope.job.proto.nodes.available, function (node) {
+                    if ($scope.job.proto.nodes.default[node]) {
+                        $scope.job.nodes[node] = true;
+                    }
+                });
+            };
+
+            var setDefaultParams = function (protoParams, jobParams) {
+                angular.forEach(protoParams, function (param) {
+                    if (param.default !== undefined) {
+                        if (param.type === "flag") {
+                            jobParams[param.name] = !!param.default;
+                        } else {
+                            jobParams[param.name] = param.default;
+                        }
+                    }
+                });
+            };
+
             $scope.reset = function () {
                 $scope.isAnyNode = false;
                 $scope.validParams = {};
@@ -49,15 +69,14 @@ app.directive('job', function () {
                 $scope.job.nodes = {};
                 $scope.job.params = {};
                 $scope.job.props = {};
-                if ($scope.job.isValid) {
-                    $scope.job.isValid = false;
-                    $scope.validChanged();
-                }
 
                 if ($scope.job.proto !== null) {
-                   validateParams($scope.job.proto.params, $scope.job.params, $scope.validParams);
-                   validateParams($scope.config.props, $scope.job.props, $scope.validProps);
+                    setDefaultNodes();
+                    setDefaultParams($scope.job.proto.params, $scope.job.params);
+                    setDefaultParams($scope.config.props, $scope.job.props);
                 }
+
+                $scope.validate();
             };
 
             $scope.validate = function () {
