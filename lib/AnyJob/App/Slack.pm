@@ -17,13 +17,14 @@ post '/' => sub {
 
 post '/cmd' => sub {
         my $params = body_parameters;
+        my $slack = creator->addon('slack');
 
-        unless (creator->addon('slack')->checkToken($params->get('token'))) {
+        unless ($slack->checkToken($params->get('token'))) {
             send_as html => 'Error: wrong token';
         }
 
         my $user = $params->get('user_id');
-        unless (creator->addon('slack')->isUserAllowed($user)) {
+        unless ($slack->isUserAllowed($user)) {
             send_as html => 'Error: user not allowed';
         }
 
@@ -32,11 +33,15 @@ post '/cmd' => sub {
             send_as html => 'Error: ' . $error;
         }
 
-        if (defined($error = creator->createJobs([ $job ], 'su' . $user))) {
-            send_as html => 'Error: ' . $error;
+        if ($extra->{dialog} or defined(creator->createJobs([ $job ], 'su' . $user))) {
+            if (defined($slack->sendDialog($slack->getJobDialog($job, $params->get('trigger_id'))))) {
+                send_as html => '';
+            } else {
+                send_as html => 'Error: failed to open dialog';
+            }
+        } else {
+            send_as html => 'Job created';
         }
-
-        send_as html => 'Job created';
     };
 
 1;
