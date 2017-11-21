@@ -267,15 +267,18 @@ sub isJobSupported {
     }
 
     my $result;
+    my $jobConfig = $self->getJobConfig($type);
+    my $nodeConfig = $self->getNodeConfig($node);
 
-    my $config = $self->getJobConfig($type);
-    unless (defined($config) and not $config->{disabled}) {
+    if (not defined($jobConfig) or $jobConfig->{disabled}) {
         $result = 0;
-    } elsif (not exists($config->{nodes}) or $config->{nodes} eq "all") {
-        my $except = $config->{except} || "";
+    } elsif (not defined($nodeConfig) or $nodeConfig->{disabled}) {
+        $result = 0;
+    } elsif (not exists($jobConfig->{nodes}) or $jobConfig->{nodes} eq "all") {
+        my $except = $jobConfig->{except} || "";
         $result = (grep {$_ eq $node} split(/\s*,\s*/, $except)) ? 0 : 1;
     } else {
-        $result = (grep {$_ eq $node} split(/\s*,\s*/, $config->{nodes})) ? 0 : 1;
+        $result = (grep {$_ eq $node} split(/\s*,\s*/, $jobConfig->{nodes})) ? 0 : 1;
     }
 
     $self->{jobSupported}->{$node}->{$type} = $result;
