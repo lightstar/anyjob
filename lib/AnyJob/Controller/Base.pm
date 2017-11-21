@@ -39,7 +39,6 @@ sub node {
 sub debug {
     my $self = shift;
     my $message = shift;
-
     $self->{parent}->debug($message);
 }
 

@@ -9,35 +9,30 @@ use Dancer2::Plugin::AnyJob;
 
 set serializer => 'JSON';
 set charset => 'UTF-8';
-set plugins => {
-        'AnyJob' => {
-            creatorName => 'slack'
-        }
-    };
 
-get '/' => sub {
+post '/' => sub {
         debug(request->body);
         send_as html => 'OK';
     };
 
-get '/cmd' => sub {
+post '/cmd' => sub {
         my $params = body_parameters;
 
-        unless (creator->checkSlackToken($params->get('token'))) {
+        unless (creator->addon('slack')->checkToken($params->get('token'))) {
             send_as html => 'Error: wrong token';
         }
 
         my $user = $params->get('user_id');
-        unless (creator->isSlackUserAllowed($user)) {
+        unless (creator->addon('slack')->isUserAllowed($user)) {
             send_as html => 'Error: user not allowed';
         }
 
-        my ($job, $error) = creator->parseJobLine($params->get('text'));
+        my ($job, $extra, $error) = creator->parseJobLine($params->get('text'));
         if (defined($error)) {
             send_as html => 'Error: ' . $error;
         }
 
-        if (defined($error = creator->createJobs($job, 'su' . $user))) {
+        if (defined($error = creator->createJobs([ $job ], 'su' . $user))) {
             send_as html => 'Error: ' . $error;
         }
 

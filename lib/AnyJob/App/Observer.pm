@@ -17,9 +17,6 @@ set plugins => {
                 utf8         => 1,
                 allow_nonref => 1
             }
-        },
-        'AnyJob'  => {
-            creatorName => 'web'
         }
     };
 
@@ -35,7 +32,8 @@ websocket_on_open sub {
             return;
         }
 
-        my $delay = config->app->{observer_delay} || 1;
+        my $config = config->section('app') || {};
+        my $delay = $config->{observer_delay} || 1;
         my $timer = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
                 my $events = creator->receivePrivateEvents('u' . $user);
                 if (scalar(@$events)) {

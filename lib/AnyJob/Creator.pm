@@ -7,6 +7,8 @@ use utf8;
 use Text::ParseWords qw(parse_line);
 use JSON::XS;
 
+use AnyJob::Utils qw(moduleName requireModule);
+
 use base 'AnyJob::Base';
 
 sub new {
@@ -14,7 +16,23 @@ sub new {
     my %args = @_;
     $args{type} = "creator";
     my $self = $class->SUPER::new(%args);
+    $self->{addons} = {};
     return $self;
+}
+
+sub addon {
+    my $self = shift;
+    my $name = shift;
+
+    if (exists($self->{addons}->{$name})) {
+        return $self->{addons}->{$name};
+    }
+
+    my $module = 'AnyJob::Creator::Addon::' . moduleName($name);
+    requireModule($module);
+
+    $self->{addons}->{$name} = $module->new(parent => $self);
+    return $self->{addons}->{$name};
 }
 
 sub checkJobs {
@@ -124,7 +142,7 @@ sub parseJobLine {
 
     my @args = parse_line('\s+', 0, $line || '');
     unless (scalar(@args) > 0) {
-        return (undef, "empty line");
+        return (undef, undef, "no job type");
     }
 
     my $job = {
@@ -136,18 +154,33 @@ sub parseJobLine {
 
     my $config = $self->config->getJobConfig($job->{type});
     unless (defined($config)) {
-        return (undef, "unknown job type '" . $job->{type} . "'");
+        return (undef, undef, "unknown job type '" . $job->{type} . "'");
     }
 
-    if (scalar(@args) > 0 and index($args[0], '=') == 1) {
-        $job->{nodes} = [ split(/\s*,\s*/, shift(@args)) ];
-    } elsif (defined($config->{defaultNodes})) {
-        $job->{nodes} = [ split(/\s*,\s*/, $config->{defaultNodes}) ];
+    my $nodes = { map {$_ => 1} @{$self->config->getJobNodes($job->{type})} };
+    if (defined($config->{defaultNodes})) {
+        foreach my $node (split(/\s*,\s*/, $config->{defaultNodes})) {
+            if (exists($nodes->{$node})) {
+                push @{$job->{nodes}}, $node;
+            }
+        }
     }
 
-    my $params = { map {$_->{name} => $_} $self->config->getJobParams($job->{type}) };
-    my $props = { map {$_->{name} => $_} $self->config->getProps() };
+    my $params = { map {$_->{name} => $_} @{$self->config->getJobParams($job->{type})} };
+    foreach my $param (values(%$params)) {
+        if (exists($param->{default})) {
+            $job->{params}->{$param->{name}} = $param->{default};
+        }
+    }
 
+    my $props = { map {$_->{name} => $_} @{$self->config->getProps()} };
+    foreach my $prop (values(%$props)) {
+        if (exists($prop->{default})) {
+            $job->{props}->{$prop->{name}} = $prop->{default};
+        }
+    }
+
+    my $extra = {};
     foreach my $arg (@args) {
         my ($name, $value) = split(/=/, $arg);
 
@@ -165,10 +198,22 @@ sub parseJobLine {
             $job->{props}->{$name} = $value;
         } elsif ($name eq "nodes") {
             $job->{nodes} = [ split(/\s*,\s*/, $value) ];
+        } else {
+            my @nodes;
+            foreach my $node (split(/\s*,\s*/, $name)) {
+                if (exists($nodes->{$node})) {
+                    push @nodes, $node;
+                }
+            }
+            if (scalar(@nodes) > 0) {
+                $job->{nodes} = \@nodes;
+            } else {
+                $extra->{$name} = $value;
+            }
         }
     }
 
-    return ($job, undef);
+    return ($job, $extra, undef);
 }
 
 sub createJobs {

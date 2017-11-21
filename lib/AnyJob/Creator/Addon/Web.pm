@@ -1,4 +1,4 @@
-package AnyJob::Creator::Web;
+package AnyJob::Creator::Addon::Web;
 
 use strict;
 use warnings;
@@ -9,9 +9,9 @@ use Scalar::Util qw(reftype);
 
 use AnyJob::Utils qw(getFileContent);
 
-use base 'AnyJob::Creator';
+use base 'AnyJob::Creator::Addon::Base';
 
-sub getWebAppEventTemplate {
+sub getEventTemplate {
     my $self = shift;
 
     unless (exists($self->{appEventTemplate})) {
@@ -22,7 +22,7 @@ sub getWebAppEventTemplate {
     return $self->{appEventTemplate};
 }
 
-sub preprocessWebAppJobs {
+sub preprocessJobs {
     my $self = shift;
     my $jobs = shift;
 
@@ -32,16 +32,16 @@ sub preprocessWebAppJobs {
 
     foreach my $job (@$jobs) {
         if (defined($job->{params}) and ref($job->{params}) eq "HASH") {
-            $self->preprocessWebAppJobParams($job->{params});
+            $self->preprocessJobParams($job->{params});
         }
 
         if (defined($job->{props}) and ref($job->{props}) eq "HASH") {
-            $self->preprocessWebAppJobParams($job->{props});
+            $self->preprocessJobParams($job->{props});
         }
     }
 }
 
-sub preprocessWebAppJobParams {
+sub preprocessJobParams {
     my $self = shift;
     my $params = shift;
 
