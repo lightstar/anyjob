@@ -25,7 +25,7 @@ post '/cmd' => sub {
             };
         }
 
-        my $builder = $slack->getBuilder($params->get('command'));
+        my $builder = $slack->getBuilder(substr($params->get('command'), 1));
         unless (defined($builder)) {
             return {
                 text => 'Error: unknown command'

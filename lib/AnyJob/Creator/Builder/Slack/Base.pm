@@ -86,11 +86,11 @@ sub sendApiCommand {
 
 sub sendDialog {
     my $self = shift;
-    my $triggerId = shift;
+    my $trigger = shift;
     my $dialog = shift;
 
-    return $self->sendCommand('dialog.open', {
-            trigger_id => $triggerId,
+    return $self->sendApiCommand('dialog.open', {
+            trigger_id => $trigger,
             dialog     => $dialog
         });
 }

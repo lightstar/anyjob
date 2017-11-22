@@ -14,11 +14,12 @@ sub build {
     my $user = shift;
 
     my ($job, $extra, $errors) = $self->parent->parseJobLine($text);
-    $self->debug('Simple build, text: ' . $text . ', job: '. encode_json($job) . ', errors: ' . encode_json($errors));
+    $self->debug('Simple build, text: ' . $text . ', job: ' . (defined($job) ? encode_json($job) : 'undef') .
+        ', errors: ' . encode_json($errors));
 
     unless (defined($job)) {
         return {
-            text => 'Error: ' . (scalar(@$errors > 0) ? $errors->[0]->{error} : 'unknown error')
+            text => 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{error} : 'unknown error')
         };
     }
 

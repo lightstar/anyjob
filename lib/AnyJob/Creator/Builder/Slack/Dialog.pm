@@ -12,14 +12,15 @@ sub build {
     my $self = shift;
     my $text = shift;
     my $user = shift;
-    my $trigger_id = shift;
+    my $trigger = shift;
 
     my ($job, $extra, $errors) = $self->parent->parseJobLine($text);
-    $self->debug('dialog build, text: ' . $text . ', job: ' . encode_json($job) . ', errors: ' . encode_json($errors));
+    $self->debug('Dialog build, text: ' . $text . ', job: ' . (defined($job) ? encode_json($job) : 'undef') .
+        ', errors: ' . encode_json($errors));
 
     unless (defined($job)) {
         return {
-            text => 'Error: ' . (scalar(@$errors > 0) ? $errors->[0]->{error} : 'unknown error')
+            text => 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{error} : 'unknown error')
         };
     }
 
@@ -39,7 +40,7 @@ sub build {
         }
     }
 
-    unless (defined($self->sendDialog($trigger_id, $dialog))) {
+    unless (defined($self->sendDialog($trigger, $dialog))) {
         return {
             text => 'Error: failed to open dialog'
         }
@@ -60,8 +61,7 @@ sub getJobDialog {
 
     my $dialog = {
         callback_id  => $id,
-        title        => 'Create job \'' . ($config->{label} || $job->{type}) . '\'' .
-            ' on ' . join(', ', @{$job->{nodes}}),
+        title        => 'Create job \'' . ($config->{label} || $job->{type}) . '\'',
         submit_label => 'Create',
         elements     => []
     };
@@ -81,57 +81,48 @@ sub getParamForDialog {
     my $param = shift;
     my $values = shift;
 
-    if ($param->{type} eq "flag") {
+    if ($param->{type} eq 'flag') {
         return {
-            type    => '
-        select',
+            type    => 'select',
             name    => $param->{name},
             label   => $param->{label},
             value   => $values->{$param->{name}} ? 1 : 0,
             options => [
                 {
-                    label => '
-        Yes',
+                    label => 'Yes',
                     value => 1
                 },
                 {
-                    label => '
-        No',
+                    label => 'No',
                     value => 0
                 }
             ]
         };
-    } elsif ($param->{type} eq '
-        text') {
+    } elsif ($param->{type} eq 'text') {
         my $value = $values->{$param->{name}};
         return {
-            type     => '
-        text',
+            type     => 'text',
             name     => $param->{name},
             label    => $param->{label},
             (defined($value) ? (value => $value) : ()),
             optional => $param->{required} ? 0 : 1,
         };
-    } elsif ($param->{type} eq '
-        textarea') {
+    } elsif ($param->{type} eq 'textarea') {
         my $value = $values->{$param->{name}};
         return {
-            type     => '
-        textarea',
+            type     => 'textarea',
             name     => $param->{name},
             label    => $param->{label},
             (defined($value) ? (value => $value) : ()),
             optional => $param->{required} ? 0 : 1,
         };
-    } elsif ($param->{type} eq '
-        combo') {
+    } elsif ($param->{type} eq 'combo') {
         my $value = $values->{$param->{name}};
         unless (defined($value) and grep {$_->{value} eq $value} @{$param->{data}}) {
             $value = undef;
         }
         return {
-            type     => '
-        select',
+            type     => 'select',
             name     => $param->{name},
             label    => $param->{label},
             (defined($value) ? (value => $value) : ()),
