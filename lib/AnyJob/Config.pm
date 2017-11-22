@@ -29,6 +29,10 @@ sub new {
         $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->observers_dir), 'observer');
     }
 
+    if (defined($self->builders_dir)) {
+        $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->builders_dir), 'builder');
+    }
+
     return $self;
 }
 
@@ -51,8 +55,16 @@ sub addConfigFromDir {
     my $dh;
     if (opendir($dh, $dirName)) {
         foreach my $fileName (readdir($dh)) {
+            next unless $fileName !~ /^\./;
+
             my $fullFileName = File::Spec->catfile($dirName, $fileName);
-            next unless -f $fullFileName and $fileName !~ /^\./ and $fileName =~ /\.cfg$/;
+
+            if (-d $fullFileName) {
+                $self->addConfigFromDir($fullFileName, $sectionPrefix . '_' . $fileName);
+            }
+
+            next unless -f $fullFileName and $fileName =~ /\.cfg$/;
+
             my $section = $sectionPrefix . '_' . $fileName;
             $section =~ s/\.cfg$//;
             $self->addConfig($fullFileName, $section);
@@ -358,6 +370,32 @@ sub checkAuth {
 
     my $config = $self->section('auth') || {};
     return (exists($config->{$user}) and crypt($pass, $config->{$user}) eq $config->{$user}) ? 1 : 0;
+}
+
+sub getBuilderConfig {
+    my $self = shift;
+    my $name = shift;
+    return $self->section('builder_' . $name);
+}
+
+sub getAllBuilders {
+    my $self = shift;
+
+    if (exists($self->{builders})) {
+        return $self->{builders};
+    }
+
+    my @builders;
+    foreach my $section (keys(%{$self->{data}})) {
+        if (my ($builder) = ($section =~ /^builder_(.+)$/)) {
+            unless ($self->{data}->{$section}->{disabled}) {
+                push @builders, $builder;
+            }
+        }
+    }
+
+    $self->{builders} = \@builders;
+    return \@builders;
 }
 
 1;

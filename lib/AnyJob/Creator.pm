@@ -111,7 +111,7 @@ sub checkParams {
         my $name = $param->{name};
         my $value = $jobParams->{$name};
 
-        if ($param->{required} and (not defined($value) or $value eq "")) {
+        if ($param->{required} and (not defined($value) or $value eq '')) {
             return undef;
         }
     }
@@ -136,13 +136,19 @@ sub checkParamType {
     return 1;
 }
 
+# TODO: too large method, need to refactor it somehow.
 sub parseJobLine {
     my $self = shift;
     my $line = shift;
+    my $allowedExtra = shift;
+    $allowedExtra ||= {};
 
     my @args = parse_line('\s+', 0, $line || '');
     unless (scalar(@args) > 0) {
-        return (undef, undef, "no job type");
+        return (undef, undef, [ {
+                field => 'type',
+                error => 'no job type'
+            } ]);
     }
 
     my $job = {
@@ -154,66 +160,165 @@ sub parseJobLine {
 
     my $config = $self->config->getJobConfig($job->{type});
     unless (defined($config)) {
-        return (undef, undef, "unknown job type '" . $job->{type} . "'");
+        return (undef, undef, [ {
+                field => 'type',
+                value => $job->{type},
+                error => 'unknown job type'
+            } ]);
     }
 
     my $nodes = { map {$_ => 1} @{$self->config->getJobNodes($job->{type})} };
-    if (defined($config->{defaultNodes})) {
-        foreach my $node (split(/\s*,\s*/, $config->{defaultNodes})) {
-            if (exists($nodes->{$node})) {
-                push @{$job->{nodes}}, $node;
-            }
-        }
-    }
-
     my $params = { map {$_->{name} => $_} @{$self->config->getJobParams($job->{type})} };
-    foreach my $param (values(%$params)) {
-        if (exists($param->{default})) {
-            $job->{params}->{$param->{name}} = $param->{default};
-        }
-    }
-
     my $props = { map {$_->{name} => $_} @{$self->config->getProps()} };
-    foreach my $prop (values(%$props)) {
-        if (exists($prop->{default})) {
-            $job->{props}->{$prop->{name}} = $prop->{default};
-        }
-    }
 
-    my $extra = {};
+    my @errors;
+    my %extra;
+    my %args;
     foreach my $arg (@args) {
         my ($name, $value) = split(/=/, $arg);
 
-        unless (defined($name)) {
-            return (undef, "wrong arg '" . $arg . "'");
+        if ($name eq '') {
+            next;
         }
+
+        if (exists($args{$name})) {
+            push @errors, {
+                    arg   => $name,
+                    error => 'ignored duplicate arg'
+                };
+            next;
+        }
+
+        $args{$name} = 1;
 
         unless (defined($value)) {
             $value = 1;
         }
 
         if (exists($params->{$name})) {
-            $job->{params}->{$name} = $value;
+            unless ($self->checkParamType($params->{$name}->{type}, $value, $params->{$name}->{data})) {
+                push @errors, {
+                        field => 'params',
+                        param => $name,
+                        value => $value,
+                        error => 'wrong param'
+                    };
+            } else {
+                $job->{params}->{$name} = $value;
+            }
         } elsif (exists($props->{$name})) {
-            $job->{props}->{$name} = $value;
+            unless ($self->checkParamType($props->{$name}->{type}, $value, $props->{$name}->{data})) {
+                push @errors, {
+                        field => 'props',
+                        prop  => $name,
+                        value => $value,
+                        error => 'wrong prop'
+                    };
+            } else {
+                $job->{props}->{$name} = $value;
+            }
         } elsif ($name eq "nodes") {
-            $job->{nodes} = [ split(/\s*,\s*/, $value) ];
-        } else {
-            my @nodes;
-            foreach my $node (split(/\s*,\s*/, $name)) {
-                if (exists($nodes->{$node})) {
-                    push @nodes, $node;
+            my @nodes = split(/\s*,\s*/, $value);
+            my $isAllValid = 1;
+            foreach my $node (@nodes) {
+                unless (exists($nodes->{$node})) {
+                    $isAllValid = 0;
+                    push @errors, {
+                            field => 'nodes',
+                            value => $node,
+                            error => 'node not supported'
+                        };
                 }
             }
-            if (scalar(@nodes) > 0) {
+            if ($isAllValid and scalar(@nodes) > 0) {
                 $job->{nodes} = \@nodes;
+            }
+        } else {
+            my @nodes = split(/\s*,\s*/, $name);
+            my $isAllValid = 1;
+            foreach my $node (@nodes) {
+                unless (exists($nodes->{$node})) {
+                    $isAllValid = 0;
+                }
+            }
+
+            if ($isAllValid and scalar(@nodes) > 0 and not exists($args{nodes})) {
+                $job->{nodes} = \@nodes;
+                $args{nodes} = 1;
+            } elsif (exists($allowedExtra->{$name})) {
+                $extra{$name} = $value;
             } else {
-                $extra->{$name} = $value;
+                push @errors, {
+                        arg   => $name,
+                        error => 'wrong arg'
+                    };
             }
         }
     }
 
-    return ($job, $extra, undef);
+    if (defined($config->{defaultNodes}) and scalar(@{$job->{nodes}}) == 0) {
+        $job->{nodes} = [ grep {exists($nodes->{$_})} split(/\s*,\s*/, $config->{defaultNodes}) ];
+        if (scalar(@{$job->{nodes}}) > 0) {
+            push @errors, {
+                    field   => 'nodes',
+                    value   => join(',', @{$job->{nodes}}),
+                    warning => 'used default nodes'
+                };
+        }
+    }
+
+    if (scalar(@{$job->{nodes}}) == 0) {
+        push @errors, {
+                field => 'nodes',
+                error => 'no nodes'
+            };
+    }
+
+    foreach my $param (values(%$params)) {
+        if (exists($param->{default}) and $param->{default} ne '' and
+            (not exists($job->{params}->{$param->{name}}) or $job->{params}->{$param->{name}} eq '')
+        ) {
+            $job->{params}->{$param->{name}} = $param->{default};
+            push @errors, {
+                    field   => 'params',
+                    param   => $param->{name},
+                    value   => $param->{default},
+                    warning => 'used default param value'
+                };
+        } elsif ($param->{required} and
+            (not exists($job->{params}->{$param->{name}}) or $job->{params}->{$param->{name}} eq '')
+        ) {
+            push @errors, {
+                    field => 'params',
+                    param => $param->{name},
+                    error => 'param is required'
+                };
+        }
+    }
+
+    foreach my $prop (values(%$props)) {
+        if (exists($prop->{default}) and $prop->{default} ne '' and
+            (not exists($job->{props}->{$prop->{name}}) or $job->{props}->{$prop->{name}} eq '')
+        ) {
+            $job->{props}->{$prop->{name}} = $prop->{default};
+            push @errors, {
+                    field   => 'props',
+                    prop    => $prop->{name},
+                    value   => $prop->{default},
+                    warning => 'used default prop value'
+                };
+        } elsif ($prop->{required} and
+            (not exists($job->{props}->{$prop->{name}}) or $job->{props}->{$prop->{name}} eq '')
+        ) {
+            push @errors, {
+                    field => 'props',
+                    prop  => $prop->{name},
+                    error => 'prop is required'
+                };
+        }
+    }
+
+    return ($job, \%extra, \@errors);
 }
 
 sub createJobs {

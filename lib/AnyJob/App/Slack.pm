@@ -20,28 +20,31 @@ post '/cmd' => sub {
         my $slack = creator->addon('slack');
 
         unless ($slack->checkToken($params->get('token'))) {
-            send_as html => 'Error: wrong token';
+            return {
+                text => 'Error: wrong token'
+            };
+        }
+
+        my $builder = $slack->getBuilder($params->get('command'));
+        unless (defined($builder)) {
+            return {
+                text => 'Error: unknown command'
+            };
         }
 
         my $user = $params->get('user_id');
-        unless ($slack->isUserAllowed($user)) {
-            send_as html => 'Error: user not allowed';
+        unless ($builder->isUserAllowed($user)) {
+            return {
+                text => 'Error: access denied'
+            };
         }
 
-        my ($job, $extra, $error) = creator->parseJobLine($params->get('text'));
-        if (defined($error)) {
-            send_as html => 'Error: ' . $error;
+        my $response = $builder->build($params->get('text'), $user, $params->get('trigger_id'));
+        if (defined($response)) {
+            return $response;
         }
 
-        if ($extra->{dialog} or defined(creator->createJobs([ $job ], 'su' . $user))) {
-            if (defined($slack->sendDialog($slack->getJobDialog($job, $params->get('trigger_id'))))) {
-                send_as html => '';
-            } else {
-                send_as html => 'Error: failed to open dialog';
-            }
-        } else {
-            send_as html => 'Job created';
-        }
+        send_as html => '';
     };
 
 1;

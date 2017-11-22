@@ -92,6 +92,17 @@ sub cleanJobSet {
     $self->redis->del("anyjob:jobset:" . $id);
 }
 
+sub cleanBuild {
+    my $self = shift;
+    my $id = shift;
+    my $time = shift;
+
+    $self->debug("Clean build '" . $id . "' last updated at " . formatDateTime($time));
+
+    $self->redis->zrem("anyjob:builds", $id);
+    $self->redis->del("anyjob:build:" . $id);
+}
+
 sub nextJobSetId {
     my $self = shift;
     return $self->redis->incr("anyjob:jobset:id");
