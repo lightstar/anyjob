@@ -133,3 +133,5 @@ sub getParamForDialog {
 
     return undef;
 }
+
+1;
