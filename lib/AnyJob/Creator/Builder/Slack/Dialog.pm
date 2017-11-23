@@ -64,14 +64,20 @@ sub update {
     }
 
     my ($name, $id) = split(/:/, $payload->{callback_id});
-    my $build;
-    unless (defined($id) or not defined($build = $self->getBuild($id))) {
+    unless (defined($id)) {
         return {
             text => 'Error: no build'
         };
     }
 
-    my $errors = $self->applyDialogSubmission($build, $payload->{submission});
+    my $build = $self->getBuild($id);
+    unless (defined($build)) {
+        return {
+            text => 'Error: no build'
+        };
+    }
+
+    my $errors = $self->applyDialogSubmission($build->{job}, $payload->{submission});
     if (scalar(@$errors) > 0) {
         return {
             errors => $errors
@@ -85,10 +91,10 @@ sub update {
 
 sub applyDialogSubmission {
     my $self = shift;
-    my $build = shift;
+    my $job = shift;
     my $submission = shift;
 
-    my $params = $self->config->getJobParams($build->{job}->{type});
+    my $params = $self->config->getJobParams($job->{type});
     my @errors;
     foreach my $param (@$params) {
         if (exists($submission->{$param->{name}})) {
@@ -98,7 +104,7 @@ sub applyDialogSubmission {
                         error => 'wrong param'
                     };
             } else {
-                $build->{job}->{params}->{$param->{name}} = $submission->{$param->{name}};
+                $job->{params}->{$param->{name}} = $submission->{$param->{name}};
             }
         }
 
