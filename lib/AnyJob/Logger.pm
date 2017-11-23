@@ -34,6 +34,10 @@ sub debug {
     my $self = shift;
     my $message = shift;
 
+    if (utf8::is_utf8($message)) {
+        utf8::decode($message);
+    }
+
     if ($self->{syslog}) {
         syslog("info", $message);
     } else {
@@ -47,6 +51,10 @@ sub debug {
 sub error {
     my $self = shift;
     my $message = shift;
+
+    if (utf8::is_utf8($message)) {
+        utf8::decode($message);
+    }
 
     if ($self->{syslog}) {
         syslog("err", $message);

@@ -55,7 +55,7 @@ sub extra {
 sub prepare {
     my $self = shift;
 
-    $self->{args} = parse_line('\s+', 0, $self->{input});
+    $self->{args} = [ parse_line('\s+', 0, $self->{input}) ];
     unless (scalar(@{$self->{args}}) > 0) {
         push @{$self->{errors}}, {
                 field => 'type',
