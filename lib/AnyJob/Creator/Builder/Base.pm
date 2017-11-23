@@ -85,4 +85,11 @@ sub build {
     Carp::confess('Need to be implemented in descendant');
 }
 
+sub update {
+    my $self = shift;
+
+    require Carp;
+    Carp::confess('Need to be implemented in descendant');
+}
+
 1;

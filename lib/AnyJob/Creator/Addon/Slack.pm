@@ -22,9 +22,8 @@ sub checkToken {
 
 sub getBuilder {
     my $self = shift;
-    my $command = shift;
+    my $name = shift;
 
-    my $name = $self->getBuilderNameByCommand($command);
     unless (defined($name)) {
         return undef;
     }
@@ -41,6 +40,18 @@ sub getBuilder {
 
     $self->{builders}->{$name} = $module->new(parent => $self->{parent}, name => $name);
     return $self->{builders}->{$name};
+}
+
+sub getBuilderByCommand {
+    my $self = shift;
+    my $command = shift;
+
+    my $name = $self->getBuilderNameByCommand($command);
+    unless (defined($name)) {
+        return undef;
+    }
+
+    return $self->getBuilder($name);
 }
 
 sub getBuilderNameByCommand {

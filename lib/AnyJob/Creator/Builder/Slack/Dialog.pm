@@ -28,28 +28,115 @@ sub build {
             type        => 'slack_dialog',
             user        => $user,
             job         => $job,
+            trigger     => $trigger,
             responseUrl => $responseUrl
         }));
 
     $self->debug('Create slack app dialog build \'' . $id . '\' by user \'' . $user . '\' with response url \'' .
-        $responseUrl . '\' and job: ' . encode_json($job));
+        $responseUrl . '\', trigger \'' . $trigger . '\' and job: ' . encode_json($job));
 
     my $dialog = $self->getDialog($job, $id);
     unless (defined($dialog)) {
         $self->cleanBuild($id);
         return {
             text => 'Error: unknown error'
-        }
+        };
     }
 
     unless (defined($self->sendDialog($trigger, $dialog))) {
         $self->cleanBuild($id);
         return {
             text => 'Error: failed to open dialog'
-        }
+        };
     }
 
     return undef;
+}
+
+sub update {
+    my $self = shift;
+    my $payload = shift;
+
+    if ($payload->{type} ne 'dialog_submission') {
+        return {
+            text => 'Error: not dialog submission type'
+        };
+    }
+
+    my ($name, $id) = split(/:/, $payload->{callback_id});
+    unless (defined($id)) {
+        return {
+            text => 'Error: no build id'
+        };
+    }
+
+    my $build = $self->getBuild($id);
+    unless (defined($build)) {
+        return {
+            text => 'Error: no build'
+        };
+    }
+
+    my $errors = $self->checkDialogSubmission($build, $payload->{submission});
+    if (scalar(@$errors) > 0) {
+        return {
+            errors => $errors
+        };
+    }
+
+    $self->cleanBuild($id);
+    return $self->finish($build);
+}
+
+sub applyDialogSubmission {
+    my $self = shift;
+    my $build = shift;
+    my $submission = shift;
+
+    my $params = $self->config->getJobParams($build->{job}->{type});
+    my @errors;
+    foreach my $param (@$params) {
+        if (exists($submission->{$param->{name}})) {
+            unless ($self->parent->checkParamType($param->{type}, $submission->{$param->{name}}, $param->{data})) {
+                push @errors, {
+                        name  => $param->{name},
+                        error => 'wrong param'
+                    };
+            } else {
+                $build->{job}->{params}->{$param->{name}} = $submission->{$param->{name}};
+            }
+        }
+
+        if ($param->{required} and
+            (not defined($submission->{$param->{name}}) or $submission->{$param->{name}} eq '')
+        ) {
+            push @errors, {
+                    name  => $param->{name},
+                    error => 'param is required'
+                };
+        }
+    }
+
+    return \@errors;
+}
+
+sub finish {
+    my $self = shift;
+    my $build = shift;
+
+    $self->debug('Create jobs using slack app dialog build: ' . encode_json($build));
+
+    my $error = $self->parent->createJobs([ $build->{job} ], 'su' . $build->{user}, $build->{responseUrl});
+    if (defined($error)) {
+        $self->debug('Creating failed: ' . $error);
+        return {
+            text => 'Error: ' . $error
+        }
+    } else {
+        return {
+            text => 'Job created'
+        }
+    }
 }
 
 sub getDialog {
@@ -64,7 +151,7 @@ sub getDialog {
     }
 
     my $dialog = {
-        callback_id  => $id,
+        callback_id  => $self->name . ':' . $id,
         title        => 'Create job \'' . ($config->{label} || $job->{type}) . '\'',
         submit_label => 'Create',
         elements     => []
