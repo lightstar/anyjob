@@ -48,6 +48,25 @@ sub isUserAllowed {
     return undef;
 }
 
+sub sendResponse {
+    my $self = shift;
+    my $response = shift;
+    my $url = shift;
+
+    my $request = POST($url,
+        Content_Type  => 'application/json',
+        Content       => encode_json($response)
+    );
+
+    my $result = $self->ua->request($request);
+    unless ($result->is_success) {
+        $self->error('Slack request failed, url: ' . $url . ', response: ' . $result->content);
+        return undef;
+    }
+
+    return 1;
+}
+
 sub sendApiCommand {
     my $self = shift;
     my $command = shift;

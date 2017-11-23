@@ -64,20 +64,14 @@ sub update {
     }
 
     my ($name, $id) = split(/:/, $payload->{callback_id});
-    unless (defined($id)) {
-        return {
-            text => 'Error: no build id'
-        };
-    }
-
-    my $build = $self->getBuild($id);
-    unless (defined($build)) {
+    my $build;
+    unless (defined($id) or not defined($build = $self->getBuild($id))) {
         return {
             text => 'Error: no build'
         };
     }
 
-    my $errors = $self->checkDialogSubmission($build, $payload->{submission});
+    my $errors = $self->applyDialogSubmission($build, $payload->{submission});
     if (scalar(@$errors) > 0) {
         return {
             errors => $errors
@@ -85,7 +79,8 @@ sub update {
     }
 
     $self->cleanBuild($id);
-    return $self->finish($build);
+    $self->finish($build);
+    return undef;
 }
 
 sub applyDialogSubmission {
@@ -129,14 +124,12 @@ sub finish {
     my $error = $self->parent->createJobs([ $build->{job} ], 'su' . $build->{user}, $build->{responseUrl});
     if (defined($error)) {
         $self->debug('Creating failed: ' . $error);
-        return {
-            text => 'Error: ' . $error
-        }
+        $self->sendResponse({ text => 'Error: ' . $error }, $build->{responseUrl});
     } else {
-        return {
-            text => 'Job created'
-        }
+        $self->sendResponse({ text => 'Job created' }, $build->{responseUrl});
     }
+
+    return undef;
 }
 
 sub getDialog {
