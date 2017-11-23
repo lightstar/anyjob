@@ -4,10 +4,10 @@ use strict;
 use warnings;
 use utf8;
 
-use Text::ParseWords qw(parse_line);
 use JSON::XS;
 
 use AnyJob::Utils qw(moduleName requireModule);
+use AnyJob::Creator::Parser;
 
 use base 'AnyJob::Base';
 
@@ -125,206 +125,41 @@ sub checkParamType {
     my $value = shift;
     my $data = shift;
 
-    if ($type eq "flag" and $value ne "0" and $value ne "1") {
+    unless (defined($type) and defined($value)) {
         return undef;
     }
 
-    if ($type eq "combo" and ref($data) eq "ARRAY" and not grep {$_ eq $value} @$data) {
+    if ($type eq 'flag' and $value ne '0' and $value ne '1') {
+        return undef;
+    }
+
+    if ($type eq 'combo' and ref($data) eq 'ARRAY' and not grep {$_ eq $value} @$data) {
         return undef;
     }
 
     return 1;
 }
 
-# TODO: too large method, need to refactor it somehow.
 sub parseJobLine {
     my $self = shift;
     my $line = shift;
     my $allowedExtra = shift;
-    $allowedExtra ||= {};
 
-    my @args = parse_line('\s+', 0, $line || '');
-    unless (scalar(@args) > 0) {
-        return (undef, undef, [ {
-                field => 'type',
-                error => 'no job type'
-            } ]);
+    my $parser = AnyJob::Creator::Parser->new(parent => $self, input => $line, allowedExtra => $allowedExtra);
+    unless (defined($parser->prepare())) {
+        return (undef, undef, $parser->errors);
     }
 
-    my $job = {
-        type   => shift(@args),
-        nodes  => [],
-        params => {},
-        props  => {}
-    };
+    $parser->parse();
 
-    my $config = $self->config->getJobConfig($job->{type});
-    unless (defined($config)) {
-        return (undef, undef, [ {
-                field => 'type',
-                value => $job->{type},
-                error => 'unknown job type'
-            } ]);
-    }
-
-    my $nodes = { map {$_ => 1} @{$self->config->getJobNodes($job->{type})} };
-    my $params = { map {$_->{name} => $_} @{$self->config->getJobParams($job->{type})} };
-    my $props = { map {$_->{name} => $_} @{$self->config->getProps()} };
-
-    my @errors;
-    my %extra;
-    my %args;
-    foreach my $arg (@args) {
-        my ($name, $value) = split(/=/, $arg);
-
-        if ($name eq '') {
-            next;
-        }
-
-        if (exists($args{$name})) {
-            push @errors, {
-                    arg   => $name,
-                    error => 'ignored duplicate arg'
-                };
-            next;
-        }
-
-        $args{$name} = 1;
-
-        unless (defined($value)) {
-            $value = 1;
-        }
-
-        if (exists($params->{$name})) {
-            unless ($self->checkParamType($params->{$name}->{type}, $value, $params->{$name}->{data})) {
-                push @errors, {
-                        field => 'params',
-                        param => $name,
-                        value => $value,
-                        error => 'wrong param'
-                    };
-            } else {
-                $job->{params}->{$name} = $value;
-            }
-        } elsif (exists($props->{$name})) {
-            unless ($self->checkParamType($props->{$name}->{type}, $value, $props->{$name}->{data})) {
-                push @errors, {
-                        field => 'props',
-                        prop  => $name,
-                        value => $value,
-                        error => 'wrong prop'
-                    };
-            } else {
-                $job->{props}->{$name} = $value;
-            }
-        } elsif ($name eq "nodes") {
-            my @nodes = split(/\s*,\s*/, $value);
-            my $isAllValid = 1;
-            foreach my $node (@nodes) {
-                unless (exists($nodes->{$node})) {
-                    $isAllValid = 0;
-                    push @errors, {
-                            field => 'nodes',
-                            value => $node,
-                            error => 'node not supported'
-                        };
-                }
-            }
-            if ($isAllValid and scalar(@nodes) > 0) {
-                $job->{nodes} = \@nodes;
-            }
-        } else {
-            my @nodes = split(/\s*,\s*/, $name);
-            my $isAllValid = 1;
-            foreach my $node (@nodes) {
-                unless (exists($nodes->{$node})) {
-                    $isAllValid = 0;
-                }
-            }
-
-            if ($isAllValid and scalar(@nodes) > 0 and not exists($args{nodes})) {
-                $job->{nodes} = \@nodes;
-                $args{nodes} = 1;
-            } elsif (exists($allowedExtra->{$name})) {
-                $extra{$name} = $value;
-            } else {
-                push @errors, {
-                        arg   => $name,
-                        error => 'wrong arg'
-                    };
-            }
-        }
-    }
-
-    if (defined($config->{defaultNodes}) and scalar(@{$job->{nodes}}) == 0) {
-        $job->{nodes} = [ grep {exists($nodes->{$_})} split(/\s*,\s*/, $config->{defaultNodes}) ];
-        if (scalar(@{$job->{nodes}}) > 0) {
-            push @errors, {
-                    field   => 'nodes',
-                    value   => join(',', @{$job->{nodes}}),
-                    warning => 'used default nodes'
-                };
-        }
-    }
-
-    if (scalar(@{$job->{nodes}}) == 0) {
-        push @errors, {
-                field => 'nodes',
-                error => 'no nodes'
-            };
-    }
-
-    foreach my $param (values(%$params)) {
-        if (exists($param->{default}) and $param->{default} ne '' and
-            (not exists($job->{params}->{$param->{name}}) or $job->{params}->{$param->{name}} eq '')
-        ) {
-            $job->{params}->{$param->{name}} = $param->{default};
-            push @errors, {
-                    field   => 'params',
-                    param   => $param->{name},
-                    value   => $param->{default},
-                    warning => 'used default param value'
-                };
-        } elsif ($param->{required} and
-            (not exists($job->{params}->{$param->{name}}) or $job->{params}->{$param->{name}} eq '')
-        ) {
-            push @errors, {
-                    field => 'params',
-                    param => $param->{name},
-                    error => 'param is required'
-                };
-        }
-    }
-
-    foreach my $prop (values(%$props)) {
-        if (exists($prop->{default}) and $prop->{default} ne '' and
-            (not exists($job->{props}->{$prop->{name}}) or $job->{props}->{$prop->{name}} eq '')
-        ) {
-            $job->{props}->{$prop->{name}} = $prop->{default};
-            push @errors, {
-                    field   => 'props',
-                    prop    => $prop->{name},
-                    value   => $prop->{default},
-                    warning => 'used default prop value'
-                };
-        } elsif ($prop->{required} and
-            (not exists($job->{props}->{$prop->{name}}) or $job->{props}->{$prop->{name}} eq '')
-        ) {
-            push @errors, {
-                    field => 'props',
-                    prop  => $prop->{name},
-                    error => 'prop is required'
-                };
-        }
-    }
-
-    return ($job, \%extra, \@errors);
+    return ($parser->job, $parser->extra, $parser->errors);
 }
 
 sub createJobs {
     my $self = shift;
     my $jobs = shift;
     my $observer = shift;
+    my $responseUrl = shift;
     my $props = shift;
     $props ||= {};
 
@@ -341,12 +176,12 @@ sub createJobs {
         $props->{observer} = $observer;
     }
 
+    if (defined($responseUrl)) {
+        $props->{response_url} = $responseUrl;
+    }
+
     my $separatedJobs = [];
     foreach my $job (@$jobs) {
-        if (defined($observer)) {
-            $job->{props}->{observer} = $observer;
-        }
-
         foreach my $name (keys(%$props)) {
             unless (exists($job->{props}->{$name})) {
                 $job->{props}->{$name} = $props->{$name};
@@ -458,7 +293,7 @@ sub receivePrivateEvents {
         if ($@) {
             $self->error("Can't decode event: " . $event);
         } else {
-            $self->stripObserverFromEvent($event);
+            $self->stripInternalPropsFromEvent($event);
             push @events, $event;
         }
 
@@ -469,17 +304,15 @@ sub receivePrivateEvents {
     return \@events;
 }
 
-sub stripObserverFromEvent {
+sub stripInternalPropsFromEvent {
     my $self = shift;
     my $event = shift;
 
-    if (exists($event->{props}->{observer})) {
-        delete $event->{props}->{observer};
-    }
-    if (exists($event->{jobs})) {
-        foreach my $job (@{$event->{jobs}}) {
-            if (exists($job->{props}->{observer})) {
-                delete $job->{props}->{observer};
+    foreach my $name (qw(observer response_url)) {
+        delete $event->{props}->{$name};
+        if (exists($event->{jobs})) {
+            foreach my $job (@{$event->{jobs}}) {
+                delete $job->{props}->{$name};
             }
         }
     }

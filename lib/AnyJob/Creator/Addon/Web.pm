@@ -11,6 +11,15 @@ use AnyJob::Utils qw(getFileContent);
 
 use base 'AnyJob::Creator::Addon::Base';
 
+sub checkAuth {
+    my $self = shift;
+    my $user = shift;
+    my $pass = shift;
+
+    my $config = $self->config->section('web_auth') || {};
+    return (exists($config->{$user}) and crypt($pass, $config->{$user}) eq $config->{$user}) ? 1 : 0;
+}
+
 sub getEventTemplate {
     my $self = shift;
 

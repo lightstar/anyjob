@@ -12,19 +12,20 @@ sub build {
     my $self = shift;
     my $text = shift;
     my $user = shift;
+    my $responseUrl = shift;
 
     my ($job, $extra, $errors) = $self->parent->parseJobLine($text);
-    $self->debug('Simple build, text: ' . $text . ', job: ' . (defined($job) ? encode_json($job) : 'undef') .
-        ', errors: ' . encode_json($errors));
-
     unless (defined($job)) {
         return {
             text => 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{error} : 'unknown error')
         };
     }
 
-    my $error = $self->parent->createJobs([ $job ], 'su' . $user);
+    $self->debug('Create jobs using slack app simple build by user \'' . $user . '\': ' . encode_json($job));
+
+    my $error = $self->parent->createJobs([ $job ], 'su' . $user, $responseUrl);
     if (defined($error)) {
+        $self->debug('Creating failed: ' . $error);
         return {
             text => 'Error: ' . $error
         }

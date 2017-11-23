@@ -340,8 +340,8 @@ sub getProps {
 
     $self->{props} = [];
 
-    my $config = $self->section("app");
-    unless (defined($config) and defined($config->{props})) {
+    my $config = $self->section('creator') || {};
+    unless (defined($config->{props})) {
         return [];
     }
 
@@ -361,15 +361,6 @@ sub getProps {
 
     $self->{props} = $props;
     return $props;
-}
-
-sub checkAuth {
-    my $self = shift;
-    my $user = shift;
-    my $pass = shift;
-
-    my $config = $self->section('auth') || {};
-    return (exists($config->{$user}) and crypt($pass, $config->{$user}) eq $config->{$user}) ? 1 : 0;
 }
 
 sub getBuilderConfig {

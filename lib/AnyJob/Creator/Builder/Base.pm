@@ -4,19 +4,21 @@ use strict;
 use warnings;
 use utf8;
 
+use AnyJob::DateTime qw(formatDateTime);
+
 sub new {
     my $class = shift;
     my %args = @_;
     my $self = bless \%args, $class;
 
-    unless ($self->{parent}) {
+    unless (defined($self->{parent})) {
         require Carp;
-        Carp::confess("No parent provided");
+        Carp::confess('No parent provided');
     }
 
-    unless ($self->{name}) {
+    unless (defined($self->{name}) and $self->{name} ne '') {
         require Carp;
-        Carp::confess("No name provided");
+        Carp::confess('No name provided');
     }
 
     return $self;
@@ -58,6 +60,17 @@ sub getBuild {
     my $self = shift;
     my $id = shift;
     return $self->{parent}->getObject('anyjob:build:' . $id);
+}
+
+sub cleanBuild {
+    my $self = shift;
+    my $id = shift;
+
+    if (my $time = $self->redis->zscore('anyjob:builds', $id)) {
+        $self->debug('Clean build \'' . $id . '\' last updated at ' . formatDateTime($time));
+        $self->redis->zrem('anyjob:builds', $id);
+        $self->redis->del('anyjob:build:' . $id);
+    }
 }
 
 sub nextBuildId {

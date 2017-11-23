@@ -1,4 +1,4 @@
-package AnyJob::App::Slack;
+package AnyJob::Creator::App::Slack;
 
 use strict;
 use warnings;
@@ -39,7 +39,8 @@ post '/cmd' => sub {
             };
         }
 
-        my $response = $builder->build($params->get('text'), $user, $params->get('trigger_id'));
+        my $response = $builder->build($params->get('text'), $user, $params->get('response_url'),
+            $params->get('trigger_id'));
         if (defined($response)) {
             return $response;
         }
