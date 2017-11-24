@@ -102,7 +102,7 @@ sub applyDialogSubmission {
     my @errors;
     foreach my $param (@$params) {
         if (exists($submission->{$param->{name}})) {
-            unless ($self->parent->checkParamType($param->{type}, $submission->{$param->{name}}, $param->{data})) {
+            unless ($self->parent->checkJobParamType($param->{type}, $submission->{$param->{name}}, $param->{data})) {
                 push @errors, {
                         name  => $param->{name},
                         error => 'wrong param'

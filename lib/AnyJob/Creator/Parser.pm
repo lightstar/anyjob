@@ -138,7 +138,7 @@ sub processParamArg {
             $value = 1;
         }
 
-        unless ($self->parent->checkParamType($param->{type}, $value, $param->{data})) {
+        unless ($self->parent->checkJobParamType($param->{type}, $value, $param->{data})) {
             push @{$self->{errors}}, {
                     type  => 'error',
                     field => 'params',
@@ -166,7 +166,7 @@ sub processPropArg {
             $value = 1;
         }
 
-        unless ($self->parent->checkParamType($prop->{type}, $value, $prop->{data})) {
+        unless ($self->parent->checkJobParamType($prop->{type}, $value, $prop->{data})) {
             push @{$self->{errors}}, {
                     type  => 'error',
                     field => 'props',
