@@ -189,12 +189,11 @@ sub processNodesArg {
     my $name = shift;
     my $value = shift;
 
-    if ($name ne 'nodes' or not defined($value)) {
+    if ($name ne 'nodes') {
         return undef;
     }
 
-    my @nodes = split(/\s*,\s*/, $value);
-    if (scalar(@nodes) == 0) {
+    unless (defined($value) and $value ne '') {
         push @{$self->{errors}}, {
                 type  => 'error',
                 field => 'nodes',
@@ -203,6 +202,7 @@ sub processNodesArg {
         return 1;
     }
 
+    my @nodes = split(/\s*,\s*/, $value);
     my $isAllValid = 1;
     foreach my $node (@nodes) {
         unless (exists($self->{nodes}->{$node})) {
