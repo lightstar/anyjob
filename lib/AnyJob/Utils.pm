@@ -14,15 +14,15 @@ our @EXPORT_OK = qw(
 
 sub moduleName {
     my $name = shift;
-    return join("", map {ucfirst($_)} split(/_/, $name));
+    return join('', map {ucfirst($_)} split(/_/, $name));
 }
 
 sub requireModule {
     my $module = shift;
-    eval "require " . $module;
+    eval 'require ' . $module;
     if ($@) {
         require Carp;
-        Carp::confess("Can't load module '" . $module . "': " . $@);
+        Carp::confess('Can\'t load module \'' . $module . '\': ' . $@);
     }
 }
 
@@ -32,8 +32,8 @@ sub getFileContent {
     my $content;
 
     my $fh;
-    if (open($fh, "<", $fileName)) {
-        binmode $fh, ":utf8";
+    if (open($fh, '<', $fileName)) {
+        binmode $fh, ':utf8';
         {
             local $/ = undef;
             $content = <$fh>;
@@ -42,7 +42,7 @@ sub getFileContent {
     }
 
     unless (defined($content)) {
-        $content = "";
+        $content = '';
     }
 
     return $content;

@@ -363,6 +363,24 @@ sub getProps {
     return $props;
 }
 
+sub getInternalProps {
+    my $self = shift;
+
+    if (exists($self->{internalProps})) {
+        return $self->{internalProps};
+    }
+
+    $self->{internalProps} = [];
+
+    my $config = $self->section('creator') || {};
+    unless (defined($config->{internal_props})) {
+        return [];
+    }
+
+    $self->{internalProps} = [ split(/\s*,\s*/, $config->{internal_props}) ];
+    return $self->{internalProps};
+}
+
 sub getBuilderConfig {
     my $self = shift;
     my $name = shift;

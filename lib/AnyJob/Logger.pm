@@ -24,7 +24,7 @@ sub new {
     my $self = bless \%args, $class;
 
     if ($self->{syslog}) {
-        openlog("anyjob" . ($self->{type} ? "-" . $self->{type} : ""), "ndelay,nofatal,pid", "local0");
+        openlog('anyjob' . ($self->{type} ? '-' . $self->{type} : ''), 'ndelay,nofatal,pid', 'local0');
     }
 
     return $self;
@@ -39,7 +39,7 @@ sub debug {
     }
 
     if ($self->{syslog}) {
-        syslog("info", $message);
+        syslog('info', $message);
     } else {
         {
             local $| = 1;
@@ -57,7 +57,7 @@ sub error {
     }
 
     if ($self->{syslog}) {
-        syslog("err", $message);
+        syslog('err', $message);
     } else {
         {
             local $| = 1;
@@ -68,7 +68,7 @@ sub error {
 
 sub prefix {
     my $self = shift;
-    return "[" . formatDateTime() . "] anyjob-" . $self->{type} . "[" . $$ . "]: ";
+    return '[' . formatDateTime() . '] anyjob-' . $self->{type} . '[' . $$ . ']: ';
 }
 
 sub DESTROY {

@@ -15,10 +15,18 @@ sub build {
     my $responseUrl = shift;
     my $trigger = shift;
 
-    my ($job, $extra, $errors) = $self->parent->parseJobLine($text);
+    my ($job, $errors);
+    ($job, undef, $errors) = $self->parent->parseJobLine($text);
     unless (defined($job)) {
         return {
-            text => 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{error} : 'unknown error')
+            text => 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error')
+        };
+    }
+
+    $errors = [ grep {$_->{type} eq 'error'} @$errors ];
+    if (scalar(@$errors) > 0) {
+        return {
+            text => 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors)
         };
     }
 
@@ -58,23 +66,18 @@ sub update {
     my $payload = shift;
 
     if ($payload->{type} ne 'dialog_submission') {
-        return {
-            text => 'Error: not dialog submission type'
-        };
+        return 'Error: not dialog submission type';
     }
 
-    my ($name, $id) = split(/:/, $payload->{callback_id});
+    my $id;
+    (undef, $id) = split(/:/, $payload->{callback_id});
     unless (defined($id)) {
-        return {
-            text => 'Error: no build'
-        };
+        return 'Error: no build';
     }
 
     my $build = $self->getBuild($id);
     unless (defined($build)) {
-        return {
-            text => 'Error: no build'
-        };
+        return 'Error: no build';
     }
 
     my $errors = $self->applyDialogSubmission($build->{job}, $payload->{submission});
@@ -86,6 +89,7 @@ sub update {
 
     $self->cleanBuild($id);
     $self->finish($build);
+
     return undef;
 }
 
@@ -127,15 +131,16 @@ sub finish {
 
     $self->debug('Create jobs using slack app dialog build: ' . encode_json($build));
 
-    my $error = $self->parent->createJobs([ $build->{job} ], 'su' . $build->{user}, $build->{responseUrl});
+    my $error = $self->parent->createJobs([ $build->{job} ], {
+            observer     => 'su' . $build->{user},
+            response_url => $build->{responseUrl}
+        });
     if (defined($error)) {
         $self->debug('Creating failed: ' . $error);
         $self->sendResponse({ text => 'Error: ' . $error }, $build->{responseUrl});
     } else {
         $self->sendResponse({ text => 'Job created' }, $build->{responseUrl});
     }
-
-    return undef;
 }
 
 sub getDialog {

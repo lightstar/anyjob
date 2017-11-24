@@ -12,7 +12,7 @@ use base 'AnyJob::Base';
 sub new {
     my $class = shift;
     my %args = @_;
-    $args{type} = "daemon";
+    $args{type} = 'daemon';
     my $self = $class->SUPER::new(%args);
 
     my $config = $self->config->daemon;

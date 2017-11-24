@@ -18,7 +18,7 @@ sub formatDateTime {
     $month++;
     $year += 1900;
 
-    return sprintf("%.2d-%.2d-%.4d %.2d:%.2d:%.2d", $day, $month, $year, $hour, $min, $sec);
+    return sprintf('%.2d-%.2d-%.4d %.2d:%.2d:%.2d', $day, $month, $year, $hour, $min, $sec);
 }
 
 1;

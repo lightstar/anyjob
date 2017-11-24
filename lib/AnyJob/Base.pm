@@ -16,12 +16,12 @@ sub new {
 
     unless ($self->{config}) {
         require Carp;
-        Carp::confess("No config provided");
+        Carp::confess('No config provided');
     }
 
     unless ($self->{type}) {
         require Carp;
-        Carp::confess("No component type provider");
+        Carp::confess('No component type provider');
     }
 
     $self->{redis} = Redis->new(server => $self->config->redis, encoding => undef);
@@ -73,13 +73,13 @@ sub error {
 sub getJob {
     my $self = shift;
     my $id = shift;
-    return $self->getObject("anyjob:job:" . $id);
+    return $self->getObject('anyjob:job:' . $id);
 }
 
 sub getJobSet {
     my $self = shift;
     my $id = shift;
-    return $self->getObject("anyjob:jobset:" . $id);
+    return $self->getObject('anyjob:jobset:' . $id);
 }
 
 sub getObject {

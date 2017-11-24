@@ -58,8 +58,9 @@ sub prepare {
     $self->{args} = [ parse_line('\s+', 0, $self->{input}) ];
     unless (scalar(@{$self->{args}}) > 0) {
         push @{$self->{errors}}, {
+                type  => 'error',
                 field => 'type',
-                error => 'no job type'
+                text  => 'no job type'
             };
         return undef;
     }
@@ -69,9 +70,10 @@ sub prepare {
     $self->{jobConfig} = $self->config->getJobConfig($type);
     unless (defined($self->{jobConfig})) {
         push @{$self->{errors}}, {
+                type  => 'error',
                 field => 'type',
                 value => $type,
-                error => 'unknown job type'
+                text  => 'unknown job type \'' . $type . '\''
             };
         return undef;
     }
@@ -104,8 +106,9 @@ sub parse {
 
         if (exists($self->{processedArgs}->{$name})) {
             push @{$self->{errors}}, {
-                    arg   => $name,
-                    error => 'ignored duplicate arg'
+                    type => 'error',
+                    arg  => $name,
+                    text => 'duplicate arg \'' . $name . '\''
                 };
             next;
         }
@@ -117,7 +120,7 @@ sub parse {
             $self->processNodesArg($name, $value) or
             $self->processImplicitNodesArg($name, $value) or
             $self->processExtraArg($name, $value) or
-            $self->processUnknownArg($name, $value);
+            $self->processUnknownArg($name);
     }
 
     $self->injectDefaultNodes();
@@ -137,10 +140,11 @@ sub processParamArg {
 
         unless ($self->parent->checkParamType($param->{type}, $value, $param->{data})) {
             push @{$self->{errors}}, {
+                    type  => 'error',
                     field => 'params',
                     param => $name,
                     value => $value,
-                    error => 'wrong param'
+                    text  => 'wrong param \'' . $name . '\' = \'' . $value . '\''
                 };
         } else {
             $self->job->{params}->{$name} = $value;
@@ -164,10 +168,11 @@ sub processPropArg {
 
         unless ($self->parent->checkParamType($prop->{type}, $value, $prop->{data})) {
             push @{$self->{errors}}, {
+                    type  => 'error',
                     field => 'props',
                     param => $name,
                     value => $value,
-                    error => 'wrong prop'
+                    text  => 'wrong prop \'' . $name . '\' = \'' . $value . '\''
                 };
         } else {
             $self->job->{props}->{$name} = $value;
@@ -191,8 +196,9 @@ sub processNodesArg {
     my @nodes = split(/\s*,\s*/, $value);
     if (scalar(@nodes) == 0) {
         push @{$self->{errors}}, {
-                arg   => 'nodes',
-                error => 'nodes arg without value'
+                type  => 'error',
+                field => 'nodes',
+                text  => '\'nodes\' arg without value'
             };
         return 1;
     }
@@ -202,9 +208,10 @@ sub processNodesArg {
         unless (exists($self->{nodes}->{$node})) {
             $isAllValid = 0;
             push @{$self->{errors}}, {
+                    type  => 'error',
                     field => 'nodes',
                     value => $node,
-                    error => 'node not supported'
+                    text  => 'not supported node \'' . $node . '\''
                 };
         }
     }
@@ -252,11 +259,11 @@ sub processExtraArg {
 sub processUnknownArg {
     my $self = shift;
     my $name = shift;
-    my $value = shift;
 
     push @{$self->{errors}}, {
-            arg   => $name,
-            error => 'wrong arg'
+            type => 'error',
+            arg  => $name,
+            text => 'wrong arg \'' . $name . '\''
         };
 
     return 1;
@@ -272,18 +279,21 @@ sub injectDefaultNodes {
         ];
 
         if (scalar(@{$self->job->{nodes}}) > 0) {
+            my $nodes = join(',', @{$self->job->{nodes}});
             push @{$self->{errors}}, {
-                    field   => 'nodes',
-                    value   => join(',', @{$self->job->{nodes}}),
-                    warning => 'used default nodes'
+                    type  => 'warning',
+                    field => 'nodes',
+                    value => $nodes,
+                    text  => 'used default nodes \'' . $nodes . '\''
                 };
         }
     }
 
     if (scalar(@{$self->job->{nodes}}) == 0) {
         push @{$self->{errors}}, {
+                type  => 'error',
                 field => 'nodes',
-                error => 'no nodes'
+                text  => 'no nodes'
             };
     }
 }
@@ -300,18 +310,20 @@ sub injectDefaultParams {
         ) {
             $jobParams->{$name} = $param->{default};
             push @{$self->{errors}}, {
-                    field   => 'params',
-                    param   => $name,
-                    value   => $jobParams->{$name},
-                    warning => 'used default param value'
+                    type  => 'warning',
+                    field => 'params',
+                    param => $name,
+                    value => $jobParams->{$name},
+                    text  => 'used default param value \'' . $name . '\' = \'' . $jobParams->{$name} . '\''
                 };
         } elsif ($param->{required} and
             (not exists($jobParams->{$name}) or $jobParams->{$name} eq '')
         ) {
             push @{$self->{errors}}, {
+                    type  => 'error',
                     field => 'params',
                     param => $name,
-                    error => 'param is required'
+                    text  => 'no required param \'' . $name . '\''
                 };
         }
     }
@@ -329,18 +341,20 @@ sub injectDefaultProps {
         ) {
             $jobProps->{$name} = $prop->{default};
             push @{$self->{errors}}, {
-                    field   => 'props',
-                    param   => $name,
-                    value   => $jobProps->{$name},
-                    warning => 'used default prop value'
+                    type  => 'warning',
+                    field => 'props',
+                    param => $name,
+                    value => $jobProps->{$name},
+                    text  => 'used default prop value \'' . $name . '\' = \'' . $jobProps->{$name} . '\''
                 };
         } elsif ($prop->{required} and
             (not exists($jobProps->{$name}) or $jobProps->{$name} eq '')
         ) {
             push @{$self->{errors}}, {
+                    type  => 'error',
                     field => 'props',
                     param => $name,
-                    error => 'prop is required'
+                    text  => 'no required prop \'' . $name . '\''
                 };
         }
     }

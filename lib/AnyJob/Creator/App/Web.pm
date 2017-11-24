@@ -65,7 +65,7 @@ post '/create' => http_basic_auth required => sub {
 
             debug('Create jobs using web app by user \'' . $user . '\': ' . encode_json($jobs));
 
-            if (defined(my $error = creator->createJobs($jobs, 'u' . $user))) {
+            if (defined(my $error = creator->createJobs($jobs, { observer => 'u' . $user }))) {
                 debug('Creating failed: ' . $error);
                 return {
                     success => 0,

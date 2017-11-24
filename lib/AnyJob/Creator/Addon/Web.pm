@@ -35,16 +35,16 @@ sub preprocessJobs {
     my $self = shift;
     my $jobs = shift;
 
-    if (ref($jobs) ne "ARRAY" or scalar(@$jobs) == 0) {
+    if (ref($jobs) ne 'ARRAY' or scalar(@$jobs) == 0) {
         return;
     }
 
     foreach my $job (@$jobs) {
-        if (defined($job->{params}) and ref($job->{params}) eq "HASH") {
+        if (defined($job->{params}) and ref($job->{params}) eq 'HASH') {
             $self->preprocessJobParams($job->{params});
         }
 
-        if (defined($job->{props}) and ref($job->{props}) eq "HASH") {
+        if (defined($job->{props}) and ref($job->{props}) eq 'HASH') {
             $self->preprocessJobParams($job->{props});
         }
     }
@@ -55,7 +55,7 @@ sub preprocessJobParams {
     my $params = shift;
 
     while (my ($name, $value) = each(%$params)) {
-        if (ref($value) ne "" and reftype($value) eq "SCALAR") {
+        if (ref($value) ne '' and reftype($value) eq 'SCALAR') {
             $params->{$name} = $$value;
         }
     }

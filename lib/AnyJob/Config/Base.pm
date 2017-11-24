@@ -33,7 +33,7 @@ sub addConfig {
 
 sub section {
     my $self = shift;
-    my $section = shift || "";
+    my $section = shift || '';
     return $self->{data}->{$section};
 }
 
@@ -48,8 +48,8 @@ sub readFile {
     }
 
     my $fh;
-    if (open($fh, "<", $fileName)) {
-        binmode $fh, ":utf8";
+    if (open($fh, '<', $fileName)) {
+        binmode $fh, ':utf8';
         my $section = $fileSection;
         my $var;
         my $docMarker;
@@ -102,7 +102,7 @@ sub readFile {
         close($fh);
     } else {
         require Carp;
-        Carp::confess("Can't open '$fileName': $!");
+        Carp::confess('Can\'t open \'' . $fileName . '\': ' . $!);
     }
 
     return $data;

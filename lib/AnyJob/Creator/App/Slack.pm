@@ -18,35 +18,36 @@ post '/' => sub {
             $payload = decode_json($params->get('payload'));
         };
         if ($@ or ref($payload) ne 'HASH') {
-            return {
-                text => 'Error: wrong payload'
-            };
+            status 400;
+            send_as html => 'Error: wrong payload';
         }
 
         my $slack = creator->addon('slack');
         unless ($slack->checkToken($payload->{token})) {
-            return {
-                text => 'Error: wrong token'
-            };
+            status 401;
+            send_as html => 'Error: wrong token';
         }
 
         unless (defined($payload->{callback_id})) {
-            return {
-                text => 'Error: no callback_id'
-            };
+            status 400;
+            send_as html => 'Error: no callback_id';
         }
 
         my ($name) = split(/:/, $payload->{callback_id});
         my $builder = $slack->getBuilder($name);
         unless (defined($builder)) {
-            return {
-                text => 'Error: unknown builder'
-            };
+            status 400;
+            send_as html => 'Error: unknown builder';
         }
 
         my $response = $builder->update($payload);
         if (defined($response)) {
-            return $response;
+            if (ref($response) eq '') {
+                status 400;
+                send_as html => $response;
+            } else {
+                return $response;
+            }
         }
 
         send_as html => '';
@@ -57,9 +58,8 @@ post '/cmd' => sub {
         my $slack = creator->addon('slack');
 
         unless ($slack->checkToken($params->get('token'))) {
-            return {
-                text => 'Error: wrong token'
-            };
+            status 401;
+            send_as html => 'Error: wrong token';
         }
 
         my $builder = $slack->getBuilderByCommand(substr($params->get('command'), 1));

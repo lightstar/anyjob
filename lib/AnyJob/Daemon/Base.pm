@@ -16,23 +16,23 @@ sub new {
 
     unless ($self->{process}) {
         require Carp;
-        Carp::confess("No process function");
+        Carp::confess('No process function');
     }
 
     unless ($self->{logger}) {
         require Carp;
-        Carp::confess("No logger");
+        Carp::confess('No logger');
     }
 
     $self->{detached} ||= 0;
-    $self->{pidfile} ||= "/var/run/daemon.pid";
+    $self->{pidfile} ||= '/var/run/daemon.pid';
     $self->{delay} ||= 1;
     $self->{delay} = int($self->{delay} * 1000000);
     $self->{script} = basename($0);
 
     unless ($self->canRun()) {
         require Carp;
-        Carp::confess("Couldn't run, some other instance is running");
+        Carp::confess('Couldn\'t run, some other instance is running');
     }
 
     return $self;
@@ -47,18 +47,18 @@ sub daemonize {
     }
 
     unless (defined($pid)) {
-        $self->error("Can't fork: " . $!);
+        $self->error('Can\'t fork: ' . $!);
         exit(1);
     }
 
     unless (setsid()) {
-        $self->error("Can't start a new session: " . $!);
+        $self->error('Can\'t start a new session: ' . $!);
         exit(1);
     }
 
     my $maxFh;
-    unless (open($maxFh, ">", "/dev/null")) {
-        $self->error("can't open /dev/null: " . $!);
+    unless (open($maxFh, '>', '/dev/null')) {
+        $self->error('Can\'t open /dev/null: ' . $!);
         exit(1);
     }
     if (fileno($maxFh) != 1) {
@@ -80,13 +80,13 @@ sub run {
     }
 
     unless ($self->writePid()) {
-        $self->error("Can't write pid");
+        $self->error('Can\'t write pid');
         exit(1);
     }
 
     $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {$self->stop()};
 
-    $self->debug("Started");
+    $self->debug('Started');
 
     $self->{running} = 1;
     while ($self->{running}) {
@@ -95,16 +95,16 @@ sub run {
         };
 
         if ($@) {
-            $self->error("Process error: $@");
+            $self->error('Process error: ' . $@);
         }
 
         usleep($self->{delay}) if $self->{running} and $self->{delay};
     }
 
-    $self->debug("Stopped");
+    $self->debug('Stopped');
 
     unless ($self->deletePid()) {
-        $self->error("Can't delete pid file");
+        $self->error('Can\'t delete pid file');
     }
 
     delete $self->{process};
@@ -112,7 +112,7 @@ sub run {
 
 sub stop {
     my $self = shift;
-    $self->debug("Stopping by signal");
+    $self->debug('Stopping by signal');
     $self->{running} = 0;
 }
 
@@ -159,7 +159,7 @@ sub canRun {
 sub readInt {
     my $fileName = shift;
 
-    my $fh = IO::File->new($fileName, "r");
+    my $fh = IO::File->new($fileName, 'r');
     return 0 unless $fh;
     my $value = int(<$fh>);
     $fh->close();
@@ -171,7 +171,7 @@ sub writeInt {
     my $fileName = shift;
     my $value = shift;
 
-    my $fh = IO::File->new($fileName, "w");
+    my $fh = IO::File->new($fileName, 'w');
     return undef unless $fh;
     print $fh $value;
     close($fh);
@@ -185,11 +185,11 @@ sub isProcRun {
 
     return undef unless $pid;
 
-    my $procFile = "/proc/$pid/cmdline";
+    my $procFile = '/proc/' . $pid . '/cmdline';
     return undef unless -e $procFile;
     return 1 unless $fileName;
 
-    my $fh = IO::File->new($procFile, "r");
+    my $fh = IO::File->new($procFile, 'r');
     return undef unless $fh;
 
     my $str = <$fh>;

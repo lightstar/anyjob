@@ -11,7 +11,7 @@ sub new {
 
     unless ($self->{parent}) {
         require Carp;
-        Carp::confess("No parent provided");
+        Carp::confess('No parent provided');
     }
 
     return $self;
