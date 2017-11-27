@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use utf8;
 
+use AnyEvent;
+
 use Dancer2 qw(!config !debug !error);
 use Dancer2::Plugin::AnyJob;
 
@@ -98,5 +100,13 @@ post '/cmd' => sub {
 
         send_as html => '';
     };
+
+{
+    my $config = config->section('slack') || {};
+    my $delay = $config->{observer_delay} || 1;
+    AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
+            creator->addon('slack')->sendPrivateEvents(creator->receivePrivateEvents('slack'));
+        });
+}
 
 1;

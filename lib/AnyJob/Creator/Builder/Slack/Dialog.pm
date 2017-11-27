@@ -70,7 +70,7 @@ sub dialogSubmission {
     $self->debug('Create jobs using slack app dialog build: ' . encode_json($build));
 
     my $error = $self->parent->createJobs([ $build->{job} ], {
-            observer     => 'su' . $build->{user},
+            observer     => 'slack',
             response_url => $build->{responseUrl}
         });
     if (defined($error)) {

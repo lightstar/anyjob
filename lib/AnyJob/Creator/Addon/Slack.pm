@@ -4,9 +4,33 @@ use strict;
 use warnings;
 use utf8;
 
+use File::Spec;
+use LWP::UserAgent;
+use HTTP::Request::Common qw(POST);
+use Template;
+
 use AnyJob::Utils qw(moduleName requireModule);
 
 use base 'AnyJob::Creator::Addon::Base';
+
+sub new {
+    my $class = shift;
+    my %args = @_;
+    my $self = $class->SUPER::new(%args);
+
+    $self->{tt} = Template->new({
+        INCLUDE_PATH => File::Spec->catdir($self->config->templates_path, 'observers/app/slack'),
+        ENCODING     => 'UTF-8',
+        PRE_CHOMP    => 1,
+        POST_CHOMP   => 1,
+        TRIM         => 1
+    });
+
+    $self->{ua} = LWP::UserAgent->new();
+    $self->{ua}->timeout(15);
+
+    return $self;
+}
 
 sub checkToken {
     my $self = shift;
@@ -81,6 +105,38 @@ sub generateBuildersByCommand {
     }
 
     $self->{buildersByCommand} = \%builders;
+}
+
+sub sendPrivateEvents {
+    my $self = shift;
+    my $events = shift;
+
+    foreach my $event (@$events) {
+        if (defined(my $url = $event->{props}->{response_url})) {
+            my $payload = $self->getEventPayload($event);
+            my $result = $self->{ua}->request(POST($url, [ payload => $payload ]));
+            unless ($result->is_success) {
+                error('Error sending event to ' . $url . ', response: ' . $result->decoded_content);
+            }
+        }
+    }
+}
+
+sub getEventPayload {
+    my $self = shift;
+    my $event = shift;
+
+    my $slack = $self->config->section('slack') || {};
+    my $payloadTemplate = $slack->{event_payload_template} || 'payload';
+
+    my $payload = "";
+    unless ($self->{tt}->process($payloadTemplate . '.tt', $event, \$payload)) {
+        require Carp;
+        Carp::confess('Can\'t process template \'' . $payloadTemplate . '\'.tt\': ' . $self->{tt}->error());
+    }
+
+    utf8::encode($payload);
+    return $payload;
 }
 
 1;

@@ -28,7 +28,7 @@ sub command {
     $self->debug('Create jobs using slack app simple build by user \'' . $user . '\': ' . encode_json($job));
 
     my $error = $self->parent->createJobs([ $job ], {
-            observer     => 'su' . $user,
+            observer     => 'slack',
             response_url => $responseUrl
         });
     if (defined($error)) {

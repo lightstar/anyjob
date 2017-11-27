@@ -25,7 +25,7 @@ sub getEventTemplate {
 
     unless (exists($self->{appEventTemplate})) {
         $self->{appEventTemplate} =
-            getFileContent(File::Spec->catdir($self->config->templates_path, 'observers/app/web-event.html'));
+            getFileContent(File::Spec->catdir($self->config->templates_path, 'observers/app/web/event.html'));
     }
 
     return $self->{appEventTemplate};

@@ -10,19 +10,20 @@ use HTTP::Request::Common qw(POST);
 
 use base 'AnyJob::Creator::Builder::Base';
 
+sub new {
+    my $class = shift;
+    my %args = @_;
+    my $self = $class->SUPER::new(%args);
+
+    $self->{ua} = LWP::UserAgent->new();
+    $self->{ua}->timeout(15);
+
+    return $self;
+}
+
 sub getBuilderConfig {
     my $self = shift;
     return $self->config->getBuilderConfig('slack_' . $self->name);
-}
-
-sub ua {
-    my $self = shift;
-    if (exists($self->{ua})) {
-        return $self->{ua};
-    }
-
-    $self->{ua} = LWP::UserAgent->new();
-    return $self->{ua};
 }
 
 sub isUserAllowed {
@@ -58,7 +59,7 @@ sub sendResponse {
         Content      => encode_json($response)
     );
 
-    my $result = $self->ua->request($request);
+    my $result = $self->{ua}->request($request);
     unless ($result->is_success) {
         $self->error('Slack request failed, url: ' . $url . ', response: ' . $result->content);
         return undef;
@@ -90,7 +91,7 @@ sub sendApiCommand {
         Content       => encode_json($data)
     );
 
-    my $result = $self->ua->request($request);
+    my $result = $self->{ua}->request($request);
     unless ($result->is_success) {
         $self->error('Slack command failed, url: ' . $url . ', response: ' . $result->content);
         return undef;
