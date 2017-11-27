@@ -81,8 +81,9 @@ post '/cmd' => sub {
 
         my $user = $params->get('user_id');
         unless ($builder->isUserAllowed($user)) {
-            status 401;
-            send_as html => 'Error: access denied';
+            return {
+                text => 'Error: access denied'
+            };
         }
 
         my $text = $params->get('text');
@@ -92,12 +93,7 @@ post '/cmd' => sub {
 
         my $response = $builder->command($text, $user, $params->get('response_url'), $params->get('trigger_id'));
         if (defined($response)) {
-            if (ref($response) eq '') {
-                status 400;
-                send_as html => $response;
-            } else {
-                return $response;
-            }
+            return ref($response) eq '' ? { text => $response } : $response;
         }
 
         send_as html => '';

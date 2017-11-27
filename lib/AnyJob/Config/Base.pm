@@ -74,6 +74,7 @@ sub readFile {
 
             if (defined($docMarker)) {
                 if ($str ne $docMarker) {
+                    $var .= "\n";
                     next;
                 } else {
                     $var =~ s/$docMarker$//;
@@ -88,7 +89,7 @@ sub readFile {
             if (my ($newSection) = ($var =~ /^\[([^\[\]]+)\]$/)) {
                 $section = $newSection;
                 $data->{$section} = {};
-            } elsif (my ($key, $val) = ($var =~ /([^=]+)\=(.+)/)) {
+            } elsif (my ($key, $val) = ($var =~ /^([^=]+)\=(.+)$/s)) {
                 next unless $section;
                 $key =~ s/^\s+//;
                 $key =~ s/\s+$//;

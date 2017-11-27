@@ -36,9 +36,7 @@ sub command {
         return 'Error: ' . $error;
     }
 
-    return {
-        text => 'Job created'
-    };
+    return 'Job created';
 }
 
 1;
