@@ -8,26 +8,22 @@ use JSON::XS;
 
 use base 'AnyJob::Creator::Builder::Slack::Base';
 
-sub build {
+sub command {
     my $self = shift;
     my $text = shift;
     my $user = shift;
     my $responseUrl = shift;
-    my $trigger = shift;
+    my $triggerId = shift;
 
     my ($job, $errors);
     ($job, undef, $errors) = $self->parent->parseJobLine($text);
     unless (defined($job)) {
-        return {
-            text => 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error')
-        };
+        return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
 
     $errors = [ grep {$_->{type} eq 'error'} @$errors ];
     if (scalar(@$errors) > 0) {
-        return {
-            text => 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors)
-        };
+        return 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors);
     }
 
     my $id = $self->nextBuildId();
@@ -36,51 +32,33 @@ sub build {
             type        => 'slack_dialog',
             user        => $user,
             job         => $job,
-            trigger     => $trigger,
+            trigger     => $triggerId,
             responseUrl => $responseUrl
         }));
 
     $self->debug('Create slack app dialog build \'' . $id . '\' by user \'' . $user . '\' with response url \'' .
-        $responseUrl . '\', trigger \'' . $trigger . '\' and job: ' . encode_json($job));
+        $responseUrl . '\', trigger \'' . $triggerId . '\' and job: ' . encode_json($job));
 
     my $dialog = $self->getDialog($job, $id);
-    unless (defined($dialog)) {
+    unless (defined($self->sendDialog($triggerId, $dialog))) {
         $self->cleanBuild($id);
-        return {
-            text => 'Error: unknown error'
-        };
-    }
-
-    unless (defined($self->sendDialog($trigger, $dialog))) {
-        $self->cleanBuild($id);
-        return {
-            text => 'Error: failed to open dialog'
-        };
+        return 'Error: failed to open dialog';
     }
 
     return undef;
 }
 
-sub update {
+sub dialogSubmission {
     my $self = shift;
     my $payload = shift;
 
-    if ($payload->{type} ne 'dialog_submission') {
-        return 'Error: not dialog submission type';
-    }
-
-    my $id;
+    my ($id, $build);
     (undef, $id) = split(/:/, $payload->{callback_id});
-    unless (defined($id)) {
+    unless (defined($id) and defined($build = $self->getBuild($id))) {
         return 'Error: no build';
     }
 
-    my $build = $self->getBuild($id);
-    unless (defined($build)) {
-        return 'Error: no build';
-    }
-
-    my $errors = $self->applyDialogSubmission($build->{job}, $payload->{submission});
+    my $errors = $self->applySubmission($build->{job}, $payload->{submission});
     if (scalar(@$errors) > 0) {
         return {
             errors => $errors
@@ -88,12 +66,24 @@ sub update {
     }
 
     $self->cleanBuild($id);
-    $self->finish($build);
+
+    $self->debug('Create jobs using slack app dialog build: ' . encode_json($build));
+
+    my $error = $self->parent->createJobs([ $build->{job} ], {
+            observer     => 'su' . $build->{user},
+            response_url => $build->{responseUrl}
+        });
+    if (defined($error)) {
+        $self->debug('Creating failed: ' . $error);
+        $self->sendResponse({ text => 'Error: ' . $error }, $build->{responseUrl});
+    } else {
+        $self->sendResponse({ text => 'Job created' }, $build->{responseUrl});
+    }
 
     return undef;
 }
 
-sub applyDialogSubmission {
+sub applySubmission {
     my $self = shift;
     my $job = shift;
     my $submission = shift;
@@ -101,7 +91,7 @@ sub applyDialogSubmission {
     my $params = $self->config->getJobParams($job->{type});
     my @errors;
     foreach my $param (@$params) {
-        if (exists($submission->{$param->{name}})) {
+        if (defined($submission->{$param->{name}})) {
             unless ($self->parent->checkJobParamType($param->{type}, $submission->{$param->{name}}, $param->{data})) {
                 push @errors, {
                         name  => $param->{name},
@@ -123,24 +113,6 @@ sub applyDialogSubmission {
     }
 
     return \@errors;
-}
-
-sub finish {
-    my $self = shift;
-    my $build = shift;
-
-    $self->debug('Create jobs using slack app dialog build: ' . encode_json($build));
-
-    my $error = $self->parent->createJobs([ $build->{job} ], {
-            observer     => 'su' . $build->{user},
-            response_url => $build->{responseUrl}
-        });
-    if (defined($error)) {
-        $self->debug('Creating failed: ' . $error);
-        $self->sendResponse({ text => 'Error: ' . $error }, $build->{responseUrl});
-    } else {
-        $self->sendResponse({ text => 'Job created' }, $build->{responseUrl});
-    }
 }
 
 sub getDialog {

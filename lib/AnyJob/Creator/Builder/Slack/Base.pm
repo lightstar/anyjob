@@ -54,8 +54,8 @@ sub sendResponse {
     my $url = shift;
 
     my $request = POST($url,
-        Content_Type  => 'application/json',
-        Content       => encode_json($response)
+        Content_Type => 'application/json',
+        Content      => encode_json($response)
     );
 
     my $result = $self->ua->request($request);
@@ -71,6 +71,11 @@ sub sendApiCommand {
     my $self = shift;
     my $command = shift;
     my $data = shift;
+
+    unless (defined($command) and defined($data)) {
+        require Carp;
+        Carp::confess('No slack api command or data');
+    }
 
     my $slack = $self->config->section('slack') || {};
     unless (defined($slack->{api}) and defined($slack->{api_token})) {
@@ -112,6 +117,33 @@ sub sendDialog {
             trigger_id => $trigger,
             dialog     => $dialog
         });
+}
+
+sub command {
+    my $self = shift;
+    my $text = shift;
+    my $user = shift;
+    my $responseUrl = shift;
+    my $triggerId = shift;
+
+    require Carp;
+    Carp::confess('Need to be implemented in descendant');
+}
+
+sub commandHelp {
+    my $self = shift;
+
+    return {
+        text => $self->getBuilderConfig()->{help} || 'No help for this command'
+    };
+}
+
+sub dialogSubmission {
+    my $self = shift;
+    my $payload = shift;
+
+    require Carp;
+    Carp::confess('Need to be implemented in descendant');
 }
 
 1;

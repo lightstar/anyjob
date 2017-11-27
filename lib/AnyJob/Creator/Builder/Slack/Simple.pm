@@ -8,7 +8,7 @@ use JSON::XS;
 
 use base 'AnyJob::Creator::Builder::Slack::Base';
 
-sub build {
+sub command {
     my $self = shift;
     my $text = shift;
     my $user = shift;
@@ -17,16 +17,12 @@ sub build {
     my ($job, $errors);
     ($job, undef, $errors) = $self->parent->parseJobLine($text);
     unless (defined($job)) {
-        return {
-            text => 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error')
-        };
+        return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
 
     $errors = [ grep {$_->{type} eq 'error'} @$errors ];
     if (scalar(@$errors) > 0) {
-        return {
-            text => 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors)
-        };
+        return 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors);
     }
 
     $self->debug('Create jobs using slack app simple build by user \'' . $user . '\': ' . encode_json($job));
@@ -37,14 +33,12 @@ sub build {
         });
     if (defined($error)) {
         $self->debug('Creating failed: ' . $error);
-        return {
-            text => 'Error: ' . $error
-        };
-    } else {
-        return {
-            text => 'Job created'
-        };
+        return 'Error: ' . $error;
     }
+
+    return {
+        text => 'Job created'
+    };
 }
 
 1;

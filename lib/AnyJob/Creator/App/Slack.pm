@@ -40,14 +40,25 @@ post '/' => sub {
             send_as html => 'Error: unknown builder';
         }
 
-        my $response = $builder->update($payload);
-        if (defined($response)) {
-            if (ref($response) eq '') {
-                status 400;
-                send_as html => $response;
-            } else {
-                return $response;
+        my $user = defined($payload->{user}) ? $payload->{user}->{id} : undef;
+        unless ($builder->isUserAllowed($user)) {
+            status 401;
+            send_as html => 'Error: access denied';
+        }
+
+        if ($payload->{type} eq 'dialog_submission') {
+            my $response = $builder->dialogSubmission($payload);
+            if (defined($response)) {
+                if (ref($response) eq '') {
+                    status 400;
+                    send_as html => $response;
+                } else {
+                    return $response;
+                }
             }
+        } else {
+            status 400;
+            send_as html => 'Error: unsupported payload type';
         }
 
         send_as html => '';
@@ -64,22 +75,29 @@ post '/cmd' => sub {
 
         my $builder = $slack->getBuilderByCommand(substr($params->get('command'), 1));
         unless (defined($builder)) {
-            return {
-                text => 'Error: unknown command'
-            };
+            status 400;
+            send_as html => 'Error: unknown command';
         }
 
         my $user = $params->get('user_id');
         unless ($builder->isUserAllowed($user)) {
-            return {
-                text => 'Error: access denied'
-            };
+            status 401;
+            send_as html => 'Error: access denied';
         }
 
-        my $response = $builder->build($params->get('text'), $user, $params->get('response_url'),
-            $params->get('trigger_id'));
+        my $text = $params->get('text');
+        if ($text eq 'help') {
+            return $builder->commandHelp();
+        }
+
+        my $response = $builder->command($text, $user, $params->get('response_url'), $params->get('trigger_id'));
         if (defined($response)) {
-            return $response;
+            if (ref($response) eq '') {
+                status 400;
+                send_as html => $response;
+            } else {
+                return $response;
+            }
         }
 
         send_as html => '';
