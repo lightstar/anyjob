@@ -7,6 +7,7 @@ use utf8;
 use JSON::XS;
 
 use AnyJob::DateTime qw(formatDateTime);
+use AnyJob::EventFilter;
 
 use base 'AnyJob::Controller::Base';
 
@@ -18,6 +19,9 @@ sub new {
         require Carp;
         Carp::confess("No name provided");
     }
+
+    my $config = $self->observerConfig() || {};
+    $self->{eventFilter} = AnyJob::EventFilter->new(filter => $config->{event_filter});
 
     return $self;
 }
@@ -69,6 +73,10 @@ sub preprocessEvent {
     my $event = shift;
 
     if ($self->checkEventProp($event, "silent")) {
+        return 0;
+    }
+
+    unless ($self->eventFilter($event)) {
         return 0;
     }
 
@@ -154,6 +162,18 @@ sub cleanLog {
 
     $self->redis->zrem("anyjob:observer:" . $self->name . ":log", $id);
     $self->redis->del("anyjob:observer:" . $self->name . ":log:" . $id);
+}
+
+sub eventFilter {
+    my $self = shift;
+    my $event = shift;
+    return $self->{eventFilter}->filter($event);
+}
+
+sub filterEvents {
+    my $self = shift;
+    my $events = shift;
+    return [ grep {$self->{eventFilter}->filter($_)} @$events ];
 }
 
 1;

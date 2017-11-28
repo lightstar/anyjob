@@ -36,7 +36,6 @@ sub new {
 sub processEvent {
     my $self = shift;
     my $event = shift;
-    $self->SUPER::processEvent($event);
 
     my $config = $self->observerConfig();
 
@@ -48,6 +47,8 @@ sub processEvent {
         require Carp;
         Carp::confess("No destination URL");
     }
+
+    $self->logEvent($event);
 
     my $result = $self->{ua}->request(POST($config->{url}, [ payload => $self->getPayload($config, $event) ]));
     unless ($result->is_success) {

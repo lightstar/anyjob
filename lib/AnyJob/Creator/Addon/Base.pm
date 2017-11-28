@@ -6,6 +6,8 @@ use utf8;
 
 use JavaScript::Duktape;
 
+use AnyJob::EventFilter;
+
 sub new {
     my $class = shift;
     my %args = @_;
@@ -21,12 +23,8 @@ sub new {
         Carp::confess('No addon type provided');
     }
 
-    $self->{js} = JavaScript::Duktape->new();
-
     my $config = $self->config->section($self->{type}) || {};
-    $self->{js}->eval('function eventFilter() { return ' .
-        (defined($config->{event_filter}) ? $config->{event_filter} : '1') .
-        '; }');
+    $self->{eventFilter} = AnyJob::EventFilter->new(filter => $config->{event_filter});
 
     return $self;
 }
@@ -51,15 +49,13 @@ sub error {
 sub eventFilter {
     my $self = shift;
     my $event = shift;
-
-    $self->{js}->set('event', $event);
-    return $self->{js}->eval('eventFilter()') ? 1 : 0;
+    return $self->{eventFilter}->filter($event);
 }
 
 sub filterEvents {
     my $self = shift;
     my $events = shift;
-    return [ grep {$self->eventFilter($_)} @$events ];
+    return [ grep {$self->{eventFilter}->filter($_)} @$events ];
 }
 
 1;

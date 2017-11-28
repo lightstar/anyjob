@@ -31,7 +31,6 @@ sub new {
 sub processEvent {
     my $self = shift;
     my $event = shift;
-    $self->SUPER::processEvent($event);
 
     my $config = $self->observerConfig();
 
@@ -43,6 +42,8 @@ sub processEvent {
         require Carp;
         Carp::confess("No origin or destination address");
     }
+
+    $self->logEvent($event);
 
     my $from = $config->{from};
     my $fromTitle = encode_base64($self->getFromTitle($config), '');
