@@ -11,6 +11,14 @@ use AnyJob::Utils qw(getFileContent);
 
 use base 'AnyJob::Creator::Addon::Base';
 
+sub new {
+    my $class = shift;
+    my %args = @_;
+    $args{type} = 'web';
+    my $self = $class->SUPER::new(%args);
+    return $self;
+}
+
 sub checkAuth {
     my $self = shift;
     my $user = shift;

@@ -17,6 +17,7 @@ use base 'AnyJob::Creator::Addon::Base';
 sub new {
     my $class = shift;
     my %args = @_;
+    $args{type} = 'slack';
     my $self = $class->SUPER::new(%args);
 
     $self->{tt} = Template->new({
@@ -108,21 +109,28 @@ sub generateBuildersByCommand {
     $self->{buildersByCommand} = \%builders;
 }
 
-sub sendPrivateEvents {
+sub observePrivateEvents {
     my $self = shift;
 
     my $slack = $self->config->section('slack') || {};
     my $delay = $slack->{observer_delay} || 1;
     $self->{observer_timer} = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
-            foreach my $event (@{$self->{parent}->receivePrivateEvents('slack')}) {
-                if (defined(my $url = $event->{props}->{response_url})) {
-                    my $result = $self->{ua}->request(POST($url, [ payload => $self->getEventPayload($event) ]));
-                    unless ($result->is_success) {
-                        $self->error('Error sending event to ' . $url . ', response: ' . $result->decoded_content);
-                    }
-                }
-            }
+            $self->sendPrivateEvents($self->{parent}->receivePrivateEvents('slack'));
         });
+}
+
+sub sendPrivateEvents {
+    my $self = shift;
+    my $events = shift;
+
+    foreach my $event (@$events) {
+        if ($self->eventFilter($event) and defined(my $url = $event->{props}->{response_url})) {
+            my $result = $self->{ua}->request(POST($url, [ payload => $self->getEventPayload($event) ]));
+            unless ($result->is_success) {
+                $self->error('Error sending event to ' . $url . ', response: ' . $result->decoded_content);
+            }
+        }
+    }
 }
 
 sub getEventPayload {

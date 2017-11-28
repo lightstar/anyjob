@@ -4,8 +4,6 @@ use strict;
 use warnings;
 use utf8;
 
-use AnyEvent;
-
 use Dancer2 qw(!config !debug !error);
 use Dancer2::Plugin::AnyJob;
 
@@ -101,6 +99,6 @@ post '/cmd' => sub {
         send_as html => '';
     };
 
-creator->addon('slack')->sendPrivateEvents();
+creator->addon('slack')->observePrivateEvents();
 
 1;

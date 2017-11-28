@@ -11,6 +11,7 @@ RUN cpanm Dancer2::Plugin::Auth::HTTP::Basic::DWIW
 RUN cpanm Dancer2::Plugin::WebSocket
 RUN cpanm Twiggy
 RUN cpanm CGI::Deurl::XS
+RUN cpanm JavaScript::Duktape
 
 RUN mkdir -p /opt/anyjob
 COPY . /opt/anyjob/

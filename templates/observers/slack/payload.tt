@@ -1,13 +1,13 @@
 {
     "channel": "[% config.channel || '' %]",
     "attachments": [ {
-        "title": "[% IF event == 'create' %]Задание создано
-            [% ELSIF event == 'redirect' %]Задание перенаправлено
-            [% ELSIF event == 'progress' %]Задание выполняется
-            [% ELSIF event == 'finish' %]Задание выполнено
-            [% ELSIF event == 'createJobSet' %]Набор заданий создан
-            [% ELSIF event == 'progressJobSet' %]Набор заданий выполняется
-            [% ELSIF event == 'finishJobSet' %]Набор заданий выполнен
+        "title": "[% IF event == 'create' %]Job created
+            [% ELSIF event == 'redirect' %]Job redirected
+            [% ELSIF event == 'progress' %]Job is running
+            [% ELSIF event == 'finish' %]Job finished
+            [% ELSIF event == 'createJobSet' %]Job Set created
+            [% ELSIF event == 'progressJobSet' %]Job Set is running
+            [% ELSIF event == 'finishJobSet' %]Job Set finished
             [% END %]",
         "color": "[% event == 'finish' ? (success ? 'good' : 'danger') : (event == 'finishJobSet' ? 'good' : '') %]",
         "fields": [
@@ -42,28 +42,28 @@
             [% IF event == 'progress' || event == 'progressJobSet' %]
                 [% IF progress.state %]
                     {
-                        "title": "Состояние",
+                        "title": "State",
                         "value": "[% progress.state %]",
                         "short": true
                     },
                 [% END %]
                 [% IF progress.progress %]
                     {
-                        "title": "Прогресс",
+                        "title": "Progress",
                         "value": "[% progress.progress %]",
                         "short": true
                     },
                 [% END %]
                 [% IF progress.log && progress.log.message %]
                     {
-                        "title": "Соообщение",
+                        "title": "Message",
                         "value": "[% progress.log.message %]",
                         "short": true
                     },
                 [% END %]
             [% ELSIF event == 'finish' %]
                     {
-                        "title": "Результат",
+                        "title": "Result",
                         "value": "[% message %]",
                         "short": true
                     },

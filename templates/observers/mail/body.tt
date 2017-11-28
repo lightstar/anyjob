@@ -1,23 +1,23 @@
 <html>
 <head>
-    <title>Задание AnyJob</title>
+    <title>AnyJob</title>
 </head>
 <body>
 
 <h3>
-    [% IF event == 'create' %]Задание создано
-    [% ELSIF event == 'redirect' %]Задание перенаправлено
-    [% ELSIF event == 'progress' %]Задание выполняется
-    [% ELSIF event == 'finish' %]Задание выполнено
-    [% ELSIF event == 'createJobSet' %]Набор заданий создан
-    [% ELSIF event == 'progressJobSet' %]Набор заданий выполняется
-    [% ELSIF event == 'finishJobSet' %]Набор заданий выполнен
+    [% IF event == 'create' %]Job created
+    [% ELSIF event == 'redirect' %]Job redirected
+    [% ELSIF event == 'progress' %]Job is running
+    [% ELSIF event == 'finish' %]Job finished
+    [% ELSIF event == 'createJobSet' %]Job Set created
+    [% ELSIF event == 'progressJobSet' %]Job Set is running
+    [% ELSIF event == 'finishJobSet' %]Job Set finished
     [% END %]
 </h3>
 
 <div>
     [% IF jobset %]
-        ID набора: <b>[% jobset %]</b><br>
+        Job Set ID: <b>[% jobset %]</b><br>
     [% END %]
 
     [% IF id %]
@@ -25,16 +25,16 @@
     [% END %]
 
     [% IF time %]
-        Время события: <b>[% time %]</b><br>
+        Event time: <b>[% time %]</b><br>
     [% END %]
 
     <br>
 
     [% IF job && node %]
-        Задание: <b>[% job.label %]</b><br>
-        Хост: <b>[% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %]</b><br>
+        Job: <b>[% job.label %]</b><br>
+        Node: <b>[% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %]</b><br>
         [% IF params && params.size %]
-            Параметры:<br>
+            Parameters:<br>
             [% FOR param IN params.pairs %]
                 &nbsp;&nbsp;<b>[% param.key %]</b>: [% param.value %]<br>
             [% END %]
@@ -44,10 +44,10 @@
 
     [% IF jobs && jobs.size %]
         [% FOREACH job IN jobs %]
-            Задание: <b>[% job.type %]</b><br>
-            Хост: <b>[% job.node %]</b><br>
+            Job: <b>[% job.type %]</b><br>
+            Node: <b>[% job.node %]</b><br>
             [% IF job.params && job.params.size %]
-                Параметры:<br>
+                Parameters:<br>
                 [% FOREACH param IN job.params.pairs %]
                     &nbsp;&nbsp;<b>[% param.key %]</b>: [% param.value %]<br>
                 [% END %]
@@ -58,14 +58,14 @@
 
     [% IF event == 'progress' || event == 'progressJobSet' %]
         [% IF progress.state %]
-            Состояние: <b>[% progress.state %]</b><br>
+            State: <b>[% progress.state %]</b><br>
         [% END %]
         [% IF progress.progress %]
-            Прогресс: <b>[% progress.progress %]</b><br>
+            Progress: <b>[% progress.progress %]</b><br>
         [% END %]
     [% ELSIF event == 'finish' %]
         [% IF log && log.list.size %]
-            Сообщения:<br>
+            Messages:<br>
             [% FOREACH row IN log.list %]
                 [% IF row.time && row.message %]
                     &nbsp;&nbsp;[[% row.time %]] [% row.message %]<br>
@@ -73,7 +73,7 @@
             [% END %]
             <br>
         [% END %]
-        Результат: <b><span style="color:[% success ? 'green' : 'red' %]">[% message %]</span></b>
+        Result: <b><span style="color:[% success ? 'green' : 'red' %]">[% message %]</span></b>
     [% END %]
 </div>
 

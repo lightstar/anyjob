@@ -93,8 +93,10 @@ websocket_on_open sub {
         my $config = config->section('web') || {};
         my $delay = $config->{observer_delay} || 1;
         my $timer = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
-                my $events = creator->receivePrivateEvents('u' . $user, 'stripInternalProps');
-                if (scalar(@$events)) {
+                my $events = creator->addon('web')->filterEvents(
+                    creator->receivePrivateEvents('u' . $user, 'stripInternalProps')
+                );
+                if (scalar(@$events) > 0) {
                     $conn->send($events);
                 }
             });
