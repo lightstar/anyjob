@@ -101,12 +101,6 @@ post '/cmd' => sub {
         send_as html => '';
     };
 
-{
-    my $config = config->section('slack') || {};
-    my $delay = $config->{observer_delay} || 1;
-    AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
-            creator->addon('slack')->sendPrivateEvents(creator->receivePrivateEvents('slack'));
-        });
-}
+creator->addon('slack')->sendPrivateEvents();
 
 1;

@@ -1,73 +1,19 @@
 {
-    "channel": "[% config.channel || '' %]",
     "attachments": [ {
-        "title": "[% IF event == 'create' %]Задание создано
-            [% ELSIF event == 'redirect' %]Задание перенаправлено
-            [% ELSIF event == 'progress' %]Задание выполняется
-            [% ELSIF event == 'finish' %]Задание выполнено
-            [% ELSIF event == 'createJobSet' %]Набор заданий создан
-            [% ELSIF event == 'progressJobSet' %]Набор заданий выполняется
-            [% ELSIF event == 'finishJobSet' %]Набор заданий выполнен
-            [% END %]",
-        "color": "[% event == 'finish' ? (success ? 'good' : 'danger') : (event == 'finishJobSet' ? 'good' : '') %]",
-        "fields": [
+        "title": "
             [% IF job && node %]
-                {
-                    "title": "[% job.label %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])",
-                    "value": "
-                        [% IF params && params.size %]
-                            [% FOR param IN params.pairs %]
-                                [% '\n- ' %][% param.key %]: [% param.value %]
-                            [% END %]
-                        [% END %]",
-                    "short": true
-                },
+                [% job.label %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])
+            [% ELSE %]
+                Job Set
             [% END %]
-
-            [% IF jobs && jobs.size %]
-                [% FOREACH job IN jobs %]
-                    {
-                        "title": "[% job.type %] ([% job.node %])",
-                        "value": "
-                            [% IF job.params && job.params.size %]
-                                [% FOREACH param IN job.params.pairs %]
-                                    [% '\n- ' %][% param.key %]: [% param.value %]
-                                [% END %]
-                            [% END %]",
-                        "short": true
-                    },
-                [% END %]
-            [% END %]
-
+        ",
+        "text": "
             [% IF event == 'progress' || event == 'progressJobSet' %]
-                [% IF progress.state %]
-                    {
-                        "title": "Состояние",
-                        "value": "[% progress.state %]",
-                        "short": true
-                    },
-                [% END %]
-                [% IF progress.progress %]
-                    {
-                        "title": "Прогресс",
-                        "value": "[% progress.progress %]",
-                        "short": true
-                    },
-                [% END %]
-                [% IF progress.log && progress.log.message %]
-                    {
-                        "title": "Соообщение",
-                        "value": "[% progress.log.message %]",
-                        "short": true
-                    },
-                [% END %]
+                [% progress.state || progress.progress || progress.log.message %]
             [% ELSIF event == 'finish' %]
-                {
-                    "title": "Результат",
-                    "value": "[% message %]",
-                    "short": true
-                },
-            [% END %]
-        ]
+                [% message %]
+            [%  END %]
+        ",
+        "color": "[% event == 'finish' ? (success ? 'good' : 'danger') : (event == 'finishJobSet' ? 'good' : '') %]",
     } ]
 }

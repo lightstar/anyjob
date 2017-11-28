@@ -287,6 +287,7 @@ sub createJobSet {
 sub receivePrivateEvents {
     my $self = shift;
     my $name = shift;
+    my $stripInternalProps = shift;
 
     unless (defined($name) and $name ne '') {
         $self->error('Called receivePrivateEvents with empty name');
@@ -304,7 +305,9 @@ sub receivePrivateEvents {
         if ($@) {
             $self->error('Can\'t decode event: ' . $event);
         } else {
-            $self->stripInternalPropsFromEvent($event);
+            if ($stripInternalProps) {
+                $self->stripInternalPropsFromEvent($event);
+            }
             push @events, $event;
         }
 

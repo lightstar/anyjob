@@ -8,6 +8,7 @@ use File::Spec;
 use LWP::UserAgent;
 use HTTP::Request::Common qw(POST);
 use Template;
+use AnyEvent;
 
 use AnyJob::Utils qw(moduleName requireModule);
 
@@ -109,27 +110,33 @@ sub generateBuildersByCommand {
 
 sub sendPrivateEvents {
     my $self = shift;
-    my $events = shift;
 
-    foreach my $event (@$events) {
-        if (defined(my $url = $event->{props}->{response_url})) {
-            my $payload = $self->getEventPayload($event);
-            my $result = $self->{ua}->request(POST($url, [ payload => $payload ]));
-            unless ($result->is_success) {
-                error('Error sending event to ' . $url . ', response: ' . $result->decoded_content);
+    my $slack = $self->config->section('slack') || {};
+    my $delay = $slack->{observer_delay} || 1;
+    $self->{observer_timer} = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
+            foreach my $event (@{$self->{parent}->receivePrivateEvents('slack')}) {
+                if (defined(my $url = $event->{props}->{response_url})) {
+                    my $result = $self->{ua}->request(POST($url, [ payload => $self->getEventPayload($event) ]));
+                    unless ($result->is_success) {
+                        $self->error('Error sending event to ' . $url . ', response: ' . $result->decoded_content);
+                    }
+                }
             }
-        }
-    }
+        });
 }
 
 sub getEventPayload {
     my $self = shift;
     my $event = shift;
 
+    if (exists($event->{type})) {
+        $event->{job} = $self->config->getJobConfig($event->{type});
+    }
+
     my $slack = $self->config->section('slack') || {};
     my $payloadTemplate = $slack->{event_payload_template} || 'payload';
 
-    my $payload = "";
+    my $payload = '';
     unless ($self->{tt}->process($payloadTemplate . '.tt', $event, \$payload)) {
         require Carp;
         Carp::confess('Can\'t process template \'' . $payloadTemplate . '\'.tt\': ' . $self->{tt}->error());
