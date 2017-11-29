@@ -9,7 +9,7 @@ use AnyJob::Creator;
 
 use Dancer2::Plugin;
 
-our $VERSION = "0.1";
+our $VERSION = '0.1';
 
 my $creator;
 sub creator {

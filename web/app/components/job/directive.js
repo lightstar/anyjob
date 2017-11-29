@@ -27,9 +27,9 @@ app.directive('job', function () {
                 var isAllValid = true;
 
                 angular.forEach(protoParams, function (param) {
-                    if (param.type !== "flag" && param.required) {
+                    if (param.type !== 'flag' && param.required) {
                         var value = jobParams[param.name];
-                        var isValidParam = value !== undefined && value !== null && value !== "";
+                        var isValidParam = value !== undefined && value !== null && value !== '';
                         if (!(validParams[param.name] = isValidParam)) {
                             isAllValid = false;
                         }
@@ -52,7 +52,7 @@ app.directive('job', function () {
             var setDefaultParams = function (protoParams, jobParams) {
                 angular.forEach(protoParams, function (param) {
                     if (param.default !== undefined) {
-                        if (param.type === "flag") {
+                        if (param.type === 'flag') {
                             jobParams[param.name] = !!param.default;
                         } else {
                             jobParams[param.name] = param.default;

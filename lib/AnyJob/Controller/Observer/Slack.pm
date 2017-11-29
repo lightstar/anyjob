@@ -21,7 +21,7 @@ sub new {
 
     $self->{tt} = Template->new({
         INCLUDE_PATH => File::Spec->catdir($self->config->templates_path, 'observers/slack'),
-        ENCODING     => "UTF-8",
+        ENCODING     => 'UTF-8',
         PRE_CHOMP    => 1,
         POST_CHOMP   => 1,
         TRIM         => 1
@@ -45,14 +45,14 @@ sub processEvent {
 
     unless (defined($config->{url})) {
         require Carp;
-        Carp::confess("No destination URL");
+        Carp::confess('No destination URL');
     }
 
     $self->logEvent($event);
 
     my $result = $self->{ua}->request(POST($config->{url}, [ payload => $self->getPayload($config, $event) ]));
     unless ($result->is_success) {
-        $self->error("Error sending event to " . $config->{url} . ", response: " . $result->decoded_content);
+        $self->error('Error sending event to ' . $config->{url} . ', response: ' . $result->decoded_content);
     }
 }
 
@@ -65,7 +65,7 @@ sub preprocessEvent {
         return 0;
     }
 
-    if ($self->checkEventProp($event, "noslack")) {
+    if ($self->checkEventProp($event, 'noslack')) {
         return 0;
     }
 
@@ -77,12 +77,12 @@ sub getPayload {
     my $config = shift;
     my $event = shift;
 
-    my $payload = "";
+    my $payload = '';
 
     my $payloadTemplate = $config->{payload_template} || 'payload';
     unless ($self->{tt}->process($payloadTemplate . '.tt', $event, \$payload)) {
         require Carp;
-        Carp::confess("Can't process template '" . $payloadTemplate . "': " . $self->{tt}->error());
+        Carp::confess('Can\'t process template \'' . $payloadTemplate . '\': ' . $self->{tt}->error());
     }
 
     utf8::encode($payload);

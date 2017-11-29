@@ -17,6 +17,6 @@ RUN mkdir -p /opt/anyjob
 COPY . /opt/anyjob/
 
 ENV ANYJOB_LIB /opt/anyjob/lib
-ENV ANYJOB_CONF /opt/anyjob/etc/docker/anyjob.cfg
+ENV ANYJOB_CONF /opt/anyjob/etc/example/anyjob.cfg
 
 ENTRYPOINT ["perl5.26.0"]

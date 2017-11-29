@@ -17,7 +17,7 @@ sub new {
 
     unless ($self->{name}) {
         require Carp;
-        Carp::confess("No name provided");
+        Carp::confess('No name provided');
     }
 
     my $config = $self->observerConfig() || {};
@@ -42,12 +42,12 @@ sub process {
     my $limit = $self->config->limit || 10;
     my $count = 0;
 
-    while (my $event = $self->redis->lpop("anyjob:observerq:" . $self->name)) {
+    while (my $event = $self->redis->lpop('anyjob:observerq:' . $self->name)) {
         eval {
             $event = decode_json($event);
         };
         if ($@) {
-            $self->error("Can't decode event: " . $event);
+            $self->error('Can\'t decode event: ' . $event);
         } else {
             $self->processEvent($event);
         }
@@ -64,7 +64,7 @@ sub processEvent {
     my $event = shift;
 
     require Carp;
-    Carp::confess("Need to be implemented in descendant");
+    Carp::confess('Need to be implemented in descendant');
 }
 
 sub preprocessEvent {
@@ -72,7 +72,7 @@ sub preprocessEvent {
     my $config = shift;
     my $event = shift;
 
-    if ($self->checkEventProp($event, "silent")) {
+    if ($self->checkEventProp($event, 'silent')) {
         return 0;
     }
 
@@ -100,8 +100,8 @@ sub saveLog {
         return;
     }
 
-    $self->redis->zadd("anyjob:observer:" . $self->name . ":log", time(), $event->{id});
-    $self->redis->rpush("anyjob:observer:" . $self->name . ":log:" . $event->{id},
+    $self->redis->zadd('anyjob:observer:' . $self->name . ':log', time(), $event->{id});
+    $self->redis->rpush('anyjob:observer:' . $self->name . ':log:' . $event->{id},
         encode_json($event->{progress}->{log}));
 }
 
@@ -113,18 +113,18 @@ sub collectLogs {
         return [];
     }
 
-    my $time = $self->redis->zscore("anyjob:observer:" . $self->name . ":log", $event->{id});
+    my $time = $self->redis->zscore('anyjob:observer:' . $self->name . ':log', $event->{id});
     unless ($time) {
         return [];
     }
 
-    my @logs = $self->redis->lrange("anyjob:observer:" . $self->name . ":log:" . $event->{id}, "0", "-1");
+    my @logs = $self->redis->lrange('anyjob:observer:' . $self->name . ':log:' . $event->{id}, '0', '-1');
     foreach my $log (@logs) {
         eval {
             $log = decode_json($log);
         };
         if ($@) {
-            $self->error("Can't decode log: " . $log);
+            $self->error('Can\'t decode log: ' . $log);
             return [];
         }
 
@@ -144,8 +144,8 @@ sub cleanLogs {
     my $limit = $self->config->limit || 10;
     my $cleanBefore = $self->config->clean_before || 3600;
 
-    my %ids = $self->redis->zrangebyscore("anyjob:observer:" . $self->name . ":log", "-inf",
-        time() - $cleanBefore, "WITHSCORES", "LIMIT", 0, $limit);
+    my %ids = $self->redis->zrangebyscore('anyjob:observer:' . $self->name . ':log', '-inf',
+        time() - $cleanBefore, 'WITHSCORES', 'LIMIT', '0', $limit);
 
     foreach my $id (keys(%ids)) {
         $self->cleanLog($id, $ids{$id});
@@ -157,11 +157,11 @@ sub cleanLog {
     my $id = shift;
     my $time = shift;
 
-    $self->debug("Clean logs in observer '" . $self->name . "' for job '" . $id . "' last updated at " .
+    $self->debug('Clean logs in observer \'' . $self->name . '\' for job \'' . $id . '\' last updated at ' .
         formatDateTime($time));
 
-    $self->redis->zrem("anyjob:observer:" . $self->name . ":log", $id);
-    $self->redis->del("anyjob:observer:" . $self->name . ":log:" . $id);
+    $self->redis->zrem('anyjob:observer:' . $self->name . ':log', $id);
+    $self->redis->del('anyjob:observer:' . $self->name . ':log:' . $id);
 }
 
 sub eventFilter {

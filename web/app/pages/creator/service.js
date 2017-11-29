@@ -2,9 +2,9 @@ app.service('creatorService',
     function ($http) {
 
         function create(jobs, callback) {
-            $http.post("create", jobs)
+            $http.post('create', jobs)
                 .then(function (response) {
-                    callback(response.data.success === 1 ? "" : (response.data.error || "неизвестная ошибка"));
+                    callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
                 }, function (response) {
                     callback(serverError(response.data, response.status));
                 });
@@ -22,9 +22,9 @@ app.service('creatorService',
                 return socket;
             }
 
-            var socketProtocol = location.protocol === 'https:' ? "wss:" : "ws:";
-            var socketUrl = socketProtocol + "//" + location.host + "/ws?user=" +
-                encodeURIComponent(auth.user) + "&pass=" + encodeURIComponent(auth.pass);
+            var socketProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            var socketUrl = socketProtocol + '//' + location.host + '/ws?user=' +
+                encodeURIComponent(auth.user) + '&pass=' + encodeURIComponent(auth.pass);
             socket = new ReconnectingWebSocket(socketUrl);
 
             return socket;

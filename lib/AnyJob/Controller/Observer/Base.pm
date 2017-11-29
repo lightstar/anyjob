@@ -24,8 +24,8 @@ sub logEvent {
     my $self = shift;
     my $event = shift;
 
-    $self->debug("Received event '" . $event->{event} . "' on node '" . $event->{node} . "' by observer '" .
-        $self->name . "': " . encode_json($event));
+    $self->debug('Received event \'' . $event->{event} . '\' on node \'' . $event->{node} . '\' by observer \'' .
+        $self->name . '\': ' . encode_json($event));
 }
 
 1;

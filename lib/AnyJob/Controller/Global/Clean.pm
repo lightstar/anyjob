@@ -25,8 +25,8 @@ sub cleanJobSets {
     my $limit = shift;
     my $cleanBefore = shift;
 
-    my %ids = $self->redis->zrangebyscore("anyjob:jobsets", "-inf", time() - $cleanBefore, "WITHSCORES",
-        "LIMIT", 0, $limit);
+    my %ids = $self->redis->zrangebyscore('anyjob:jobsets', '-inf', time() - $cleanBefore, 'WITHSCORES',
+        'LIMIT', '0', $limit);
 
     foreach my $id (keys(%ids)) {
         $self->cleanJobSet($id, $ids{$id});
@@ -38,8 +38,8 @@ sub cleanBuilds {
     my $limit = shift;
     my $cleanBefore = shift;
 
-    my %ids = $self->redis->zrangebyscore("anyjob:builds", "-inf", time() - $cleanBefore, "WITHSCORES",
-        "LIMIT", 0, $limit);
+    my %ids = $self->redis->zrangebyscore('anyjob:builds', '-inf', time() - $cleanBefore, 'WITHSCORES',
+        'LIMIT', '0', $limit);
 
     foreach my $id (keys(%ids)) {
         $self->cleanBuild($id, $ids{$id});

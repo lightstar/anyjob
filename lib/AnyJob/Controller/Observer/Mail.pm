@@ -10,6 +10,8 @@ use MIME::Base64;
 use MIME::Entity;
 use Template;
 
+use AnyJob::Events qw($EVENT_PROGRESS $EVENT_FINISH);
+
 use base 'AnyJob::Controller::Observer::Base';
 
 sub new {
@@ -19,7 +21,7 @@ sub new {
 
     $self->{tt} = Template->new({
         INCLUDE_PATH => File::Spec->catdir($self->config->templates_path, 'observers/mail'),
-        ENCODING     => "UTF-8",
+        ENCODING     => 'UTF-8',
         PRE_CHOMP    => 1,
         POST_CHOMP   => 1,
         TRIM         => 1
@@ -40,7 +42,7 @@ sub processEvent {
 
     unless (defined($config->{from}) and defined($config->{to})) {
         require Carp;
-        Carp::confess("No origin or destination address");
+        Carp::confess('No origin or destination address');
     }
 
     $self->logEvent($event);
@@ -62,9 +64,9 @@ sub processEvent {
         );
 
         my $fh;
-        unless (open($fh, "|/usr/sbin/sendmail -f " . $from . " -t")) {
+        unless (open($fh, '|/usr/sbin/sendmail -f ' . $from . ' -t')) {
             require Carp;
-            Carp::confess("Can't open sendmail");
+            Carp::confess('Can\'t open sendmail');
         }
         $letter->print($fh);
         close($fh);
@@ -80,19 +82,19 @@ sub preprocessEvent {
         return 0;
     }
 
-    if ($self->checkEventProp($event, "nomail")) {
+    if ($self->checkEventProp($event, 'nomail')) {
         return 0;
     }
 
-    if ($event->{event} eq "progress") {
+    if ($event->{event} eq $EVENT_PROGRESS) {
         $self->saveLog($event);
 
-        unless ($config->{mail_progress} or $self->checkEventProp($event, "mail_progress")) {
+        unless ($config->{mail_progress} or $self->checkEventProp($event, 'mail_progress')) {
             return 0;
         }
     }
 
-    if ($event->{event} eq "finish") {
+    if ($event->{event} eq $EVENT_FINISH) {
         $event->{log} = $self->collectLogs($event);
     }
 
@@ -114,12 +116,12 @@ sub getSubject {
     my $config = shift;
     my $event = shift;
 
-    my $subject = "";
+    my $subject = '';
 
     my $subjectTemplate = $config->{subject_template} || 'subject';
     unless ($self->{tt}->process($subjectTemplate . '.tt', $event, \$subject)) {
         require Carp;
-        Carp::confess("Can't process template '" . $subjectTemplate . "': " . $self->{tt}->error());
+        Carp::confess('Can\'t process template \'' . $subjectTemplate . '\': ' . $self->{tt}->error());
     }
 
     utf8::encode($subject);
@@ -131,12 +133,12 @@ sub getBody {
     my $config = shift;
     my $event = shift;
 
-    my $body = "";
+    my $body = '';
 
     my $bodyTemplate = $config->{body_template} || 'body';
     unless ($self->{tt}->process($bodyTemplate . '.tt', $event, \$body)) {
         require Carp;
-        Carp::confess("Can't process template '" . $bodyTemplate . "': " . $self->{tt}->error());
+        Carp::confess('Can\'t process template \'' . $bodyTemplate . '\': ' . $self->{tt}->error());
     }
 
     utf8::encode($body);

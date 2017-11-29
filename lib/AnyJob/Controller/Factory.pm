@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use utf8;
 
-use AnyJob::Utils qw(moduleName);
+use AnyJob::Utils qw(moduleName requireModule);
 
 sub new {
     my $class = shift;
@@ -13,7 +13,7 @@ sub new {
 
     unless ($self->{parent}) {
         require Carp;
-        Carp::confess("No parent provided");
+        Carp::confess('No parent provided');
     }
 
     return $self;
@@ -30,16 +30,16 @@ sub collect {
     $self->{controllers} = [];
 
     if ($self->config->isNodeGlobal()) {
-        $self->pushController("global");
+        $self->pushController('global');
         foreach my $name (@AnyJob::Controller::Global::MODULES) {
-            $self->pushController("global", $name);
+            $self->pushController('global', $name);
         }
     }
 
     if ($self->config->isNodeRegular()) {
-        $self->pushController("node");
+        $self->pushController('node');
         foreach my $name (@AnyJob::Controller::Node::MODULES) {
-            $self->pushController("node", $name);
+            $self->pushController('node', $name);
         }
     }
 
@@ -47,10 +47,10 @@ sub collect {
         my $observerConfig = $self->config->getObserverConfig($observer);
         unless ($observerConfig and $observerConfig->{module}) {
             require Carp;
-            Carp::confess("No config or module for observer '" . $observer . "' provided");
+            Carp::confess('No config or module for observer \'' . $observer . '\' provided');
         }
 
-        $self->pushController("observer", $observerConfig->{module}, name => $observer);
+        $self->pushController('observer', $observerConfig->{module}, name => $observer);
     }
 
     return $self->{controllers};
@@ -61,16 +61,11 @@ sub pushController {
     my $type = shift;
     my $name = shift;
 
-    my $module = "AnyJob::Controller::" . moduleName($type);
+    my $module = 'AnyJob::Controller::' . moduleName($type);
     if (defined($name)) {
-        $module .= "::" . moduleName($name);
+        $module .= '::' . moduleName($name);
     }
-
-    eval "require " . $module;
-    if ($@) {
-        require Carp;
-        Carp::confess("Can't load module '" . $module . "': " . $@);
-    }
+    requireModule($module);
 
     push @{$self->{controllers}}, $module->new(parent => $self->{parent}, @_);
 }

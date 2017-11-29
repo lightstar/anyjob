@@ -13,36 +13,56 @@ our @EXPORT_OK = qw(
     allEventsHash
     isValidEvent
     eventType
+    $EVENT_CREATE
+    $EVENT_FINISH
+    $EVENT_PROGRESS
+    $EVENT_REDIRECT
+    $EVENT_CREATE_JOBSET
+    $EVENT_FINISH_JOBSET
+    $EVENT_PROGRESS_JOBSET
+    $EVENT_TYPE_JOB
+    $EVENT_TYPE_JOBSET
     );
+
+our $EVENT_CREATE = 'create';
+our $EVENT_FINISH = 'finish';
+our $EVENT_PROGRESS = 'progress';
+our $EVENT_REDIRECT = 'redirect';
+our $EVENT_CREATE_JOBSET = 'createJobSet';
+our $EVENT_FINISH_JOBSET = 'finishJobSet';
+our $EVENT_PROGRESS_JOBSET = 'progressJobSet';
+
+our $EVENT_TYPE_JOB = 'job';
+our $EVENT_TYPE_JOBSET = 'jobset';
 
 my @EVENTS = (
     {
-        event => 'create',
-        type  => 'job'
+        event => $EVENT_CREATE,
+        type  => $EVENT_TYPE_JOB
     },
     {
-        event => 'finish',
-        type  => 'job'
+        event => $EVENT_FINISH,
+        type  => $EVENT_TYPE_JOB
     },
     {
-        event => 'progress',
-        type  => 'job'
+        event => $EVENT_PROGRESS,
+        type  => $EVENT_TYPE_JOB
     },
     {
-        event => 'redirect',
-        type  => 'job'
+        event => $EVENT_REDIRECT,
+        type  => $EVENT_TYPE_JOB
     },
     {
-        event => 'createJobSet',
-        type  => 'jobset'
+        event => $EVENT_CREATE_JOBSET,
+        type  => $EVENT_TYPE_JOBSET
     },
     {
-        event => 'finishJobSet',
-        type  => 'jobset'
+        event => $EVENT_FINISH_JOBSET,
+        type  => $EVENT_TYPE_JOBSET
     },
     {
-        event => 'progressJobSet',
-        type  => 'jobset'
+        event => $EVENT_PROGRESS_JOBSET,
+        type  => $EVENT_TYPE_JOBSET
     }
 );
 

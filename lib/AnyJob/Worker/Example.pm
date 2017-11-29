@@ -11,15 +11,15 @@ sub run {
 
     sleep(2);
 
-    $self->sendLog("Step 1");
+    $self->sendLog('Step 1');
 
     sleep(5);
 
-    $self->sendLog("Step 2");
+    $self->sendLog('Step 2');
 
     sleep(10);
 
-    $self->sendSuccess("done");
+    $self->sendSuccess('done');
 }
 
 1;

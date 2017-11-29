@@ -6,6 +6,8 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::Events qw($EVENT_PROGRESS $EVENT_REDIRECT $EVENT_FINISH);
+
 use base 'AnyJob::Controller::Node';
 
 sub process {
@@ -14,12 +16,12 @@ sub process {
     my $limit = $self->config->limit || 10;
     my $count = 0;
 
-    while (my $progress = $self->redis->lpop("anyjob:progressq:" . $self->node)) {
+    while (my $progress = $self->redis->lpop('anyjob:progressq:' . $self->node)) {
         eval {
             $progress = decode_json($progress);
         };
         if ($@) {
-            $self->error("Can't decode progress: " . $progress);
+            $self->error('Can\'t decode progress: ' . $progress);
         } elsif (exists($progress->{success})) {
             $self->finishJob($progress);
         } elsif (exists($progress->{redirect})) {
@@ -44,9 +46,9 @@ sub progressJob {
         return;
     }
 
-    $self->redis->zadd("anyjob:jobs:" . $self->node, time(), $id);
+    $self->redis->zadd('anyjob:jobs:' . $self->node, time(), $id);
 
-    $self->debug("Progress job '" . $id . "': " . encode_json($progress));
+    $self->debug('Progress job \'' . $id . '\': ' . encode_json($progress));
 
     my $jobChanged = 0;
 
@@ -61,16 +63,16 @@ sub progressJob {
     }
 
     if ($jobChanged) {
-        $self->redis->set("anyjob:job:" . $id, encode_json($job));
+        $self->redis->set('anyjob:job:' . $id, encode_json($job));
     }
 
-    if ($job->{jobset}) {
+    if (exists($job->{jobset})) {
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
 
-    $self->sendEvent("progress", {
+    $self->sendEvent($EVENT_PROGRESS, {
             id       => $id,
-            ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
+            (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
             type     => $job->{type},
             params   => $job->{params},
             props    => $job->{props},
@@ -90,21 +92,22 @@ sub redirectJob {
     }
 
     unless ($self->config->isJobSupported($job->{type}, $progress->{redirect})) {
-        $self->error("Job with type '" . $job->{type} . "' is not supported on node '" . $progress->{redirect} . "'");
+        $self->error('Job with type \'' . $job->{type} . '\' is not supported on node \'' .
+            $progress->{redirect} . '\'');
         return;
     }
 
-    $self->redis->zadd("anyjob:jobs:" . $self->node, time(), $id);
+    $self->redis->zadd('anyjob:jobs:' . $self->node, time(), $id);
 
-    $self->debug("Redirect job '" . $id . "': " . encode_json($progress));
+    $self->debug('Redirect job \'' . $id . '\': ' . encode_json($progress));
 
-    if ($job->{jobset}) {
+    if (exists($job->{jobset})) {
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
 
-    $self->sendEvent("redirect", {
+    $self->sendEvent($EVENT_REDIRECT, {
             id       => $id,
-            ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
+            (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
             type     => $job->{type},
             params   => $job->{params},
             props    => $job->{props},
@@ -115,7 +118,7 @@ sub redirectJob {
         id   => $id,
         from => $self->node
     };
-    $self->redis->rpush("anyjob:queue:" . $progress->{redirect}, encode_json($redirect));
+    $self->redis->rpush('anyjob:queue:' . $progress->{redirect}, encode_json($redirect));
 }
 
 sub finishJob {
@@ -129,10 +132,10 @@ sub finishJob {
         return;
     }
 
-    $self->debug("Job '" . $id . "' " . ($progress->{success} ? "successfully finished" : "finished with error") .
-        ": '" . $progress->{message} . "'");
+    $self->debug('Job \'' . $id . '\' ' . ($progress->{success} ? 'successfully finished' : 'finished with error') .
+        ': \'' . $progress->{message} . '\'');
 
-    if (my $time = $self->redis->zscore("anyjob:jobs:" . $self->node, $id)) {
+    if (my $time = $self->redis->zscore('anyjob:jobs:' . $self->node, $id)) {
         $self->cleanJob($id, $time);
     }
 
@@ -140,9 +143,9 @@ sub finishJob {
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
 
-    $self->sendEvent("finish", {
+    $self->sendEvent($EVENT_FINISH, {
             id      => $id,
-            ($job->{jobset} ? (jobset => $job->{jobset}) : ()),
+            (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
             type    => $job->{type},
             params  => $job->{params},
             props   => $job->{props},

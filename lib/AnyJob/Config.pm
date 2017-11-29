@@ -43,7 +43,7 @@ sub node {
         return $self->{node};
     }
 
-    $self->{node} = $ENV{ANYJOB_NODE} || "";
+    $self->{node} = $ENV{ANYJOB_NODE} || '';
     return $self->{node};
 }
 
@@ -173,10 +173,10 @@ sub getObserversForEvent {
     foreach my $observer (@{$self->getAllObservers()}) {
         my $config = $self->getObserverConfig($observer);
 
-        if (not exists($config->{events}) or $config->{events} eq "all" or
+        if (not exists($config->{events}) or $config->{events} eq 'all' or
             grep {$_ eq $event} split(/\s*,\s*/, $config->{events})
         ) {
-            if (not exists($config->{nodes}) or $config->{nodes} eq "all" or
+            if (not exists($config->{nodes}) or $config->{nodes} eq 'all' or
                 grep {$_ eq $self->node} split(/\s*,\s*/, $config->{nodes})
             ) {
                 push @$observers, $observer;
@@ -191,20 +191,20 @@ sub getObserversForEvent {
 sub getJobConfig {
     my $self = shift;
     my $type = shift;
-    return $self->section("job_" . $type);
+    return $self->section('job_' . $type);
 }
 
 sub getNodeConfig {
     my $self = shift;
     my $node = shift;
     $node ||= $self->node;
-    return $self->section("node_" . $node);
+    return $self->section('node_' . $node);
 }
 
 sub getObserverConfig {
     my $self = shift;
     my $name = shift;
-    return $self->section("observer_" . $name);
+    return $self->section('observer_' . $name);
 }
 
 sub getJobNodes {
@@ -236,7 +236,7 @@ sub getJobParams {
         return [];
     }
 
-    my $params = $config->{params} || "[]";
+    my $params = $config->{params} || '[]';
     utf8::encode($params);
 
     eval {
@@ -246,7 +246,7 @@ sub getJobParams {
         return [];
     }
 
-    unless (ref($params) eq "ARRAY") {
+    unless (ref($params) eq 'ARRAY') {
         return [];
     }
 
@@ -261,7 +261,7 @@ sub getJobWorker {
     my $config = $self->getJobConfig($type);
     return undef unless defined($config);
 
-    my $workerSection = $self->section("worker") || {};
+    my $workerSection = $self->section('worker') || {};
 
     return ($config->{work_dir} || $workerSection->{work_dir},
         $config->{exec} || $workerSection->{exec},
@@ -286,8 +286,8 @@ sub isJobSupported {
         $result = 0;
     } elsif (not defined($nodeConfig) or $nodeConfig->{disabled}) {
         $result = 0;
-    } elsif (not exists($jobConfig->{nodes}) or $jobConfig->{nodes} eq "all") {
-        my $except = $jobConfig->{except} || "";
+    } elsif (not exists($jobConfig->{nodes}) or $jobConfig->{nodes} eq 'all') {
+        my $except = $jobConfig->{except} || '';
         $result = (grep {$_ eq $node} split(/\s*,\s*/, $except)) ? 0 : 1;
     } else {
         $result = (grep {$_ eq $node} split(/\s*,\s*/, $jobConfig->{nodes})) ? 0 : 1;
@@ -355,7 +355,7 @@ sub getProps {
         return [];
     }
 
-    unless (ref($props) eq "ARRAY") {
+    unless (ref($props) eq 'ARRAY') {
         return [];
     }
 

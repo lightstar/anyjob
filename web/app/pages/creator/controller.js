@@ -27,18 +27,18 @@ app.controller('creatorController', function ($scope, $http, $compile, creatorSe
         });
 
         creatorService.create(jobs, function (error) {
-            if (error !== "") {
-                $scope.alert("Error: " + error, "danger", true);
+            if (error !== '') {
+                $scope.alert('Error: ' + error, 'danger', true);
             } else {
-                var message = jobs.length > 1 ? "Jobs created" : "Job created";
-                $scope.alert(message, "success");
+                var message = jobs.length > 1 ? 'Jobs created' : 'Job created';
+                $scope.alert(message, 'success');
                 $scope.control.reset();
             }
         });
     };
 
     $scope.$watchGroup(['config.auth','control.event'], function () {
-        if ($scope.config.auth.user === "" || $scope.control.event === null) {
+        if ($scope.config.auth.user === '' || $scope.control.event === null) {
             return;
         }
 

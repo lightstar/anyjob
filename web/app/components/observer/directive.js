@@ -10,7 +10,7 @@ app.directive('observer', function ($timeout) {
             $scope.events = [];
             $scope.isHidden = true;
             $scope.isCollapsed = true;
-            $scope.bigClass = "";
+            $scope.bigClass = '';
 
             var delayedEvents = [];
             var timeoutPromise = null;
@@ -30,7 +30,7 @@ app.directive('observer', function ($timeout) {
                 }, 0);
 
                 if ($scope.events.length >= 5) {
-                    $scope.bigClass = "big";
+                    $scope.bigClass = 'big';
                 }
 
                 timeoutPromise = $timeout(pushEvent, 1000);
@@ -40,19 +40,19 @@ app.directive('observer', function ($timeout) {
                 event.$index = index++;
 
                 switch(event.event) {
-                    case 'create':
-                    case 'createJobSet':
+                    case EVENT_CREATE:
+                    case EVENT_CREATE_JOBSET:
                         event.class = 'text-primary';
                         break;
-                    case 'progress':
-                    case 'redirect':
-                    case 'progressJobSet':
+                    case EVENT_PROGRESS:
+                    case EVENT_REDIRECT:
+                    case EVENT_PROGRESS_JOBSET:
                         event.class = 'text-info';
                         break;
-                    case 'finish':
+                    case EVENT_FINISH:
                         event.class = event.success ? 'text-success' : 'text-danger';
                         break;
-                    case 'finishJobSet':
+                    case EVENT_FINISH_JOBSET:
                         event.class = 'text-success';
                         break;
                     default:

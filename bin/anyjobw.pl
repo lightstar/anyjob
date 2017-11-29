@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use lib ($ENV{ANYJOB_LIB} || "/opt/anyjob/lib");
+use lib ($ENV{ANYJOB_LIB} || '/opt/anyjob/lib');
 use strict;
 use warnings;
 use utf8;
@@ -19,8 +19,8 @@ unless ($ENV{ANYJOB_ID}) {
     exit(1);
 }
 
-my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : "/opt/anyjob/etc/current/anyjob.cfg";
-my $worker = AnyJob::Worker->new(config => AnyJob::Config->new($configFile, "anyjob"));
+my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : '/opt/anyjob/etc/current/anyjob.cfg';
+my $worker = AnyJob::Worker->new(config => AnyJob::Config->new($configFile, 'anyjob'));
 $worker->run($ENV{ANYJOB_ID});
 
 exit(0);

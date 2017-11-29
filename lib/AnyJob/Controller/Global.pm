@@ -7,6 +7,8 @@ use utf8;
 use JSON::XS;
 
 use AnyJob::DateTime qw(formatDateTime);
+use AnyJob::Events qw($EVENT_CREATE_JOBSET);
+use AnyJob::States qw($STATE_BEGIN);
 
 use base 'AnyJob::Controller::Base';
 
@@ -21,15 +23,15 @@ sub process {
     my $limit = $self->config->limit || 10;
     my $count = 0;
 
-    while (my $job = $self->redis->lpop("anyjob:queue")) {
+    while (my $job = $self->redis->lpop('anyjob:queue')) {
         eval {
             $job = decode_json($job);
         };
         if ($@) {
-            $self->error("Can't decode job: " . $job);
+            $self->error('Can\'t decode job: ' . $job);
         } elsif (exists($job->{node})) {
             my $node = delete $job->{node};
-            $self->redis->rpush("anyjob:queue:" . $node, encode_json($job));
+            $self->redis->rpush('anyjob:queue:' . $node, encode_json($job));
         } elsif ($job->{jobset}) {
             $self->createJobSet($job);
         }
@@ -45,30 +47,30 @@ sub createJobSet {
 
     foreach my $job (@{$jobSet->{jobs}}) {
         unless ($self->config->isJobSupported($job->{type}, $job->{node})) {
-            $self->error("Job with type '" . $job->{type} . "' is not supported on node '" . $job->{node} .
-                "'. Entire jobset discarded: " . encode_json($jobSet));
+            $self->error('Job with type \'' . $job->{type} . '\' is not supported on node \'' . $job->{node} .
+                '\'. Entire jobset discarded: ' . encode_json($jobSet));
             return;
         }
     }
 
-    $jobSet->{state} = "begin";
+    $jobSet->{state} = $STATE_BEGIN;
     $jobSet->{time} = time();
     foreach my $job (@{$jobSet->{jobs}}) {
-        $job->{state} = "begin";
+        $job->{state} = $STATE_BEGIN;
     }
 
     my $id = $self->nextJobSetId();
-    $self->redis->zadd("anyjob:jobsets", $jobSet->{time}, $id);
-    $self->redis->set("anyjob:jobset:" . $id, encode_json($jobSet));
+    $self->redis->zadd('anyjob:jobsets', $jobSet->{time}, $id);
+    $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
 
     foreach my $job (@{$jobSet->{jobs}}) {
         delete $job->{state};
     }
 
-    $self->debug("Create jobset '" . $id . "' with props " . encode_json($jobSet->{props}) .
-        " and jobs " . encode_json($jobSet->{jobs}));
+    $self->debug('Create jobset \'' . $id . '\' with props ' . encode_json($jobSet->{props}) .
+        ' and jobs ' . encode_json($jobSet->{jobs}));
 
-    $self->sendEvent("createJobSet", {
+    $self->sendEvent($EVENT_CREATE_JOBSET, {
             id    => $id,
             props => $jobSet->{props},
             jobs  => $jobSet->{jobs}
@@ -77,7 +79,7 @@ sub createJobSet {
     foreach my $job (@{$jobSet->{jobs}}) {
         my $node = delete $job->{node};
         $job->{jobset} = $id;
-        $self->redis->rpush("anyjob:queue:" . $node, encode_json($job));
+        $self->redis->rpush('anyjob:queue:' . $node, encode_json($job));
     }
 }
 
@@ -86,10 +88,10 @@ sub cleanJobSet {
     my $id = shift;
     my $time = shift;
 
-    $self->debug("Clean jobset '" . $id . "' last updated at " . formatDateTime($time));
+    $self->debug('Clean jobset \'' . $id . '\' last updated at ' . formatDateTime($time));
 
-    $self->redis->zrem("anyjob:jobsets", $id);
-    $self->redis->del("anyjob:jobset:" . $id);
+    $self->redis->zrem('anyjob:jobsets', $id);
+    $self->redis->del('anyjob:jobset:' . $id);
 }
 
 sub cleanBuild {
@@ -97,15 +99,15 @@ sub cleanBuild {
     my $id = shift;
     my $time = shift;
 
-    $self->debug("Clean build '" . $id . "' last updated at " . formatDateTime($time));
+    $self->debug('Clean build \'' . $id . '\' last updated at ' . formatDateTime($time));
 
-    $self->redis->zrem("anyjob:builds", $id);
-    $self->redis->del("anyjob:build:" . $id);
+    $self->redis->zrem('anyjob:builds', $id);
+    $self->redis->del('anyjob:build:' . $id);
 }
 
 sub nextJobSetId {
     my $self = shift;
-    return $self->redis->incr("anyjob:jobset:id");
+    return $self->redis->incr('anyjob:jobset:id');
 }
 
 1;

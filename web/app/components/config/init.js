@@ -12,7 +12,7 @@ app.run(function ($http, $rootScope) {
             };
 
             angular.forEach(config.jobs, function (job) {
-                if (job.group === undefined || job.group === "") {
+                if (job.group === undefined || job.group === '') {
                     job.group = null;
                 }
 
@@ -28,13 +28,13 @@ app.run(function ($http, $rootScope) {
             $rootScope.config = config;
         }
 
-        init([], [], {eventTemplate:""}, {user: "", pass: ""}, "");
-        $http.get("config")
+        init([], [], {eventTemplate: ''}, {user: '', pass: ''}, '');
+        $http.get('config')
             .then(function (response) {
-                init(response.data.jobs, response.data.props, response.data.observer, response.data.auth, "");
+                init(response.data.jobs, response.data.props, response.data.observer, response.data.auth, '');
             }, function (response) {
-                init([], [], {eventTemplate:""}, {user: "", pass: ""}, serverError(response.data, response.status));
-                $rootScope.alert("Error: " + $rootScope.config.error, "danger", true);
+                init([], [], {eventTemplate: ''}, {user: '', pass: ''}, serverError(response.data, response.status));
+                $rootScope.alert('Error: ' + $rootScope.config.error, 'danger', true);
             });
     }
 );

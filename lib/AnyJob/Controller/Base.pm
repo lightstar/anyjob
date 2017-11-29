@@ -15,7 +15,7 @@ sub new {
 
     unless ($self->{parent}) {
         require Carp;
-        Carp::confess("No parent provided");
+        Carp::confess('No parent provided');
     }
 
     return $self;
@@ -66,7 +66,7 @@ sub sendEvent {
     my $event = shift;
 
     unless (isValidEvent($name)) {
-        $self->error("Unknown event '" . $name . "'");
+        $self->error('Unknown event \'' . $name . '\'');
     }
 
     $event->{event} = $name;
@@ -76,12 +76,12 @@ sub sendEvent {
     my $encodedData = encode_json($event);
 
     foreach my $observer (@{$self->config->getObserversForEvent($name)}) {
-        $self->redis->rpush("anyjob:observerq:" . $observer, $encodedData);
+        $self->redis->rpush('anyjob:observerq:' . $observer, $encodedData);
     }
 
-    my $privateObserver = $self->checkEventProp($event, "observer", "private");
+    my $privateObserver = $self->checkEventProp($event, 'observer', 'private');
     if (defined($privateObserver)) {
-        $self->redis->rpush("anyjob:observerq:private:" . $privateObserver, $encodedData);
+        $self->redis->rpush('anyjob:observerq:private:' . $privateObserver, $encodedData);
     }
 }
 
@@ -109,7 +109,7 @@ sub process {
     my $self = shift;
 
     require Carp;
-    Carp::confess("Need to be implemented in descendant");
+    Carp::confess('Need to be implemented in descendant');
 }
 
 1;

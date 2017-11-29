@@ -6,14 +6,15 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Utils qw(moduleName);
+use AnyJob::Utils qw(moduleName requireModule);
+use AnyJob::States qw($STATE_RUN);
 
 use base 'AnyJob::Base';
 
 sub new {
     my $class = shift;
     my %args = @_;
-    $args{type} = "worker";
+    $args{type} = 'worker';
     my $self = $class->SUPER::new(%args);
     return $self;
 }
@@ -23,12 +24,12 @@ sub sendProgress {
     my $id = shift;
     my $progress = shift;
 
-    unless (ref($progress) eq "HASH") {
+    unless (ref($progress) eq 'HASH') {
         $progress = { progress => $progress };
     }
 
     $progress->{id} = $id;
-    $self->redis->rpush("anyjob:progressq:" . $self->node, encode_json($progress));
+    $self->redis->rpush('anyjob:progressq:' . $self->node, encode_json($progress));
 }
 
 sub sendState {
@@ -43,7 +44,7 @@ sub sendRun {
     my $self = shift;
     my $id = shift;
 
-    $self->sendState($id, "run");
+    $self->sendState($id, $STATE_RUN);
 }
 
 sub sendLog {
@@ -88,12 +89,12 @@ sub sendJobSetProgress {
     my $id = shift;
     my $progress = shift;
 
-    unless (ref($progress) eq "HASH") {
+    unless (ref($progress) eq 'HASH') {
         $progress = { progress => $progress };
     }
 
     $progress->{id} = $id;
-    $self->redis->rpush("anyjob:progressq", encode_json($progress));
+    $self->redis->rpush('anyjob:progressq', encode_json($progress));
 }
 
 sub sendJobSetState {
@@ -109,56 +110,51 @@ sub run {
     my $id = shift;
 
     if ($self->config->node eq '') {
-        $self->error("No node");
+        $self->error('No node');
         return;
     }
 
     my $job = $self->getJob($id);
     unless (defined($job)) {
-        $self->error("Job '" . $id . "' not found");
+        $self->error('Job \'' . $id . '\' not found');
         return;
     }
 
-    my $config = $self->config->getJobConfig($job->{type});
-    unless (defined($config)) {
-        $self->error("No config for job type '" . $job->{type} . "'");
+    my $jobConfig = $self->config->getJobConfig($job->{type});
+    unless (defined($jobConfig)) {
+        $self->error('No config for job type \'' . $job->{type} . '\'');
         return;
     }
 
     unless ($self->config->isJobSupported($job->{type})) {
-        $self->error("Job with type '" . $job->{type} . "' is not supported on this node");
+        $self->error('Job with type \'' . $job->{type} . '\' is not supported on this node');
         return;
     }
 
-    my $workerSection = $self->config->section("worker") || {};
+    my $workerConfig = $self->config->section('worker') || {};
 
-    my $module = moduleName($config->{module} || $workerSection->{module} || $job->{type});
-    my $prefix = $config->{prefix} || $workerSection->{prefix} || "AnyJob::Worker";
+    my $module = moduleName($jobConfig->{module} || $workerConfig->{module} || $job->{type});
+    my $prefix = $jobConfig->{prefix} || $workerConfig->{prefix} || 'AnyJob::Worker';
     if (defined($prefix)) {
-        $module = $prefix . "::" . $module;
+        $module = $prefix . '::' . $module;
     }
+    requireModule($module);
 
-    eval "require $module";
-    if ($@) {
-        $self->error("Can't load module '" . $module . "': " . $@);
-        return;
-    }
-
-    $self->debug("Perform job '" . $id . "' on node '" . $self->node . "': " . encode_json($job));
+    $self->debug('Execute job \'' . $id . '\' on node \'' . $self->node . '\': ' . encode_json($job));
 
     $self->sendRun($id);
 
-    my $method = $config->{method} || $workerSection->{method} || "run";
+    my $method = $jobConfig->{method} || $workerConfig->{method} || 'run';
     eval {
         no strict 'refs';
-        $module->new(worker => $self, id => $id, job => $job)->$method();
+        $module->new(parent => $self, id => $id, job => $job)->$method();
     };
     if ($@) {
-        $self->error("Error running method '" . $method . "' in module '" . $module . "': " . $@);
+        $self->error('Error running method \'' . $method . '\' in module \'' . $module . '\': ' . $@);
         return;
     }
 
-    $self->debug("Finish perform job '" . $id . "'");
+    $self->debug('Finish job \'' . $id . '\'');
 }
 
 1;
