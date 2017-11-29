@@ -8,6 +8,7 @@ use JSON::XS;
 
 use AnyJob::Utils qw(moduleName requireModule);
 use AnyJob::Creator::Parser;
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 
 use base 'AnyJob::Base';
 
@@ -122,7 +123,7 @@ sub checkJobParams {
             return undef;
         }
 
-        unless ($self->checkJobParamType($param->{type}, $jobParams->{$name}, $param->{data})) {
+        unless ($self->checkJobParamType($param->{type}, $jobParams->{$name}, $param->{options})) {
             return undef;
         }
     }
@@ -143,7 +144,7 @@ sub checkJobParamType {
     my $self = shift;
     my $type = shift;
     my $value = shift;
-    my $data = shift;
+    my $options = shift;
 
     unless (defined($type) and defined($value)) {
         return undef;
@@ -153,19 +154,19 @@ sub checkJobParamType {
         return undef;
     }
 
-    if ($type eq 'combo' and ref($data) eq 'ARRAY' and not grep {$_ eq $value} @$data) {
+    if ($type eq 'combo' and ref($options) eq 'ARRAY' and not grep {$_->{value} eq $value} @$options) {
         return undef;
     }
 
     return 1;
 }
 
-sub parseJobLine {
+sub parseJob {
     my $self = shift;
-    my $line = shift;
+    my $input = shift;
     my $allowedExtra = shift;
 
-    my $parser = AnyJob::Creator::Parser->new(parent => $self, input => $line,
+    my $parser = AnyJob::Creator::Parser->new(parent => $self, input => $input,
         allowedExtra => $allowedExtra);
     unless (defined($parser->prepare())) {
         return (undef, undef, $parser->errors);
@@ -294,7 +295,8 @@ sub receivePrivateEvents {
         return [];
     }
 
-    my $limit = $self->config->limit || 10;
+    my $config = $self->config->section('creator') || {};
+    my $limit = $config->{observe_limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
     my @events;
 

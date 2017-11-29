@@ -6,6 +6,7 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT DEFAULT_CLEAN_TIMEOUT);
 use AnyJob::DateTime qw(formatDateTime);
 use AnyJob::EventFilter;
 
@@ -15,12 +16,12 @@ sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
 
-    unless ($self->{name}) {
+    unless (defined($self->{name}) and $self->{name} ne '') {
         require Carp;
         Carp::confess('No name provided');
     }
 
-    my $config = $self->observerConfig() || {};
+    my $config = $self->getObserverConfig() || {};
     $self->{eventFilter} = AnyJob::EventFilter->new(filter => $config->{event_filter});
 
     return $self;
@@ -31,7 +32,7 @@ sub name {
     return $self->{name};
 }
 
-sub observerConfig {
+sub getObserverConfig {
     my $self = shift;
     return $self->config->getObserverConfig($self->name);
 }
@@ -39,7 +40,8 @@ sub observerConfig {
 sub process {
     my $self = shift;
 
-    my $limit = $self->config->limit || 10;
+    my $observerConfig = $self->getObserverConfig() || {};
+    my $limit = $observerConfig->{limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
 
     while (my $event = $self->redis->lpop('anyjob:observerq:' . $self->name)) {
@@ -82,7 +84,7 @@ sub preprocessEvent {
 
     $event->{config} = $config;
     if (exists($event->{type})) {
-        $event->{job} = $self->config->getJobConfig($event->{type});
+        $event->{job} = $self->config->getJobConfig($event->{type}) || {};
     }
 
     if ($event->{time}) {
@@ -100,7 +102,11 @@ sub saveLog {
         return;
     }
 
-    $self->redis->zadd('anyjob:observer:' . $self->name . ':log', time(), $event->{id});
+    my $observerConfig = $self->getObserverConfig() || {};
+    my $clean_timeout = $event->{props}->{log_clean_timeout} || $observerConfig->{log_clean_timeout} ||
+        $self->config->clean_timeout || DEFAULT_CLEAN_TIMEOUT;
+
+    $self->redis->zadd('anyjob:observer:' . $self->name . ':log', time() + $clean_timeout, $event->{id});
     $self->redis->rpush('anyjob:observer:' . $self->name . ':log:' . $event->{id},
         encode_json($event->{progress}->{log}));
 }
@@ -110,11 +116,6 @@ sub collectLogs {
     my $event = shift;
 
     unless (exists($event->{id})) {
-        return [];
-    }
-
-    my $time = $self->redis->zscore('anyjob:observer:' . $self->name . ':log', $event->{id});
-    unless ($time) {
         return [];
     }
 
@@ -133,7 +134,7 @@ sub collectLogs {
         }
     }
 
-    $self->cleanLog($event->{id}, $time);
+    $self->cleanLog($event->{id});
 
     return \@logs;
 }
@@ -141,24 +142,22 @@ sub collectLogs {
 sub cleanLogs {
     my $self = shift;
 
-    my $limit = $self->config->limit || 10;
-    my $cleanBefore = $self->config->clean_before || 3600;
+    my $observerConfig = $self->getObserverConfig() || {};
+    my $limit = $observerConfig->{log_clean_limit} || $self->config->limit || DEFAULT_LIMIT;
 
-    my %ids = $self->redis->zrangebyscore('anyjob:observer:' . $self->name . ':log', '-inf',
-        time() - $cleanBefore, 'WITHSCORES', 'LIMIT', '0', $limit);
+    my %ids = $self->redis->zrangebyscore('anyjob:observer:' . $self->name . ':log', '-inf', time(),
+        'WITHSCORES', 'LIMIT', '0', $limit);
 
     foreach my $id (keys(%ids)) {
-        $self->cleanLog($id, $ids{$id});
+        $self->cleanLog($id);
     }
 }
 
 sub cleanLog {
     my $self = shift;
     my $id = shift;
-    my $time = shift;
 
-    $self->debug('Clean logs in observer \'' . $self->name . '\' for job \'' . $id . '\' last updated at ' .
-        formatDateTime($time));
+    $self->debug('Clean logs in observer \'' . $self->name . '\' for job \'' . $id . '\'');
 
     $self->redis->zrem('anyjob:observer:' . $self->name . ':log', $id);
     $self->redis->del('anyjob:observer:' . $self->name . ':log:' . $id);

@@ -6,6 +6,7 @@ use utf8;
 
 use AnyJob::Daemon::Base;
 use AnyJob::Controller::Factory;
+use AnyJob::Constants::Defaults qw(DEFAULT_DELAY);
 
 use base 'AnyJob::Base';
 
@@ -19,7 +20,7 @@ sub new {
     $self->{daemon} = AnyJob::Daemon::Base->new(
         detached => $config->{detached},
         pidfile  => $config->{pidfile},
-        delay    => $config->{delay},
+        delay    => $config->{delay} || DEFAULT_DELAY,
         logger   => $self->logger,
         process  => sub {$self->process()}
     );

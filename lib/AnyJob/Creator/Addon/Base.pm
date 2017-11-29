@@ -13,20 +13,25 @@ sub new {
     my %args = @_;
     my $self = bless \%args, $class;
 
-    unless ($self->{parent}) {
+    unless (defined($self->{parent})) {
         require Carp;
         Carp::confess('No parent provided');
     }
 
-    unless ($self->{type}) {
+    unless (defined($self->{type}) and $self->{type} ne '') {
         require Carp;
         Carp::confess('No addon type provided');
     }
 
-    my $config = $self->config->section($self->{type}) || {};
+    my $config = $self->config->section('creator_' . $self->{type}) || {};
     $self->{eventFilter} = AnyJob::EventFilter->new(filter => $config->{event_filter});
 
     return $self;
+}
+
+sub parent {
+    my $self = shift;
+    return $self->{parent};
 }
 
 sub config {

@@ -6,14 +6,16 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Events qw($EVENT_PROGRESS $EVENT_REDIRECT $EVENT_FINISH);
+use AnyJob::Constants::Events qw(EVENT_PROGRESS EVENT_REDIRECT EVENT_FINISH);
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 
 use base 'AnyJob::Controller::Node';
 
 sub process {
     my $self = shift;
 
-    my $limit = $self->config->limit || 10;
+    my $nodeConfig = $self->config->getNodeConfig() || {};
+    my $limit = $nodeConfig->{job_progress_limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
 
     while (my $progress = $self->redis->lpop('anyjob:progressq:' . $self->node)) {
@@ -46,7 +48,7 @@ sub progressJob {
         return;
     }
 
-    $self->redis->zadd('anyjob:jobs:' . $self->node, time(), $id);
+    $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
 
     $self->debug('Progress job \'' . $id . '\': ' . encode_json($progress));
 
@@ -70,7 +72,7 @@ sub progressJob {
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
 
-    $self->sendEvent($EVENT_PROGRESS, {
+    $self->sendEvent(EVENT_PROGRESS, {
             id       => $id,
             (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
             type     => $job->{type},
@@ -97,7 +99,7 @@ sub redirectJob {
         return;
     }
 
-    $self->redis->zadd('anyjob:jobs:' . $self->node, time(), $id);
+    $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
 
     $self->debug('Redirect job \'' . $id . '\': ' . encode_json($progress));
 
@@ -105,7 +107,7 @@ sub redirectJob {
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
 
-    $self->sendEvent($EVENT_REDIRECT, {
+    $self->sendEvent(EVENT_REDIRECT, {
             id       => $id,
             (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
             type     => $job->{type},
@@ -135,15 +137,13 @@ sub finishJob {
     $self->debug('Job \'' . $id . '\' ' . ($progress->{success} ? 'successfully finished' : 'finished with error') .
         ': \'' . $progress->{message} . '\'');
 
-    if (my $time = $self->redis->zscore('anyjob:jobs:' . $self->node, $id)) {
-        $self->cleanJob($id, $time);
-    }
+    $self->cleanJob($id);
 
     if ($job->{jobset}) {
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
 
-    $self->sendEvent($EVENT_FINISH, {
+    $self->sendEvent(EVENT_FINISH, {
             id      => $id,
             (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
             type    => $job->{type},

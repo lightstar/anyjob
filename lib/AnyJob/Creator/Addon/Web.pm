@@ -6,8 +6,10 @@ use utf8;
 
 use File::Spec;
 use Scalar::Util qw(reftype);
+use AnyEvent;
 
 use AnyJob::Utils qw(getFileContent);
+use AnyJob::Constants::Defaults qw(DEFAULT_DELAY);
 
 use base 'AnyJob::Creator::Addon::Base';
 
@@ -24,7 +26,7 @@ sub checkAuth {
     my $user = shift;
     my $pass = shift;
 
-    my $config = $self->config->section('web_auth') || {};
+    my $config = $self->config->section('creator_web_auth') || {};
     return (exists($config->{$user}) and crypt($pass, $config->{$user}) eq $config->{$user}) ? 1 : 0;
 }
 
@@ -67,6 +69,26 @@ sub preprocessJobParams {
             $params->{$name} = $$value;
         }
     }
+}
+
+sub observePrivateEvents {
+    my $self = shift;
+    my $conn = shift;
+    my $user = shift;
+
+    my $config = $self->config->section('creator_web') || {};
+    my $delay = $config->{observer_delay} || DEFAULT_DELAY;
+    my $timer = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
+            my $events = $self->filterEvents(
+                $self->parent->receivePrivateEvents('u' . $user, 'stripInternalProps')
+            );
+            if (scalar(@$events) > 0) {
+                $conn->send($events);
+            }
+        });
+    $conn->on(close => sub {
+            undef $timer;
+        });
 }
 
 1;

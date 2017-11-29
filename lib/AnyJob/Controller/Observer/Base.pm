@@ -12,7 +12,7 @@ sub processEvent {
     my $self = shift;
     my $event = shift;
 
-    my $config = $self->observerConfig();
+    my $config = $self->getObserverConfig();
     unless ($self->preprocessEvent($config, $event)) {
         return;
     }

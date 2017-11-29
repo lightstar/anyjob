@@ -10,7 +10,7 @@ use MIME::Base64;
 use MIME::Entity;
 use Template;
 
-use AnyJob::Events qw($EVENT_PROGRESS $EVENT_FINISH);
+use AnyJob::Constants::Events qw(EVENT_PROGRESS EVENT_FINISH);
 
 use base 'AnyJob::Controller::Observer::Base';
 
@@ -34,7 +34,7 @@ sub processEvent {
     my $self = shift;
     my $event = shift;
 
-    my $config = $self->observerConfig();
+    my $config = $self->getObserverConfig();
 
     unless ($self->preprocessEvent($config, $event)) {
         return;
@@ -86,7 +86,7 @@ sub preprocessEvent {
         return 0;
     }
 
-    if ($event->{event} eq $EVENT_PROGRESS) {
+    if ($event->{event} eq EVENT_PROGRESS) {
         $self->saveLog($event);
 
         unless ($config->{mail_progress} or $self->checkEventProp($event, 'mail_progress')) {
@@ -94,7 +94,7 @@ sub preprocessEvent {
         }
     }
 
-    if ($event->{event} eq $EVENT_FINISH) {
+    if ($event->{event} eq EVENT_FINISH) {
         $event->{log} = $self->collectLogs($event);
     }
 

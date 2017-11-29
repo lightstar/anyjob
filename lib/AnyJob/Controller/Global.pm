@@ -6,9 +6,9 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::DateTime qw(formatDateTime);
-use AnyJob::Events qw($EVENT_CREATE_JOBSET);
-use AnyJob::States qw($STATE_BEGIN);
+use AnyJob::Constants::Events qw(EVENT_CREATE_JOBSET);
+use AnyJob::Constants::States qw(STATE_BEGIN);
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 
 use base 'AnyJob::Controller::Base';
 
@@ -20,7 +20,8 @@ our @MODULES = qw(
 sub process {
     my $self = shift;
 
-    my $limit = $self->config->limit || 10;
+    my $nodeConfig = $self->config->getNodeConfig() || {};
+    my $limit = $nodeConfig->{global_create_limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
 
     while (my $job = $self->redis->lpop('anyjob:queue')) {
@@ -53,14 +54,14 @@ sub createJobSet {
         }
     }
 
-    $jobSet->{state} = $STATE_BEGIN;
+    $jobSet->{state} = STATE_BEGIN;
     $jobSet->{time} = time();
     foreach my $job (@{$jobSet->{jobs}}) {
-        $job->{state} = $STATE_BEGIN;
+        $job->{state} = STATE_BEGIN;
     }
 
-    my $id = $self->nextJobSetId();
-    $self->redis->zadd('anyjob:jobsets', $jobSet->{time}, $id);
+    my $id = $self->getNextJobSetId();
+    $self->redis->zadd('anyjob:jobsets', $jobSet->{time} + $self->getJobSetCleanTimeout($jobSet), $id);
     $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
 
     foreach my $job (@{$jobSet->{jobs}}) {
@@ -70,7 +71,7 @@ sub createJobSet {
     $self->debug('Create jobset \'' . $id . '\' with props ' . encode_json($jobSet->{props}) .
         ' and jobs ' . encode_json($jobSet->{jobs}));
 
-    $self->sendEvent($EVENT_CREATE_JOBSET, {
+    $self->sendEvent(EVENT_CREATE_JOBSET, {
             id    => $id,
             props => $jobSet->{props},
             jobs  => $jobSet->{jobs}
@@ -86,9 +87,8 @@ sub createJobSet {
 sub cleanJobSet {
     my $self = shift;
     my $id = shift;
-    my $time = shift;
 
-    $self->debug('Clean jobset \'' . $id . '\' last updated at ' . formatDateTime($time));
+    $self->debug('Clean jobset \'' . $id . '\'');
 
     $self->redis->zrem('anyjob:jobsets', $id);
     $self->redis->del('anyjob:jobset:' . $id);
@@ -97,15 +97,14 @@ sub cleanJobSet {
 sub cleanBuild {
     my $self = shift;
     my $id = shift;
-    my $time = shift;
 
-    $self->debug('Clean build \'' . $id . '\' last updated at ' . formatDateTime($time));
+    $self->debug('Clean build \'' . $id . '\'');
 
     $self->redis->zrem('anyjob:builds', $id);
     $self->redis->del('anyjob:build:' . $id);
 }
 
-sub nextJobSetId {
+sub getNextJobSetId {
     my $self = shift;
     return $self->redis->incr('anyjob:jobset:id');
 }

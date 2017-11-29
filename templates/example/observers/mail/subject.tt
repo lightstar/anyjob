@@ -2,7 +2,9 @@
 [% ELSIF event == 'redirect' %]Job redirected
 [% ELSIF event == 'progress' %]Job is running
 [% ELSIF event == 'finish' %]Job finished
+[% ELSIF event == 'clean' %]Job cleaned
 [% ELSIF event == 'createJobSet' %]Job Set created
 [% ELSIF event == 'progressJobSet' %]Job Set is running
 [% ELSIF event == 'finishJobSet' %]Job Set finished
+[% ELSIF event == 'cleanJobSet' %]Job Set cleaned
 [% END %]

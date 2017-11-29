@@ -7,7 +7,7 @@ use utf8;
 use JSON::XS;
 
 use AnyJob::Utils qw(moduleName requireModule);
-use AnyJob::States qw($STATE_RUN);
+use AnyJob::Constants::States qw(STATE_RUN);
 
 use base 'AnyJob::Base';
 
@@ -44,7 +44,7 @@ sub sendRun {
     my $self = shift;
     my $id = shift;
 
-    $self->sendState($id, $STATE_RUN);
+    $self->sendState($id, STATE_RUN);
 }
 
 sub sendLog {

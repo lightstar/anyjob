@@ -11,8 +11,10 @@ sub new {
     my %args = @_;
     my $self = bless \%args, $class;
 
-    $self->{js} = JavaScript::Duktape->new();
-    $self->{js}->eval('function eventFilter() { return ' . (defined($self->{filter}) ? $self->{filter} : '1') . '; }');
+    if (defined($self->{filter})) {
+        $self->{js} = JavaScript::Duktape->new();
+        $self->{js}->eval('function eventFilter() { return ' . $self->{filter} . '; }');
+    }
 
     return $self;
 }
@@ -20,6 +22,10 @@ sub new {
 sub filter {
     my $self = shift;
     my $event = shift;
+
+    unless (exists($self->{js})) {
+        return 1;
+    }
 
     $self->{js}->set('event', $event);
     return $self->{js}->eval('eventFilter()') ? 1 : 0;

@@ -1,21 +1,25 @@
-package AnyJob::Creator::Builder::Slack::Simple;
+package AnyJob::Creator::Addon::Console;
 
 use strict;
 use warnings;
 use utf8;
 
-use JSON::XS;
+use base 'AnyJob::Creator::Addon::Base';
 
-use base 'AnyJob::Creator::Builder::Slack::Base';
+sub new {
+    my $class = shift;
+    my %args = @_;
+    $args{type} = 'console';
+    my $self = $class->SUPER::new(%args);
+    return $self;
+}
 
-sub command {
+sub create {
     my $self = shift;
-    my $text = shift;
-    my $user = shift;
-    my $responseUrl = shift;
+    my $args = shift;
 
     my ($job, $errors);
-    ($job, undef, $errors) = $self->parent->parseJob($text);
+    ($job, undef, $errors) = $self->parent->parseJob($args);
     unless (defined($job)) {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
@@ -25,12 +29,9 @@ sub command {
         return 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors);
     }
 
-    $self->debug('Create jobs using slack app simple build by user \'' . $user . '\': ' . encode_json($job));
+    $self->debug('Create job using console creator: ' . encode_json($job));
 
-    my $error = $self->parent->createJobs([ $job ], {
-            observer     => 'slack',
-            response_url => $responseUrl
-        });
+    my $error = $self->parent->createJobs([ $job ]);
     if (defined($error)) {
         $self->debug('Creating failed: ' . $error);
         return 'Error: ' . $error;
@@ -38,5 +39,3 @@ sub command {
 
     return 'Job created';
 }
-
-1;

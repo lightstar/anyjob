@@ -7,9 +7,9 @@ use utf8;
 use JSON::XS;
 use File::Basename;
 
-use AnyJob::Events qw($EVENT_CREATE);
-use AnyJob::States qw($STATE_BEGIN);
-use AnyJob::DateTime qw(formatDateTime);
+use AnyJob::Constants::Events qw(EVENT_CREATE);
+use AnyJob::Constants::States qw(STATE_BEGIN);
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 
 use base 'AnyJob::Controller::Base';
 
@@ -21,7 +21,8 @@ our @MODULES = qw(
 sub process {
     my $self = shift;
 
-    my $limit = $self->config->limit || 10;
+    my $nodeConfig = $self->config->getNodeConfig() || {};
+    my $limit = $nodeConfig->{create_limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
 
     while (my $job = $self->redis->lpop('anyjob:queue:' . $self->node)) {
@@ -50,11 +51,11 @@ sub createJob {
         return;
     }
 
-    $job->{state} = $STATE_BEGIN;
+    $job->{state} = STATE_BEGIN;
     $job->{time} = time();
 
-    my $id = $self->nextJobId();
-    $self->redis->zadd('anyjob:jobs:' . $self->node, $job->{time}, $id);
+    my $id = $self->getNextJobId();
+    $self->redis->zadd('anyjob:jobs:' . $self->node, $job->{time} + $self->getJobCleanTimeout($job), $id);
     $self->redis->set('anyjob:job:' . $id, encode_json($job));
 
     $self->debug('Create job \'' . $id . '\' ' .
@@ -63,7 +64,7 @@ sub createJob {
 
     if (exists($job->{jobset})) {
         my $progress = {
-            state  => $STATE_BEGIN,
+            state  => STATE_BEGIN,
             node   => $self->node,
             type   => $job->{type},
             params => $job->{params},
@@ -72,7 +73,7 @@ sub createJob {
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
 
-    $self->sendEvent($EVENT_CREATE, {
+    $self->sendEvent(EVENT_CREATE, {
             id     => $id,
             (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
             type   => $job->{type},
@@ -100,7 +101,7 @@ sub runRedirectedJob {
     }
 
     $self->redis->zrem('anyjob:jobs:' . $redirect->{from}, $id);
-    $self->redis->zadd('anyjob:jobs:' . $self->node, time(), $id);
+    $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
 
     $self->debug('Run redirected job \'' . $id . '\' ' .
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
@@ -142,9 +143,8 @@ sub runJob {
 sub cleanJob {
     my $self = shift;
     my $id = shift;
-    my $time = shift;
 
-    $self->debug('Clean job \'' . $id . '\' last updated at ' . formatDateTime($time));
+    $self->debug('Clean job \'' . $id . '\'');
 
     $self->redis->zrem('anyjob:jobs:' . $self->node, $id);
     $self->redis->del('anyjob:job:' . $id);
@@ -164,7 +164,7 @@ sub sendJobProgressForJobSet {
     $self->redis->rpush('anyjob:progressq', encode_json($jobSetProgress));
 }
 
-sub nextJobId {
+sub getNextJobId {
     my $self = shift;
     return $self->redis->incr('anyjob:job:id');
 }

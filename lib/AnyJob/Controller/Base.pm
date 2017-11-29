@@ -6,6 +6,7 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_TIMEOUT);
 use AnyJob::Events qw(isValidEvent);
 
 sub new {
@@ -13,7 +14,7 @@ sub new {
     my %args = @_;
     my $self = bless \%args, $class;
 
-    unless ($self->{parent}) {
+    unless (defined($self->{parent})) {
         require Carp;
         Carp::confess('No parent provided');
     }
@@ -103,6 +104,25 @@ sub checkEventProp {
     }
 
     return undef;
+}
+
+sub getJobCleanTimeout {
+    my $self = shift;
+    my $job = shift;
+
+    my $jobConfig = $self->config->getJobConfig($job->{type}) || {};
+    my $nodeConfig = $self->config->getNodeConfig() || {};
+    return $job->{props}->{clean_timeout} || $jobConfig->{clean_timeout} || $nodeConfig->{job_clean_timeout} ||
+        $self->config->clean_timeout || DEFAULT_CLEAN_TIMEOUT;
+}
+
+sub getJobSetCleanTimeout {
+    my $self = shift;
+    my $jobSet = shift;
+
+    my $nodeConfig = $self->config->getNodeConfig() || {};
+    return $jobSet->{props}->{clean_timeout} || $nodeConfig->{jobset_clean_timeout} ||
+        $self->config->clean_timeout || DEFAULT_CLEAN_TIMEOUT;
 }
 
 sub process {

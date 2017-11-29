@@ -55,7 +55,12 @@ sub extra {
 sub prepare {
     my $self = shift;
 
-    $self->{args} = [ parse_line('\s+', 0, $self->{input}) ];
+    if (ref($self->{input}) eq 'ARRAY') {
+        $self->{args} = $self->{input};
+    } else {
+        $self->{args} = [ parse_line('\s+', 0, $self->{input}) ];
+    }
+
     unless (scalar(@{$self->{args}}) > 0) {
         push @{$self->{errors}}, {
                 type  => 'error',

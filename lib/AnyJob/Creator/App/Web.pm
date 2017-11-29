@@ -4,7 +4,6 @@ use strict;
 use warnings;
 use utf8;
 
-use AnyEvent;
 use CGI::Deurl::XS qw(parse_query_string);
 
 use Dancer2 qw(!config !debug !error);
@@ -85,24 +84,13 @@ websocket_on_open sub {
         my $query = parse_query_string($env->{'QUERY_STRING'});
         my $user = $query->{user} || '';
         my $pass = $query->{pass} || '';
+        my $web = creator->addon('web');
 
-        unless (creator->addon('web')->checkAuth($user, $pass)) {
+        unless ($web->checkAuth($user, $pass)) {
             return;
         }
 
-        my $config = config->section('web') || {};
-        my $delay = $config->{observer_delay} || 1;
-        my $timer = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
-                my $events = creator->addon('web')->filterEvents(
-                    creator->receivePrivateEvents('u' . $user, 'stripInternalProps')
-                );
-                if (scalar(@$events) > 0) {
-                    $conn->send($events);
-                }
-            });
-        $conn->on(close => sub {
-                undef $timer;
-            });
+        $web->observePrivateEvents($conn, $user);
     };
 
 1;

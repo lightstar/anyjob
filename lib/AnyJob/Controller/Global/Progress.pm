@@ -6,15 +6,17 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Events qw($EVENT_PROGRESS_JOBSET $EVENT_FINISH_JOBSET);
-use AnyJob::States qw($STATE_BEGIN $STATE_FINISHED);
+use AnyJob::Constants::Events qw(EVENT_PROGRESS_JOBSET EVENT_FINISH_JOBSET);
+use AnyJob::Constants::States qw(STATE_BEGIN STATE_FINISHED);
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 
 use base 'AnyJob::Controller::Global';
 
 sub process {
     my $self = shift;
 
-    my $limit = $self->config->limit || 10;
+    my $nodeConfig = $self->config->getNodeConfig() || {};
+    my $limit = $nodeConfig->{jobset_progress_limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
 
     while (my $progress = $self->redis->lpop('anyjob:progressq')) {
@@ -52,13 +54,13 @@ sub progressJobInJobSet {
         return;
     }
 
-    $self->redis->zadd('anyjob:jobsets', time(), $id);
+    $self->redis->zadd('anyjob:jobsets', time() + $self->getJobSetCleanTimeout($jobSet), $id);
 
     $self->debug('Progress jobset \'' . $id . '\', job\'s \'' . $job->{id} . '\' progress: ' .
         encode_json($jobProgress));
 
     if (exists($jobProgress->{success})) {
-        $job->{state} = $STATE_FINISHED;
+        $job->{state} = STATE_FINISHED;
         $job->{success} = $jobProgress->{success};
         $job->{message} = $jobProgress->{message};
     } else {
@@ -74,18 +76,16 @@ sub progressJobInJobSet {
     }
 
     my $jobSetFinished = 0;
-    my @finishedJobs = grep {$_->{state} eq $STATE_FINISHED} @{$jobSet->{jobs}};
+    my @finishedJobs = grep {$_->{state} eq STATE_FINISHED} @{$jobSet->{jobs}};
     if (scalar(@finishedJobs) == scalar(@{$jobSet->{jobs}})) {
         $jobSetFinished = 1;
-        if (my $time = $self->redis->zscore('anyjob:jobsets', $id)) {
-            $self->cleanJobSet($id, $time);
-        }
+        $self->cleanJobSet($id);
     } else {
         $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
     }
 
     if ($jobSetFinished) {
-        $self->sendEvent($EVENT_FINISH_JOBSET, {
+        $self->sendEvent(EVENT_FINISH_JOBSET, {
                 id    => $id,
                 props => $jobSet->{props},
                 jobs  => $jobSet->{jobs}
@@ -100,7 +100,7 @@ sub findJobInJobSet {
     my $jobProgress = shift;
 
     my $job;
-    if (exists($jobProgress->{state}) and $jobProgress->{state} eq $STATE_BEGIN) {
+    if (exists($jobProgress->{state}) and $jobProgress->{state} eq STATE_BEGIN) {
         ($job) = grep {
             $_->{node} eq $jobProgress->{node} and
                 $_->{type} eq $jobProgress->{type} and not exists($_->{id})
@@ -127,7 +127,7 @@ sub progressJobSet {
         return;
     }
 
-    $self->redis->zadd('anyjob:jobsets', time(), $id);
+    $self->redis->zadd('anyjob:jobsets', time() + $self->getJobSetCleanTimeout($jobSet), $id);
 
     $self->debug('Progress jobset \'' . $id . '\': ' . encode_json($progress));
 
@@ -141,7 +141,7 @@ sub progressJobSet {
 
     $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
 
-    $self->sendEvent($EVENT_PROGRESS_JOBSET, {
+    $self->sendEvent(EVENT_PROGRESS_JOBSET, {
             id       => $id,
             props    => $jobSet->{props},
             progress => $progress

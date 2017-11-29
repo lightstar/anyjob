@@ -6,43 +6,53 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::DateTime qw(formatDateTime);
+use AnyJob::Constants::Events qw(EVENT_CLEAN_JOBSET);
 
 use base 'AnyJob::Controller::Global';
 
 sub process {
     my $self = shift;
 
-    my $limit = $self->config->limit || 10;
-    my $cleanBefore = $self->config->clean_before || 3600;
+    my $nodeConfig = $self->config->getNodeConfig() || {};
 
-    $self->cleanJobSets($limit, $cleanBefore);
-    $self->cleanBuilds($limit, $cleanBefore);
+    my $jobSetLimit = $nodeConfig->{jobset_clean_limit} || $self->config->limit || 10;
+    $self->cleanJobSets($jobSetLimit);
+
+    my $buildLimit = $nodeConfig->{build_clean_limit} || $self->config->limit || 10;
+    $self->cleanBuilds($buildLimit);
 }
 
 sub cleanJobSets {
     my $self = shift;
     my $limit = shift;
-    my $cleanBefore = shift;
 
-    my %ids = $self->redis->zrangebyscore('anyjob:jobsets', '-inf', time() - $cleanBefore, 'WITHSCORES',
+    my %ids = $self->redis->zrangebyscore('anyjob:jobsets', '-inf', time(), 'WITHSCORES',
         'LIMIT', '0', $limit);
 
     foreach my $id (keys(%ids)) {
-        $self->cleanJobSet($id, $ids{$id});
+        if (defined(my $jobSet = $self->getJobSet($id))) {
+            $self->sendEvent(EVENT_CLEAN_JOBSET, {
+                    id    => $id,
+                    props => $jobSet->{props},
+                    jobs  => $jobSet->{jobs}
+                });
+        } else {
+            $self->error('Cleaned jobset \'' . $id . '\' not found');
+        }
+
+        $self->cleanJobSet($id);
     }
 }
 
 sub cleanBuilds {
     my $self = shift;
     my $limit = shift;
-    my $cleanBefore = shift;
 
-    my %ids = $self->redis->zrangebyscore('anyjob:builds', '-inf', time() - $cleanBefore, 'WITHSCORES',
+    my %ids = $self->redis->zrangebyscore('anyjob:builds', '-inf', time(), 'WITHSCORES',
         'LIMIT', '0', $limit);
 
     foreach my $id (keys(%ids)) {
-        $self->cleanBuild($id, $ids{$id});
+        $self->cleanBuild($id);
     }
 }
 

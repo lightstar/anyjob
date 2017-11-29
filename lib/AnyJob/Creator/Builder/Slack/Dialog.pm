@@ -16,7 +16,7 @@ sub command {
     my $triggerId = shift;
 
     my ($job, $errors);
-    ($job, undef, $errors) = $self->parent->parseJobLine($text);
+    ($job, undef, $errors) = $self->parent->parseJob($text);
     unless (defined($job)) {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
@@ -26,8 +26,8 @@ sub command {
         return 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors);
     }
 
-    my $id = $self->nextBuildId();
-    $self->redis->zadd('anyjob:builds', time(), $id);
+    my $id = $self->getNextBuildId();
+    $self->redis->zadd('anyjob:builds', time() + $self->getCleanTimeout(), $id);
     $self->redis->set('anyjob:build:' . $id, encode_json({
             type        => 'slack_dialog',
             user        => $user,
@@ -92,7 +92,7 @@ sub applySubmission {
     my @errors;
     foreach my $param (@$params) {
         if (defined($submission->{$param->{name}})) {
-            unless ($self->parent->checkJobParamType($param->{type}, $submission->{$param->{name}}, $param->{data})) {
+            unless ($self->parent->checkJobParamType($param->{type}, $submission->{$param->{name}}, $param->{options})) {
                 push @errors, {
                         name  => $param->{name},
                         error => 'wrong param'
@@ -222,8 +222,13 @@ sub getComboParamElement {
     my $values = shift;
 
     my $value = $values->{$param->{name}};
-    unless (defined($value) and grep {$_->{value} eq $value} @{$param->{data}}) {
+    unless (defined($value) and grep {$_->{value} eq $value} @{$param->{options}}) {
         $value = undef;
+    }
+
+    my $options = [ map {{ label => $_->{label}, value => $_->{value} }} @{$param->{options}} ];
+    unless ($param->{required}) {
+        unshift @$options, { label => '--none--', value => '' };
     }
 
     return {
@@ -232,7 +237,7 @@ sub getComboParamElement {
         label    => $param->{label},
         (defined($value) ? (value => $value) : ()),
         optional => $param->{required} ? 0 : 1,
-        options  => [ map {{ label => $_->{label}, value => $_->{value} }} @{$param->{data}} ]
+        options  => $options
     };
 }
 

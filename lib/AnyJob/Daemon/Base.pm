@@ -14,12 +14,12 @@ sub new {
     my %args = @_;
     my $self = bless \%args, $class;
 
-    unless ($self->{process}) {
+    unless (defined($self->{process}) and ref($self->{process}) eq 'CODE') {
         require Carp;
         Carp::confess('No process function');
     }
 
-    unless ($self->{logger}) {
+    unless (defined($self->{logger})) {
         require Carp;
         Carp::confess('No logger');
     }

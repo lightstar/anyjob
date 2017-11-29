@@ -1,0 +1,7 @@
+<label for="id-{{id}}">{{label}}:</label>
+<select id="id-{{id}}" class="form-control"
+        data-ng-model="values[name]"
+        data-ng-options="item.value as item.label for item in options"
+        data-ng-change="change()">
+    <option value="">--none--</option>
+</select>

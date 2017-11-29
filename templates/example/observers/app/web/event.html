@@ -5,6 +5,7 @@
         <span data-ng-switch-when="createJobSet">Job Set created.</span>
         <span data-ng-switch-when="progressJobSet">Job Set is running.</span>
         <span data-ng-switch-when="finishJobSet">Job Set finished.</span>
+        <span data-ng-switch-when="cleanJobSet">Job Set cleaned.</span>
     </span>
 
     <span data-ng-if="event.type && event.node">
@@ -18,6 +19,10 @@
 
     <span data-ng-if="event.event === 'redirect'">
         Redirected.
+    </span>
+
+    <span data-ng-if="event.event === 'clean'">
+        Cleaned.
     </span>
 
     <span data-ng-if="event.event === 'progress' || event.event === 'progressJobSet'">

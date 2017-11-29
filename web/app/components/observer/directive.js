@@ -55,6 +55,10 @@ app.directive('observer', function ($timeout) {
                     case EVENT_FINISH_JOBSET:
                         event.class = 'text-success';
                         break;
+                    case EVENT_CLEAN:
+                    case EVENT_CLEAN_JOBSET:
+                        event.class = 'text-danger';
+                        break;
                     default:
                         event.class = '';
                 }

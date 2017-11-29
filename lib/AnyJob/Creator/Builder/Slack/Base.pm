@@ -78,16 +78,16 @@ sub sendApiCommand {
         Carp::confess('No slack api command or data');
     }
 
-    my $slack = $self->config->section('slack') || {};
-    unless (defined($slack->{api}) and defined($slack->{api_token})) {
+    my $config = $self->config->section('creator_slack') || {};
+    unless (defined($config->{api}) and defined($config->{api_token})) {
         require Carp;
         Carp::confess('No api URL or token for slack');
     }
 
-    my $url = $slack->{api} . $command;
+    my $url = $config->{api} . $command;
     my $request = POST($url,
         Content_Type  => 'application/json',
-        Authorization => 'Bearer ' . $slack->{api_token},
+        Authorization => 'Bearer ' . $config->{api_token},
         Content       => encode_json($data)
     );
 

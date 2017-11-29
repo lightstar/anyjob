@@ -120,7 +120,7 @@ sub AUTOLOAD {
         return $self->{data}->{$name};
     }
 
-    if ($self->{global} and exists($self->{data}->{$self->{global}}->{$name})) {
+    if (defined($self->{global}) and exists($self->{data}->{$self->{global}}->{$name})) {
         return $self->{data}->{$self->{global}}->{$name};
     }
 

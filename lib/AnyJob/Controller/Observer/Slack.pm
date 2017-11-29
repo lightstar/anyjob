@@ -10,8 +10,6 @@ use LWP::UserAgent;
 use HTTP::Request::Common qw(POST);
 use Template;
 
-use AnyJob::DateTime qw(formatDateTime);
-
 use base 'AnyJob::Controller::Observer::Base';
 
 sub new {
@@ -37,7 +35,7 @@ sub processEvent {
     my $self = shift;
     my $event = shift;
 
-    my $config = $self->observerConfig();
+    my $config = $self->getObserverConfig();
 
     unless ($self->preprocessEvent($config, $event)) {
         return;

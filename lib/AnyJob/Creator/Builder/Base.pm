@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use utf8;
 
-use AnyJob::DateTime qw(formatDateTime);
+use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_TIMEOUT);
 
 sub new {
     my $class = shift;
@@ -62,34 +62,26 @@ sub getBuild {
     return $self->{parent}->getObject('anyjob:build:' . $id);
 }
 
+sub getCleanTimeout {
+    my $self = shift;
+
+    my $config = $self->config->section('creator_' . $self->name) || {};
+    return $config->{build_clean_timeout} || $self->config->clean_timeout || DEFAULT_CLEAN_TIMEOUT;
+}
+
 sub cleanBuild {
     my $self = shift;
     my $id = shift;
 
-    if (my $time = $self->redis->zscore('anyjob:builds', $id)) {
-        $self->debug('Clean build \'' . $id . '\' last updated at ' . formatDateTime($time));
-        $self->redis->zrem('anyjob:builds', $id);
-        $self->redis->del('anyjob:build:' . $id);
-    }
+    $self->debug('Clean build \'' . $id . '\'');
+
+    $self->redis->zrem('anyjob:builds', $id);
+    $self->redis->del('anyjob:build:' . $id);
 }
 
-sub nextBuildId {
+sub getNextBuildId {
     my $self = shift;
     return $self->{parent}->redis->incr('anyjob:build:id');
-}
-
-sub build {
-    my $self = shift;
-
-    require Carp;
-    Carp::confess('Need to be implemented in descendant');
-}
-
-sub update {
-    my $self = shift;
-
-    require Carp;
-    Carp::confess('Need to be implemented in descendant');
 }
 
 1;
