@@ -55,7 +55,7 @@ sub sendResponse {
     my $url = shift;
 
     my $request = POST($url,
-        Content_Type => 'application/json',
+        Content_Type => 'application/json; charset=utf-8',
         Content      => encode_json($response)
     );
 
@@ -86,7 +86,7 @@ sub sendApiCommand {
 
     my $url = $config->{api} . $command;
     my $request = POST($url,
-        Content_Type  => 'application/json',
+        Content_Type  => 'application/json; charset=utf-8',
         Authorization => 'Bearer ' . $config->{api_token},
         Content       => encode_json($data)
     );

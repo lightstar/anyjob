@@ -226,18 +226,13 @@ sub getComboParamElement {
         $value = undef;
     }
 
-    my $options = [ map {{ label => $_->{label}, value => $_->{value} }} @{$param->{options}} ];
-    unless ($param->{required}) {
-        unshift @$options, { label => '--none--', value => '' };
-    }
-
     return {
         type     => 'select',
         name     => $param->{name},
         label    => $param->{label},
         (defined($value) ? (value => $value) : ()),
         optional => $param->{required} ? 0 : 1,
-        options  => $options
+        options  => [ map {{ label => $_->{label}, value => $_->{value} }} @{$param->{options}} ]
     };
 }
 

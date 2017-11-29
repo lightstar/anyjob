@@ -126,9 +126,14 @@ sub sendPrivateEvents {
 
     foreach my $event (@$events) {
         if ($self->eventFilter($event) and defined(my $url = $event->{props}->{response_url})) {
-            my $result = $self->{ua}->request(POST($url, [ payload => $self->getEventPayload($event) ]));
+            my $request = POST($url,
+                Content_Type => 'application/json; charset=utf-8',
+                Content      => $self->getEventPayload($event)
+            );
+
+            my $result = $self->{ua}->request($request);
             unless ($result->is_success) {
-                $self->error('Error sending event to ' . $url . ', response: ' . $result->decoded_content);
+                $self->error('Error sending event to ' . $url . ', response: ' . $result->content);
             }
         }
     }

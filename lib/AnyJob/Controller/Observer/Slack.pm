@@ -48,9 +48,14 @@ sub processEvent {
 
     $self->logEvent($event);
 
-    my $result = $self->{ua}->request(POST($config->{url}, [ payload => $self->getPayload($config, $event) ]));
+    my $request = POST($config->{url},
+        Content_Type => 'application/json; charset=utf-8',
+        Content      => $self->getPayload($config, $event)
+    );
+
+    my $result = $self->{ua}->request($request);
     unless ($result->is_success) {
-        $self->error('Error sending event to ' . $config->{url} . ', response: ' . $result->decoded_content);
+        $self->error('Error sending event to ' . $config->{url} . ', response: ' . $result->content);
     }
 }
 
