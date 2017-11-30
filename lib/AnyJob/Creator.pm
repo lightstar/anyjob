@@ -6,9 +6,10 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 use AnyJob::Utils qw(moduleName requireModule);
 use AnyJob::Creator::Parser;
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
+use AnyJob::Creator::Shutdown;
 
 use base 'AnyJob::Base';
 
@@ -166,8 +167,7 @@ sub parseJob {
     my $input = shift;
     my $allowedExtra = shift;
 
-    my $parser = AnyJob::Creator::Parser->new(parent => $self, input => $input,
-        allowedExtra => $allowedExtra);
+    my $parser = AnyJob::Creator::Parser->new(parent => $self, input => $input, allowedExtra => $allowedExtra);
     unless (defined($parser->prepare())) {
         return (undef, undef, $parser->errors);
     }
@@ -331,6 +331,15 @@ sub stripInternalPropsFromEvent {
                 delete $job->{props}->{$name};
             }
         }
+    }
+}
+
+sub shutdownIfNeeded {
+    my $self = shift;
+
+    if (isShutdown()) {
+        $self->debug('Shutdown');
+        exit(0);
     }
 }
 

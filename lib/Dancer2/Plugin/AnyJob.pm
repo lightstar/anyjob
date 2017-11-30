@@ -11,6 +11,17 @@ use Dancer2::Plugin;
 
 our $VERSION = '0.1';
 
+sub BUILD {
+    my $plugin = shift;
+
+    $plugin->app->add_hook(Dancer2::Core::Hook->new(
+        name => 'before',
+        code => sub {
+            $plugin->creator->shutdownIfNeeded();
+        }
+    ));
+}
+
 my $creator;
 sub creator {
     if (defined($creator)) {
