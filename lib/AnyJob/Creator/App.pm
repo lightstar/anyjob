@@ -10,36 +10,35 @@ sub new {
     my $class = shift;
     my %args = @_;
     my $self = $class->SUPER::new(%args);
-    $self->{isBusy} = 0;
-    $self->{isShutdown} = 0;
+    $self->{busy} = 0;
+    $self->{running} = 1;
 
     $self->debug('Started');
-
-    $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {
-        $self->{isShutdown} = 1;
-        $self->shutdownIfNotBusy();
-    };
+    $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {$self->stop()};
 
     return $self;
 }
 
-sub setBusy {
+sub stop {
     my $self = shift;
-    my $isBusy = shift;
 
-    if ($self->{isShutdown}) {
+    $self->debug('Stopping by signal');
+    $self->{running} = 0;
+
+    unless ($self->{busy}) {
         $self->shutdown();
     }
-
-    $self->{isBusy} = $isBusy;
 }
 
-sub shutdownIfNotBusy {
+sub setBusy {
     my $self = shift;
+    my $busy = shift;
 
-    unless ($self->{isBusy}) {
+    unless ($self->{running}) {
         $self->shutdown();
     }
+
+    $self->{busy} = $busy || 0;
 }
 
 sub shutdown {
