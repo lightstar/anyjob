@@ -15,12 +15,17 @@ use base 'AnyJob::Controller::Base';
 our @MODULES = qw(
     Progress
     Clean
+    BuildClean
     );
 
 sub process {
     my $self = shift;
 
     my $nodeConfig = $self->config->getNodeConfig() || {};
+    if ($self->isProcessDelayed($nodeConfig->{global_create_delay})) {
+        return;
+    }
+
     my $limit = $nodeConfig->{global_create_limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
 
@@ -63,6 +68,7 @@ sub createJobSet {
     my $id = $self->getNextJobSetId();
     $self->redis->zadd('anyjob:jobsets', $jobSet->{time} + $self->getJobSetCleanTimeout($jobSet), $id);
     $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
+    $self->parent->incActiveJobSetCount();
 
     foreach my $job (@{$jobSet->{jobs}}) {
         delete $job->{state};
@@ -92,6 +98,7 @@ sub cleanJobSet {
 
     $self->redis->zrem('anyjob:jobsets', $id);
     $self->redis->del('anyjob:jobset:' . $id);
+    $self->parent->decActiveJobSetCount();
 }
 
 sub cleanBuild {

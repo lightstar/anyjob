@@ -6,16 +6,25 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT DEFAULT_CLEAN_DELAY);
 use AnyJob::Constants::Events qw(EVENT_CLEAN);
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 
 use base 'AnyJob::Controller::Node';
 
 sub process {
     my $self = shift;
 
+    if ($self->parent->getActiveJobCount() == 0) {
+        return;
+    }
+
     my $nodeConfig = $self->config->getNodeConfig() || {};
-    my $limit = $nodeConfig->{job_clean_limit} || $self->config->limit || DEFAULT_LIMIT;
+    my $delay = $nodeConfig->{clean_delay} || $self->config->clean_delay || DEFAULT_CLEAN_DELAY;
+    if ($self->isProcessDelayed($delay)) {
+        return;
+    }
+
+    my $limit = $nodeConfig->{clean_limit} || $self->config->limit || DEFAULT_LIMIT;
 
     my %ids = $self->redis->zrangebyscore('anyjob:jobs:' . $self->node, '-inf', time(), 'WITHSCORES',
         'LIMIT', '0', $limit);

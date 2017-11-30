@@ -41,6 +41,11 @@ sub process {
     my $self = shift;
 
     my $observerConfig = $self->getObserverConfig() || {};
+
+    if ($self->isProcessDelayed($observerConfig->{delay} || $self->config->observe_delay)) {
+        return;
+    }
+
     my $limit = $observerConfig->{limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
 

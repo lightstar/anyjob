@@ -77,7 +77,7 @@ sub observePrivateEvents {
     my $user = shift;
 
     my $config = $self->config->section('creator_web') || {};
-    my $delay = $config->{observer_delay} || DEFAULT_DELAY;
+    my $delay = $config->{observe_delay} || DEFAULT_DELAY;
     my $timer = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
             $self->parent->setBusy(1);
 

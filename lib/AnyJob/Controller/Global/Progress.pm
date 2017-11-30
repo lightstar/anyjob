@@ -6,17 +6,25 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 use AnyJob::Constants::Events qw(EVENT_PROGRESS_JOBSET EVENT_FINISH_JOBSET);
 use AnyJob::Constants::States qw(STATE_BEGIN STATE_FINISHED);
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 
 use base 'AnyJob::Controller::Global';
 
 sub process {
     my $self = shift;
 
+    if ($self->parent->getActiveJobSetCount() == 0) {
+        return;
+    }
+
     my $nodeConfig = $self->config->getNodeConfig() || {};
-    my $limit = $nodeConfig->{jobset_progress_limit} || $self->config->limit || DEFAULT_LIMIT;
+    if ($self->isProcessDelayed($nodeConfig->{global_progress_delay})) {
+        return;
+    }
+
+    my $limit = $nodeConfig->{global_progress_limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
 
     while (my $progress = $self->redis->lpop('anyjob:progressq')) {

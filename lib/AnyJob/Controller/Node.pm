@@ -22,6 +22,15 @@ sub process {
     my $self = shift;
 
     my $nodeConfig = $self->config->getNodeConfig() || {};
+
+    if (defined($nodeConfig->{max_jobs}) and $self->parent->getActiveJobCount() >= $nodeConfig->{max_jobs}) {
+        return;
+    }
+
+    if ($self->isProcessDelayed($nodeConfig->{create_delay})) {
+        return;
+    }
+
     my $limit = $nodeConfig->{create_limit} || $self->config->limit || DEFAULT_LIMIT;
     my $count = 0;
 
@@ -57,6 +66,7 @@ sub createJob {
     my $id = $self->getNextJobId();
     $self->redis->zadd('anyjob:jobs:' . $self->node, $job->{time} + $self->getJobCleanTimeout($job), $id);
     $self->redis->set('anyjob:job:' . $id, encode_json($job));
+    $self->parent->incActiveJobCount();
 
     $self->debug('Create job \'' . $id . '\' ' .
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
@@ -102,6 +112,7 @@ sub runRedirectedJob {
 
     $self->redis->zrem('anyjob:jobs:' . $redirect->{from}, $id);
     $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
+    $self->parent->incActiveJobCount();
 
     $self->debug('Run redirected job \'' . $id . '\' ' .
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
@@ -148,6 +159,7 @@ sub cleanJob {
 
     $self->redis->zrem('anyjob:jobs:' . $self->node, $id);
     $self->redis->del('anyjob:job:' . $id);
+    $self->parent->decActiveJobCount();
 }
 
 sub sendJobProgressForJobSet {

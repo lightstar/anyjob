@@ -114,7 +114,7 @@ sub observePrivateEvents {
     my $self = shift;
 
     my $config = $self->config->section('creator_slack') || {};
-    my $delay = $config->{observer_delay} || DEFAULT_DELAY;
+    my $delay = $config->{observe_delay} || DEFAULT_DELAY;
     $self->{observer_timer} = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
             $self->parent->setBusy(1);
             $self->sendPrivateEvents($self->parent->receivePrivateEvents('slack'));

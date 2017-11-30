@@ -130,6 +130,21 @@ sub getJobSetCleanTimeout {
         $self->config->clean_timeout || DEFAULT_CLEAN_TIMEOUT;
 }
 
+sub isProcessDelayed {
+    my $self = shift;
+    my $delay = shift;
+
+    if (defined($delay)) {
+        my $time = time();
+        if ($time - ($self->{lastTime} || 0) < $delay) {
+            return 1;
+        }
+        $self->{lastTime} = $time;
+    }
+
+    return undef;
+}
+
 sub process {
     my $self = shift;
 
