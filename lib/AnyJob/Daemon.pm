@@ -16,6 +16,11 @@ sub new {
     $args{type} = 'daemon';
     my $self = $class->SUPER::new(%args);
 
+    unless ($self->config->node ne '') {
+        require Carp;
+        Carp::confess('No node');
+    }
+
     my $config = $self->config->daemon;
     $self->{daemon} = AnyJob::Daemon::Base->new(
         detached => $config->{detached},

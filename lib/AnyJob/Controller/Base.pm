@@ -22,6 +22,11 @@ sub new {
     return $self;
 }
 
+sub parent {
+    my $self = shift;
+    return $self->{parent};
+}
+
 sub config {
     my $self = shift;
     return $self->{parent}->config;

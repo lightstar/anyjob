@@ -5,7 +5,7 @@ use warnings;
 use utf8;
 
 use AnyJob::Config;
-use AnyJob::Creator;
+use AnyJob::Creator::App;
 
 use Dancer2::Plugin;
 
@@ -17,7 +17,14 @@ sub BUILD {
     $plugin->app->add_hook(Dancer2::Core::Hook->new(
         name => 'before',
         code => sub {
-            $plugin->creator->shutdownIfNeeded();
+            $plugin->creator->setBusy(1);
+        }
+    ));
+
+    $plugin->app->add_hook(Dancer2::Core::Hook->new(
+        name => 'after',
+        code => sub {
+            $plugin->creator->setBusy(0);
         }
     ));
 }
@@ -29,7 +36,7 @@ sub creator {
     }
 
     my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : '/opt/anyjob/etc/current/anyjob.cfg';
-    $creator = AnyJob::Creator->new(config => AnyJob::Config->new($configFile, 'anyjob'));
+    $creator = AnyJob::Creator::App->new(config => AnyJob::Config->new($configFile, 'anyjob'));
 
     return $creator;
 }

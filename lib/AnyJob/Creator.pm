@@ -9,7 +9,6 @@ use JSON::XS;
 use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 use AnyJob::Utils qw(moduleName requireModule);
 use AnyJob::Creator::Parser;
-use AnyJob::Creator::Shutdown;
 
 use base 'AnyJob::Base';
 
@@ -331,15 +330,6 @@ sub stripInternalPropsFromEvent {
                 delete $job->{props}->{$name};
             }
         }
-    }
-}
-
-sub shutdownIfNeeded {
-    my $self = shift;
-
-    if (isShutdown()) {
-        $self->debug('Shutdown');
-        exit(0);
     }
 }
 

@@ -79,7 +79,7 @@ sub observePrivateEvents {
     my $config = $self->config->section('creator_web') || {};
     my $delay = $config->{observer_delay} || DEFAULT_DELAY;
     my $timer = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
-            $self->parent->shutdownIfNeeded();
+            $self->parent->setBusy(1);
 
             my $events = $self->filterEvents(
                 $self->parent->receivePrivateEvents('u' . $user, 'stripInternalProps')
@@ -88,6 +88,8 @@ sub observePrivateEvents {
             if (scalar(@$events) > 0) {
                 $conn->send($events);
             }
+
+            $self->parent->setBusy(0);
         });
     $conn->on(close => sub {
             undef $timer;

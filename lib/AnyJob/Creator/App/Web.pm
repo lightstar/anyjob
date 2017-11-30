@@ -81,6 +81,8 @@ websocket_on_open sub {
         my $conn = shift;
         my $env = shift;
 
+        creator->setBusy(1);
+
         my $query = parse_query_string($env->{'QUERY_STRING'});
         my $user = $query->{user} || '';
         my $pass = $query->{pass} || '';
@@ -91,6 +93,8 @@ websocket_on_open sub {
         }
 
         $web->observePrivateEvents($conn, $user);
+
+        creator->setBusy(0);
     };
 
 1;
