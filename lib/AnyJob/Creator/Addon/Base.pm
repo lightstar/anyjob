@@ -4,8 +4,6 @@ use strict;
 use warnings;
 use utf8;
 
-use JavaScript::Duktape;
-
 use AnyJob::EventFilter;
 
 sub new {

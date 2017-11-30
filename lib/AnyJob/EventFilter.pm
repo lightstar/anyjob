@@ -4,14 +4,13 @@ use strict;
 use warnings;
 use utf8;
 
-use JavaScript::Duktape;
-
 sub new {
     my $class = shift;
     my %args = @_;
     my $self = bless \%args, $class;
 
     if (defined($self->{filter})) {
+        require JavaScript::Duktape;
         $self->{js} = JavaScript::Duktape->new();
         $self->{js}->eval('function eventFilter() { return ' . $self->{filter} . '; }');
     }
