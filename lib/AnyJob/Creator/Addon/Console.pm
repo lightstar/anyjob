@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use utf8;
 
+use JSON::XS;
+
 use base 'AnyJob::Creator::Addon::Base';
 
 sub new {
@@ -39,3 +41,5 @@ sub create {
 
     return 'Job created';
 }
+
+1;

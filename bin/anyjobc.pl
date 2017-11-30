@@ -5,6 +5,10 @@ use strict;
 use warnings;
 use utf8;
 
+BEGIN {
+    $ENV{PERL_INLINE_DIRECTORY} = ($ENV{ANYJOB_PATH} || '/opt/anyjob') . '/.inline';
+}
+
 use AnyJob::Config;
 use AnyJob::Creator;
 

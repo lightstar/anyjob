@@ -25,6 +25,7 @@ start() {
         echo "anyjobd is already running..."
     else
         ulimit -n 10240
+        export PERL_INLINE_DIRECTORY=${ANYJOB_PATH:-"/opt/anyjob"}"/.inline"
         LANG=en_US.UTF-8 ANYJOB_NODE="$NODE" $ANYJOBD
     fi
 }

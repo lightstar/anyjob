@@ -27,6 +27,7 @@ start() {
         echo "anyjobc is already running..."
     else
         ulimit -n 10240
+        export PERL_INLINE_DIRECTORY=${ANYJOB_PATH:-"/opt/anyjob"}"/.inline"
         $PLACKUP --server $SERVER --host $HOST --port $PORT --no-default-middleware $ANYJOBC >/dev/null 2>&1 &
     fi
 }
