@@ -36,6 +36,8 @@ sub process {
             $self->finishJob($progress);
         } elsif (exists($progress->{redirect})) {
             $self->redirectJob($progress);
+        } elsif (exists($progress->{redirected})) {
+            $self->redirectedJob($progress);
         } else {
             $self->progressJob($progress);
         }
@@ -129,6 +131,13 @@ sub redirectJob {
         from => $self->node
     };
     $self->redis->rpush('anyjob:queue:' . $progress->{redirect}, encode_json($redirect));
+}
+
+sub redirectedJob {
+    my $self = shift;
+    my $progress = shift;
+
+    $self->parent->updateActiveJobCount();
 }
 
 sub finishJob {

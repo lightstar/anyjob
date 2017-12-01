@@ -114,6 +114,10 @@ sub runRedirectedJob {
     $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
     $self->parent->incActiveJobCount();
 
+    $self->redis->rpush('anyjob:progressq:' . $redirect->{from}, encode_json({
+            redirected => $id
+        }));
+
     $self->debug('Run redirected job \'' . $id . '\' ' .
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
         '\', params ' . encode_json($job->{params}) . ' and props ' . encode_json($job->{props}));

@@ -14,9 +14,9 @@ sub new {
     my %args = @_;
     my $self = bless \%args, $class;
 
-    unless (defined($self->{process}) and ref($self->{process}) eq 'CODE') {
+    unless (defined($self->{processor}) and $self->{processor}->can('process')) {
         require Carp;
-        Carp::confess('No process function');
+        Carp::confess('No processor object');
     }
 
     unless (defined($self->{logger})) {
@@ -91,7 +91,7 @@ sub run {
     $self->{running} = 1;
     while ($self->{running}) {
         eval {
-            $self->{process}->();
+            $self->{processor}->process();
         };
 
         if ($@) {
@@ -107,7 +107,7 @@ sub run {
         $self->error('Can\'t delete pid file');
     }
 
-    delete $self->{process};
+    delete $self->{processor};
 }
 
 sub stop {
