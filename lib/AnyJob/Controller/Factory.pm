@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use utf8;
 
-use AnyJob::Utils qw(moduleName requireModule);
+use AnyJob::Utils qw(getModuleName requireModule);
 
 sub new {
     my $class = shift;
@@ -61,9 +61,9 @@ sub pushController {
     my $type = shift;
     my $name = shift;
 
-    my $module = 'AnyJob::Controller::' . moduleName($type);
+    my $module = 'AnyJob::Controller::' . getModuleName($type);
     if (defined($name)) {
-        $module .= '::' . moduleName($name);
+        $module .= '::' . getModuleName($name);
     }
     requireModule($module);
 

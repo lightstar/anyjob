@@ -1,5 +1,13 @@
 package AnyJob::Daemon::Base;
 
+###############################################################################
+# Class for daemon object which actually can be used for some other daemon, not necessarily anyjob-related.
+#
+# Author:       LightStar
+# Created:      19.10.2017
+# Last update:  01.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -7,8 +15,20 @@ use utf8;
 use POSIX qw(setsid dup2 :sys_wait_h);
 use Time::HiRes qw(usleep);
 use File::Basename;
-use IO::File;
+use Scalar::Util qw(looks_like_number);
 
+###############################################################################
+# Construct new AnyJob::Daemon::Base object.
+#
+# Arguments:
+#     processor      - object which must implement 'process' method. It will be called in daemon process loop.
+#     logger         - logger object which must implement 'debug' and 'error' methods.
+#     detached       - 0/1 flag. If set daemon will run in 'detached' mode i.e. will fork, close all input/output, etc.
+#     delay          - delay in seconds between process loop iterations. By default - 1.
+#     pidfile        - file name to store daemon process pid value. By default - '/var/run/daemon.pid'.
+# Returns:
+#     AnyJob::Daemon::Base object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -19,7 +39,7 @@ sub new {
         Carp::confess('No processor object');
     }
 
-    unless (defined($self->{logger})) {
+    unless (defined($self->{logger}) and $self->{logger}->can('debug') and $self->{logger}->can('error')) {
         require Carp;
         Carp::confess('No logger');
     }
@@ -38,6 +58,9 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Daemonize current process: fork, start new session, close STDIN/STDOUT/STDERR, send all output to /dev/null.
+#
 sub daemonize {
     my $self = shift;
 
@@ -56,6 +79,10 @@ sub daemonize {
         exit(1);
     }
 
+    close(STDIN);
+    close(STDOUT);
+    close(STDERR);
+
     my $maxFh;
     unless (open($maxFh, '>', '/dev/null')) {
         $self->error('Can\'t open /dev/null: ' . $!);
@@ -72,10 +99,13 @@ sub daemonize {
     }
 }
 
+###############################################################################
+# Run daemon loop.
+#
 sub run {
     my $self = shift;
 
-    unless ($self->{detached}) {
+    if ($self->{detached}) {
         $self->daemonize();
     }
 
@@ -110,93 +140,195 @@ sub run {
     delete $self->{processor};
 }
 
+###############################################################################
+# Set stop flag for daemon so its loop will break on next iteration.
+#
 sub stop {
     my $self = shift;
     $self->debug('Stopping by signal');
     $self->{running} = 0;
 }
 
+###############################################################################
+# Write debug message to log.
+#
+# Arguments:
+#     message - string debug message.
+#
 sub debug {
     my $self = shift;
     my $message = shift;
     $self->{logger}->debug($message);
 }
 
+###############################################################################
+# Write error message to log.
+#
+# Arguments:
+#     message - string error message.
+#
 sub error {
     my $self = shift;
     my $message = shift;
     $self->{logger}->error($message);
 }
 
+###############################################################################
+# Read current value from pid file.
+#
+# Returns:
+#     integer pid value or 0 if pid file does not exists or contains not a number.
+#
 sub readPid {
     my $self = shift;
     return (-s $self->{pidfile}) ? readInt($self->{pidfile}) : 0;
 }
 
+###############################################################################
+# Write pid file of current process to pid file.
+#
+# Returns:
+#     1/undef on success/error accordingly.
+#
 sub writePid {
     my $self = shift;
-    writeInt($self->{pidfile}, $$) or return undef;
-    chmod(0666, $self->{pidfile}) or return undef;
+
+    unless (writeInt($self->{pidfile}, $$)) {
+        return undef;
+    }
+
+    unless (chmod(0666, $self->{pidfile})) {
+        return undef;
+    }
+
     return 1;
 }
 
+###############################################################################
+# Delete pid file.
+#
+# Returns:
+#     1/undef on success/error accordingly.
+#
 sub deletePid {
     my $self = shift;
+
     if (-e $self->{pidfile}) {
-        unlink($self->{pidfile}) or return undef;
+        unless (unlink($self->{pidfile})) {
+            return undef;
+        }
     }
+
     return 1;
 }
 
+###############################################################################
+# Check if daemon can be run assuming only one instance of it can.
+#
+# Returns:
+#     0/1 flag which will be set if daemon can safely run.
+#
 sub canRun {
     my $self = shift;
+
     if (my $pid = $self->readPid()) {
-        return isProcRun($pid, $self->{script}) ? 0 : 1;
+        return isProcessRunning($pid, $self->{script}) ? 0 : 1;
     }
+
     return 1;
 }
 
+###############################################################################
+# Read integer value from given file.
+#
+# Arguments:
+#     fileName - name of file to read from.
+# Returns:
+#     integer value or 0 if file can't be opened or its content is not integer.
+#
 sub readInt {
     my $fileName = shift;
 
-    my $fh = IO::File->new($fileName, 'r');
-    return 0 unless $fh;
-    my $value = int(<$fh>);
-    $fh->close();
+    my $fh;
+    unless (open($fh, '<', $fileName)) {
+        return 0;
+    }
+    my $value = <$fh>;
+    close($fh);
+
+    if (looks_like_number($value)) {
+        $value = int($value);
+    } else {
+        $value = 0;
+    }
 
     return $value;
 }
 
+###############################################################################
+# Write integer value to file.
+#
+# Arguments:
+#     fileName - name of file to write to.
+#     value    - integer value to write.
+# Returns:
+#     1/undef on success/error accordingly.
+#
 sub writeInt {
     my $fileName = shift;
     my $value = shift;
 
-    my $fh = IO::File->new($fileName, 'w');
-    return undef unless $fh;
+    my $fh;
+    unless (open($fh, '>', $fileName)) {
+        return undef;
+    }
     print $fh $value;
     close($fh);
 
     return 1;
 }
 
-sub isProcRun {
+
+###############################################################################
+# Check if process with given pid and executable file is running now.
+#
+# Arguments:
+#     pid      - pid of checked process.
+#     fileName - name of checked process executable file. If undefined given check will be performed only by pid.
+# Returns:
+#     0/1 flag which will be set if process is currently running.
+#
+sub isProcessRunning {
     my $pid = shift;
     my $fileName = shift;
 
-    return undef unless $pid;
+    unless (defined($pid) and $pid != 0) {
+        return undef;
+    }
 
     my $procFile = '/proc/' . $pid . '/cmdline';
-    return undef unless -e $procFile;
-    return 1 unless $fileName;
+    unless (-e $procFile) {
+        return undef;
+    }
 
-    my $fh = IO::File->new($procFile, 'r');
-    return undef unless $fh;
+    unless (defined($fileName)) {
+        return 1;
+    }
 
+    my $fh;
+    unless (open($fh, '<', $procFile)) {
+        return undef;
+    }
     my $str = <$fh>;
     close($fh);
-    return undef unless $str;
 
-    return 1 if $str =~ /$fileName/;
+    unless (defined($str) and $str ne '') {
+        return undef;
+    }
+
+    if (index($str, $fileName) != -1) {
+        return 1;
+    }
 
     return undef;
 }

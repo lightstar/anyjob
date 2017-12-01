@@ -23,7 +23,7 @@ sub new {
 
     my $config = $self->config->section('daemon') || {};
     $self->{daemon} = AnyJob::Daemon::Base->new(
-        detached  => $config->{detached} || 0,
+        detached  => defined($config->{detached}) ? ($config->{detached} ? 1 : 0) : 1,
         pidfile   => $config->{pidfile} || DEFAULT_PIDFILE,
         delay     => $config->{delay} || DEFAULT_DELAY,
         logger    => $self->logger,

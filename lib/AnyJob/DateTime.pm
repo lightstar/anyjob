@@ -1,5 +1,13 @@
 package AnyJob::DateTime;
 
+###############################################################################
+# Functions related to manipulating with date and time.
+#
+# Author:       LightStar
+# Created:      21.10.2017
+# Last update:  01.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -10,6 +18,14 @@ our @EXPORT_OK = qw(
     formatDateTime
     );
 
+###############################################################################
+# Format provided unix time (or current time) using standart scheme 'DD-MM-YYYY HH:MM:SS'.
+#
+# Arguments:
+#     time - integer unix time. Current time will be substituted if 0 or undef.
+# Returns:
+#     string formatted datetime.
+#
 sub formatDateTime {
     my $time = shift;
     $time ||= time();

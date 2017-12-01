@@ -7,7 +7,7 @@ use utf8;
 use JSON::XS;
 
 use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
-use AnyJob::Utils qw(moduleName requireModule);
+use AnyJob::Utils qw(getModuleName requireModule);
 use AnyJob::Creator::Parser;
 
 use base 'AnyJob::Base';
@@ -29,7 +29,7 @@ sub addon {
         return $self->{addons}->{$name};
     }
 
-    my $module = 'AnyJob::Creator::Addon::' . moduleName($name);
+    my $module = 'AnyJob::Creator::Addon::' . getModuleName($name);
     requireModule($module);
 
     $self->{addons}->{$name} = $module->new(parent => $self);

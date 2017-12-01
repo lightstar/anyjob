@@ -6,8 +6,8 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Utils qw(moduleName requireModule);
 use AnyJob::Constants::States qw(STATE_RUN);
+use AnyJob::Utils qw(getModuleName requireModule);
 
 use base 'AnyJob::Base';
 
@@ -133,7 +133,7 @@ sub run {
 
     my $workerConfig = $self->config->section('worker') || {};
 
-    my $module = moduleName($jobConfig->{module} || $workerConfig->{module} || $job->{type});
+    my $module = getModuleName($jobConfig->{module} || $workerConfig->{module} || $job->{type});
     my $prefix = $jobConfig->{prefix} || $workerConfig->{prefix} || 'AnyJob::Worker';
     if (defined($prefix)) {
         $module = $prefix . '::' . $module;

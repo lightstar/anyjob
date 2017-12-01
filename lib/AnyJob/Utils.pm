@@ -1,5 +1,13 @@
 package AnyJob::Utils;
 
+###############################################################################
+# Various utility functions.
+#
+# Author:       LightStar
+# Created:      27.10.2017
+# Last update:  01.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -7,18 +15,31 @@ use utf8;
 use base 'Exporter';
 
 our @EXPORT_OK = qw(
-    moduleName
+    getModuleName
     requireModule
     getFileContent
     );
 
-sub moduleName {
+###############################################################################
+# Get canonical module name from some name in config.
+#
+# Returns:
+#     string module name.
+#
+sub getModuleName {
     my $name = shift;
     return join('', map {ucfirst($_)} split(/_/, $name));
 }
 
+###############################################################################
+# Load module by name using eval and throwing exception on error.
+#
+# Arguments:
+#     module - string module name.
+#
 sub requireModule {
     my $module = shift;
+
     eval 'require ' . $module;
     if ($@) {
         require Carp;
@@ -26,6 +47,14 @@ sub requireModule {
     }
 }
 
+###############################################################################
+# Get full file content.
+#
+# Arguments:
+#     fileName - string file name.
+# Returns:
+#     string file content or empty string if file can't be opened.
+#
 sub getFileContent {
     my $fileName = shift;
 

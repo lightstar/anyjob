@@ -10,7 +10,7 @@ use HTTP::Request::Common qw(POST);
 use Template;
 use AnyEvent;
 
-use AnyJob::Utils qw(moduleName requireModule);
+use AnyJob::Utils qw(getModuleName requireModule);
 use AnyJob::Constants::Defaults qw(DEFAULT_DELAY);
 
 use base 'AnyJob::Creator::Addon::Base';
@@ -62,7 +62,7 @@ sub getBuilder {
     $self->{builders} ||= {};
 
     my $config = $self->config->getBuilderConfig('slack_' . $name);
-    my $module = 'AnyJob::Creator::Builder::Slack::' . moduleName($config->{module});
+    my $module = 'AnyJob::Creator::Builder::Slack::' . getModuleName($config->{module});
     requireModule($module);
 
     $self->{builders}->{$name} = $module->new(parent => $self->{parent}, name => $name);

@@ -27,6 +27,11 @@ sub new {
     return $self;
 }
 
+sub parent {
+    my $self = shift;
+    return $self->{parent};
+}
+
 sub id {
     my $self = shift;
     return $self->{id};
@@ -35,11 +40,6 @@ sub id {
 sub job {
     my $self = shift;
     return $self->{job};
-}
-
-sub parent {
-    my $self = shift;
-    return $self->{parent};
 }
 
 sub jobset {
