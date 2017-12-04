@@ -8,6 +8,12 @@ use JSON::XS;
 use File::Basename;
 use File::Spec;
 
+use AnyJob::Constants::Defaults qw(
+    DEFAULT_NODES_CONFIG_DIR DEFAULT_JOBS_CONFIG_DIR DEFAULT_OBSERVERS_CONFIG_DIR DEFAULT_BUILDS_CONFIG_DIR
+    DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH DEFAULT_INTERNAL_PROPS
+    injectPathIntoConstant
+    );
+
 use base 'AnyJob::Config::Base';
 
 sub new {
@@ -17,21 +23,14 @@ sub new {
     my $fileName = shift;
     my $baseDir = dirname($fileName);
 
-    if (defined($self->nodes_dir)) {
-        $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->nodes_dir), 'node');
-    }
-
-    if (defined($self->jobs_dir)) {
-        $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->jobs_dir), 'job');
-    }
-
-    if (defined($self->observers_dir)) {
-        $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->observers_dir), 'observer');
-    }
-
-    if (defined($self->builders_dir)) {
-        $self->addConfigFromDir(File::Spec->catdir($baseDir, $self->builders_dir), 'builder');
-    }
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->nodes_dir || DEFAULT_NODES_CONFIG_DIR)),
+        'node');
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->jobs_dir || DEFAULT_JOBS_CONFIG_DIR)),
+        'job');
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->observers_dir || DEFAULT_OBSERVERS_CONFIG_DIR)),
+        'observer');
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->builders_dir || DEFAULT_BUILDS_CONFIG_DIR)),
+        'builder');
 
     return $self;
 }
@@ -263,8 +262,8 @@ sub getJobWorker {
 
     my $workerSection = $self->section('worker') || {};
 
-    return ($config->{work_dir} || $workerSection->{work_dir},
-        $config->{exec} || $workerSection->{exec},
+    return ($config->{work_dir} || $workerSection->{work_dir} || injectPathIntoConstant(DEFAULT_WORKER_WORK_DIR),
+        $config->{exec} || $workerSection->{exec} || injectPathIntoConstant(DEFAULT_WORKER_EXEC),
         $config->{lib} || $workerSection->{lib});
 }
 
@@ -373,11 +372,9 @@ sub getInternalProps {
     $self->{internalProps} = [];
 
     my $config = $self->section('creator') || {};
-    unless (defined($config->{internal_props})) {
-        return [];
-    }
+    my $internalProps = defined($config->{internal_props}) ? $config->{internal_props} : DEFAULT_INTERNAL_PROPS;
 
-    $self->{internalProps} = [ split(/\s*,\s*/, $config->{internal_props}) ];
+    $self->{internalProps} = [ split(/\s*,\s*/, $internalProps) ];
     return $self->{internalProps};
 }
 
@@ -405,6 +402,11 @@ sub getAllBuilders {
 
     $self->{builders} = \@builders;
     return \@builders;
+}
+
+sub getTemplatesPath {
+    my $self = shift;
+    return $self->templates_path || injectPathIntoConstant(DEFAULT_TEMPLATES_PATH);
 }
 
 1;

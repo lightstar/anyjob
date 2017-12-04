@@ -5,12 +5,12 @@ use strict;
 use warnings;
 use utf8;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_CONFIG_FILE injectPathIntoConstant);
 use AnyJob::Config;
 use AnyJob::Worker;
 
 BEGIN {
-    if ($ENV{ANYJOB_WORKER_LIB}) {
-        require lib;
+    if (defined($ENV{ANYJOB_WORKER_LIB})) {
         lib->import($ENV{ANYJOB_WORKER_LIB});
     }
 }
@@ -19,7 +19,7 @@ unless ($ENV{ANYJOB_ID}) {
     exit(1);
 }
 
-my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : '/opt/anyjob/etc/current/anyjob.cfg';
+my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : injectPathIntoConstant(DEFAULT_CONFIG_FILE);
 my $worker = AnyJob::Worker->new(config => AnyJob::Config->new($configFile, 'anyjob'));
 $worker->run($ENV{ANYJOB_ID});
 

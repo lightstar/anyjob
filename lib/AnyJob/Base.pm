@@ -17,6 +17,7 @@ use utf8;
 use Redis;
 use JSON::XS;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_REDIS);
 use AnyJob::Logger;
 
 ###############################################################################
@@ -43,7 +44,7 @@ sub new {
         Carp::confess('No component type provider');
     }
 
-    $self->{redis} = Redis->new(server => $self->config->redis, encoding => undef);
+    $self->{redis} = Redis->new(server => $self->config->redis || DEFAULT_REDIS, encoding => undef);
     $self->{node} = $self->config->node;
 
     my $syslog = $self->config->syslog ? 1 : 0;

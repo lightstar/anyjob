@@ -10,8 +10,8 @@ use HTTP::Request::Common qw(POST);
 use Template;
 use AnyEvent;
 
-use AnyJob::Utils qw(getModuleName requireModule);
 use AnyJob::Constants::Defaults qw(DEFAULT_DELAY);
+use AnyJob::Utils qw(getModuleName requireModule);
 
 use base 'AnyJob::Creator::Addon::Base';
 
@@ -22,7 +22,7 @@ sub new {
     my $self = $class->SUPER::new(%args);
 
     $self->{tt} = Template->new({
-        INCLUDE_PATH => File::Spec->catdir($self->config->templates_path, 'observers/app/slack'),
+        INCLUDE_PATH => File::Spec->catdir($self->config->getTemplatesPath(), 'observers/app/slack'),
         ENCODING     => 'UTF-8',
         PRE_CHOMP    => 1,
         POST_CHOMP   => 1,

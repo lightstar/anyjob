@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use utf8;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_CONFIG_FILE injectPathIntoConstant);
 use AnyJob::Config;
 use AnyJob::Creator::App;
 
@@ -35,7 +36,7 @@ sub creator {
         return $creator;
     }
 
-    my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : '/opt/anyjob/etc/current/anyjob.cfg';
+    my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : injectPathIntoConstant(DEFAULT_CONFIG_FILE);
     $creator = AnyJob::Creator::App->new(config => AnyJob::Config->new($configFile, 'anyjob'));
 
     return $creator;

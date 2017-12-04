@@ -8,8 +8,8 @@ use File::Spec;
 use Scalar::Util qw(reftype);
 use AnyEvent;
 
-use AnyJob::Utils qw(getFileContent);
 use AnyJob::Constants::Defaults qw(DEFAULT_DELAY);
+use AnyJob::Utils qw(getFileContent);
 
 use base 'AnyJob::Creator::Addon::Base';
 
@@ -34,8 +34,8 @@ sub getEventTemplate {
     my $self = shift;
 
     unless (exists($self->{appEventTemplate})) {
-        $self->{appEventTemplate} =
-            getFileContent(File::Spec->catdir($self->config->templates_path, 'observers/app/web/event.html'));
+        $self->{appEventTemplate} = getFileContent(File::Spec->catdir($self->config->getTemplatesPath(),
+            'observers/app/web/event.html'));
     }
 
     return $self->{appEventTemplate};

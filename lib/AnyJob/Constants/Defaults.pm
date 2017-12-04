@@ -39,12 +39,88 @@ use constant DEFAULT_CLEAN_DELAY => 60;
 #
 use constant DEFAULT_PIDFILE => '/var/run/anyjobd.pid';
 
+###############################################################################
+# Default anyjob installation path.
+#
+use constant DEFAULT_ANYJOB_PATH => '/opt/anyjob';
+
+###############################################################################
+# Default config file.
+#
+use constant DEFAULT_CONFIG_FILE => '{ANYJOB_PATH}/etc/current/anyjob.cfg';
+
+###############################################################################
+# Default redis address and port.
+#
+use constant DEFAULT_REDIS => '127.0.0.1:6379';
+
+###############################################################################
+# Default directory for nodes configuration (relative to config file).
+#
+use constant DEFAULT_NODES_CONFIG_DIR => 'nodes';
+
+###############################################################################
+# Default directory for jobs configuration (relative to config file).
+#
+use constant DEFAULT_JOBS_CONFIG_DIR => 'jobs';
+
+###############################################################################
+# Default directory for observers configuration (relative to config file).
+#
+use constant DEFAULT_OBSERVERS_CONFIG_DIR => 'observers';
+
+###############################################################################
+# Default directory for builds configuration (relative to config file).
+#
+use constant DEFAULT_BUILDS_CONFIG_DIR => 'builds';
+
+###############################################################################
+# Default directory for templates.
+#
+use constant DEFAULT_TEMPLATES_PATH => '{ANYJOB_PATH}/templates/current';
+
+###############################################################################
+# Default work dir for worker execution.
+#
+use constant DEFAULT_WORKER_WORK_DIR => '{ANYJOB_PATH}';
+
+###############################################################################
+# Default worker executable.
+#
+use constant DEFAULT_WORKER_EXEC => '{ANYJOB_PATH}/bin/anyjobw.pl';
+
+###############################################################################
+# Default list of creator internal properties.
+#
+use constant DEFAULT_INTERNAL_PROPS => 'observer,response_url';
+
 our @EXPORT = qw(
     DEFAULT_LIMIT
     DEFAULT_DELAY
     DEFAULT_CLEAN_TIMEOUT
     DEFAULT_CLEAN_DELAY
     DEFAULT_PIDFILE
+    DEFAULT_ANYJOB_PATH
+    DEFAULT_CONFIG_FILE
+    DEFAULT_REDIS
+    DEFAULT_NODES_CONFIG_DIR
+    DEFAULT_JOBS_CONFIG_DIR
+    DEFAULT_OBSERVERS_CONFIG_DIR
+    DEFAULT_BUILDS_CONFIG_DIR
+    DEFAULT_TEMPLATES_PATH
+    DEFAULT_WORKER_WORK_DIR
+    DEFAULT_WORKER_EXEC
+    DEFAULT_INTERNAL_PROPS
+    injectPathIntoConstant
     );
+
+sub injectPathIntoConstant {
+    my $value = shift;
+
+    my $anyjobPath = $ENV{ANYJOB_PATH} || DEFAULT_ANYJOB_PATH;
+    $value =~ s/\{ANYJOB_PATH\}/$anyjobPath/;
+
+    return $value;
+}
 
 1;

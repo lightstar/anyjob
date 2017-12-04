@@ -20,7 +20,7 @@ sub new {
     my $self = $class->SUPER::new(%args);
 
     $self->{tt} = Template->new({
-        INCLUDE_PATH => File::Spec->catdir($self->config->templates_path, 'observers/mail'),
+        INCLUDE_PATH => File::Spec->catdir($self->config->getTemplatesPath(), 'observers/mail'),
         ENCODING     => 'UTF-8',
         PRE_CHOMP    => 1,
         POST_CHOMP   => 1,

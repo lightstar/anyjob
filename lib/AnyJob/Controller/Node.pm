@@ -131,11 +131,6 @@ sub runJob {
     my $id = shift;
 
     my ($workDir, $exec, $lib) = $self->config->getJobWorker($job->{type});
-    unless (defined($workDir) and defined($exec)) {
-        $self->error('Worker or work directory for job with type \'' . $job->{type} .
-            '\' are not defined and no global values are set');
-        return;
-    }
 
     my $pid = fork();
     if ($pid != 0) {

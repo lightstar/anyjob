@@ -18,7 +18,7 @@ sub new {
     my $self = $class->SUPER::new(%args);
 
     $self->{tt} = Template->new({
-        INCLUDE_PATH => File::Spec->catdir($self->config->templates_path, 'observers/slack'),
+        INCLUDE_PATH => File::Spec->catdir($self->config->getTemplatesPath(), 'observers/slack'),
         ENCODING     => 'UTF-8',
         PRE_CHOMP    => 1,
         POST_CHOMP   => 1,
