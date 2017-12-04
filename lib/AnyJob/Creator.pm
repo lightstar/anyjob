@@ -1,5 +1,16 @@
 package AnyJob::Creator;
 
+###############################################################################
+# Creator component subclassed from AnyJob::Base, which primary task is to create new jobs and jobsets.
+# There are several creation ways which are implemented as creator addons under 'Creator\Addon' package path.
+# Creator also manages special 'private' observers which are intended to deliver event messages directly
+# to clients who created appropriate jobs.
+#
+# Author:       LightStar
+# Created:      17.10.2017
+# Last update:  04.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -12,6 +23,12 @@ use AnyJob::Creator::Parser;
 
 use base 'AnyJob::Base';
 
+###############################################################################
+# Construct new AnyJob::Creator object.
+#
+# Returns:
+#     AnyJob::Creator object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -21,6 +38,14 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Get addon object by its name.
+#
+# Arguments:
+#     name - string addon name.
+# Returns:
+#     addon object usually inherited from AnyJob::Creator::Addon::Base class.
+#
 sub addon {
     my $self = shift;
     my $name = shift;
@@ -36,6 +61,17 @@ sub addon {
     return $self->{addons}->{$name};
 }
 
+###############################################################################
+# Check given array of hashes with information about jobs to create.
+# Each hash should contain 'type' (string job type), 'nodes' (array of strings with node names),
+# 'params' (hash with job parameters) and 'props' (hash with job properties) fields.
+# All of it will be checked for correctness.
+#
+# Arguments:
+#     jobs - array of hashes with job information.
+# Returns:
+#     string error message or undef if there are no any errors.
+#
 sub checkJobs {
     my $self = shift;
     my $jobs = shift;
@@ -68,6 +104,14 @@ sub checkJobs {
     return $error;
 }
 
+###############################################################################
+# Check type of given job to create.
+#
+# Arguments:
+#     job - hash with job information. Only its field 'type' will be checked.
+# Returns:
+#     string error message or undef if there are no any errors.
+#
 sub checkJobType {
     my $self = shift;
     my $job = shift;
@@ -83,6 +127,14 @@ sub checkJobType {
     return undef;
 }
 
+###############################################################################
+# Check nodes of given job to create.
+#
+# Arguments:
+#     job - hash with job information. Only its field 'nodes' will be checked.
+# Returns:
+#     string error message or undef if there are no any errors.
+#
 sub checkJobNodes {
     my $self = shift;
     my $job = shift;
@@ -104,6 +156,15 @@ sub checkJobNodes {
     return undef;
 }
 
+###############################################################################
+# Check given job parameters for correctness.
+#
+# Arguments:
+#     jobParams - hash with job parameters.
+#     params    - array of hashes with all available job parameters from configuration.
+# Returns:
+#     1/undef on success/error accordingly.
+#
 sub checkJobParams {
     my $self = shift;
     my $jobParams = shift;
@@ -140,6 +201,16 @@ sub checkJobParams {
     return 1;
 }
 
+###############################################################################
+# Check that given parameter value is correct considering its configured type.
+#
+# Arguments:
+#     type    - string parameter type.
+#     value   - string parameter value.
+#     options - array of strings with all available values, used if parameter type is 'combo'.
+# Returns:
+#     1/undef on success/error accordingly.
+#
 sub checkJobParamType {
     my $self = shift;
     my $type = shift;
@@ -161,6 +232,19 @@ sub checkJobParamType {
     return 1;
 }
 
+###############################################################################
+# Parse given input which can be string command-line or array of string command-line arguments.
+# Result is some job(s) to create.
+# See AnyJob::Creator::Parser module for details.
+#
+# Arguments:
+#     input         - string input line or array of string arguments.
+#     allowedExtra  - hash with allowed additional parameters.
+# Returns:
+#     hash with parsed job information.
+#     hash with parsed extra parameters.
+#     array of hashes with errors/warnings.
+#
 sub parseJob {
     my $self = shift;
     my $input = shift;
@@ -176,6 +260,23 @@ sub parseJob {
     return ($parser->job, $parser->extra, $parser->errors);
 }
 
+###############################################################################
+# Create provided jobs. If there is only one job, it will be created by itself,
+# otherwise jobset is created containing all jobs.
+# At first created jobs are checked using 'checkJobs' method, and creating fails if there are any errors.
+#
+# Arguments:
+#     jobs - array of hashes with job information. I.e.:
+#            [{
+#                type => '...',
+#                nodes => [ 'node1', 'node2', ... ],
+#                params => { 'param1' => '...', 'param2' => '...', ... },
+#                props => { 'prop1' => '...', 'prop2' => '...', ... }
+#            }, ...]
+#     props - hash with properties injected into all jobs and jobset if any.
+# Returns:
+#     string error message or undef if there are no any errors.
+#
 sub createJobs {
     my $self = shift;
     my $jobs = shift;
@@ -219,6 +320,16 @@ sub createJobs {
     return undef;
 }
 
+###############################################################################
+# Create one job on given node.
+# Almost nothing is checked here so better use higher level method 'createJobs' instead.
+#
+# Arguments:
+#     node   - string node where to create.
+#     type   - string job type.
+#     params - optional hash with job parameters.
+#     props  - optional hash with job properties.
+#
 sub createJob {
     my $self = shift;
     my $node = shift;
@@ -246,6 +357,15 @@ sub createJob {
         }));
 }
 
+###############################################################################
+# Create jobset.
+# Almost nothing is checked here so better use higher level method 'createJobs' instead.
+#
+# Arguments:
+#     jobs   - arrays of hashes with information about jobs to create. Each hash should contain string fields
+#              'type', 'node' and optionally inner hashes 'params' and 'props'.
+#     props  - optional hash with jobset properties.
+#
 sub createJobSet {
     my $self = shift;
     my $jobs = shift;
@@ -271,10 +391,6 @@ sub createJobSet {
 
         $job->{params} ||= {};
         $job->{props} ||= {};
-
-        if (exists($props->{observer})) {
-            $job->{props}->{observer} = $props->{observer};
-        }
     }
 
     $self->redis->rpush('anyjob:queue', encode_json({
@@ -284,6 +400,16 @@ sub createJobSet {
         }));
 }
 
+###############################################################################
+# Receive private events dedicated to specific creator addon or even some client who used that addon.
+#
+# Arguments:
+#     name                - some string name uniquely signifying event target (it could be addon name,
+#                           addon client name or anything that is meaningfull for that addon).
+#     stripInternalProps  - 0/1 flag. If set, all configured internal properties will be stripped from all events.
+# Returns:
+#     array of hashes with event data. Details about what event data can contain see in documentation.
+#
 sub receivePrivateEvents {
     my $self = shift;
     my $name = shift;
@@ -319,6 +445,12 @@ sub receivePrivateEvents {
     return \@events;
 }
 
+###############################################################################
+# Strip all configured internal properties from provided event.
+#
+# Arguments:
+#     event - hash with event data. Details about what event data can contain see in documentation.
+#
 sub stripInternalPropsFromEvent {
     my $self = shift;
     my $event = shift;

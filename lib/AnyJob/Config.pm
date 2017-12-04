@@ -1,5 +1,13 @@
 package AnyJob::Config;
 
+###############################################################################
+# Configuration class used to collect, store and retrieve configuration data.
+#
+# Author:       LightStar
+# Created:      17.10.2017
+# Last update:  04.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -16,6 +24,12 @@ use AnyJob::Constants::Defaults qw(
 
 use base 'AnyJob::Config::Base';
 
+###############################################################################
+# Construct new AnyJob::Config object.
+#
+# Returns:
+#     AnyJob::Config object.
+#
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
@@ -35,6 +49,10 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Returns:
+#     string node name retrieved from system environment.
+#
 sub node {
     my $self = shift;
 
@@ -46,6 +64,16 @@ sub node {
     return $self->{node};
 }
 
+###############################################################################
+# Add configuration from files in given directory.
+#
+# Arguments:
+#     dirName       - root directory to search configuration files in.
+#     sectionPrefix - prefix for default section. Default section will contain all configuration data
+#                     without any explicit section. Final default section value for every file will be
+#                     <sectionPrefix>_<fileName>. For files in additional subdirectory:
+#                     <sectionPrefix>_<subdirectoryName>_<fileName>.
+#
 sub addConfigFromDir {
     my $self = shift;
     my $dirName = shift;
@@ -72,6 +100,12 @@ sub addConfigFromDir {
     }
 }
 
+###############################################################################
+# Get array of strings with names of all available nodes.
+#
+# Returns:
+#     array of strings with names of all available nodes.
+#
 sub getAllNodes {
     my $self = shift;
 
@@ -97,6 +131,22 @@ sub getAllNodes {
     return \@nodes;
 }
 
+###############################################################################
+# Get array of hashes with detailed information about all available jobs.
+#
+# Returns:
+#     array of hashes with detailed information about all available jobs:
+#     [{
+#         type => '...',
+#         nodes => {
+#             available => [ 'node1', 'node2', node3', ... ],
+#             default   => { 'node1' => 1, 'node2' => 1, ... }
+#         },
+#         label => '...',
+#         group => '...',
+#         params => { 'param1': '...', 'param2': '...', ... }
+#     },...]
+#
 sub getAllJobs {
     my $self = shift;
 
@@ -139,6 +189,12 @@ sub getAllJobs {
     return \@jobs;
 }
 
+###############################################################################
+# Get array of strings with names of all available observers.
+#
+# Returns:
+#     array of strings with names of all available observers.
+#
 sub getAllObservers {
     my $self = shift;
 
@@ -159,40 +215,54 @@ sub getAllObservers {
     return \@observers;
 }
 
-sub getObserversForEvent {
+###############################################################################
+# Get array of strings with names of all available builders.
+#
+# Returns:
+#     array of strings with names of all available builders.
+#
+sub getAllBuilders {
     my $self = shift;
-    my $event = shift;
 
-    $self->{eventObservers} ||= {};
-    if (exists($self->{eventObservers}->{$event})) {
-        return $self->{eventObservers}->{$event};
+    if (exists($self->{builders})) {
+        return $self->{builders};
     }
 
-    my $observers = [];
-    foreach my $observer (@{$self->getAllObservers()}) {
-        my $config = $self->getObserverConfig($observer);
-
-        if (not exists($config->{events}) or $config->{events} eq 'all' or
-            grep {$_ eq $event} split(/\s*,\s*/, $config->{events})
-        ) {
-            if (not exists($config->{nodes}) or $config->{nodes} eq 'all' or
-                grep {$_ eq $self->node} split(/\s*,\s*/, $config->{nodes})
-            ) {
-                push @$observers, $observer;
+    my @builders;
+    foreach my $section (keys(%{$self->{data}})) {
+        if (my ($builder) = ($section =~ /^builder_(.+)$/)) {
+            unless ($self->{data}->{$section}->{disabled}) {
+                push @builders, $builder;
             }
         }
     }
 
-    $self->{eventObservers}->{$event} = $observers;
-    return $observers;
+    $self->{builders} = \@builders;
+    return \@builders;
 }
 
+###############################################################################
+# Get job configuration or undef.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     hash with job configuration or undef if there are no such job type.
+#
 sub getJobConfig {
     my $self = shift;
     my $type = shift;
     return $self->section('job_' . $type);
 }
 
+###############################################################################
+# Get node configuration or undef.
+#
+# Arguments:
+#     node - optional string node name. If undefined, current node will be used.
+# Returns:
+#     hash with node configuration or undef if there are no such node.
+#
 sub getNodeConfig {
     my $self = shift;
     my $node = shift;
@@ -200,12 +270,42 @@ sub getNodeConfig {
     return $self->section('node_' . $node);
 }
 
+###############################################################################
+# Get observer configuration or undef.
+#
+# Arguments:
+#     name - string observer name.
+# Returns:
+#     hash with observer configuration or undef if there are no such observer.
+#
 sub getObserverConfig {
     my $self = shift;
     my $name = shift;
     return $self->section('observer_' . $name);
 }
 
+###############################################################################
+# Get builder configuration or undef.
+#
+# Arguments:
+#     name - string builder name.
+# Returns:
+#     hash with builder configuration or undef if there are no such builder.
+#
+sub getBuilderConfig {
+    my $self = shift;
+    my $name = shift;
+    return $self->section('builder_' . $name);
+}
+
+###############################################################################
+# Get array of strings with names of nodes where job with given type can execute.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     array of strings with names of nodes.
+#
 sub getJobNodes {
     my $self = shift;
     my $type = shift;
@@ -220,6 +320,15 @@ sub getJobNodes {
     return \@nodes;
 }
 
+###############################################################################
+# Get array of hashes with detailed information about parameters for given job type.
+# All possible fields in that hashes see in documentation.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     array of hashes with detailed parameters information.
+#
 sub getJobParams {
     my $self = shift;
     my $type = shift;
@@ -253,6 +362,16 @@ sub getJobParams {
     return $params;
 }
 
+###############################################################################
+# Get job worker configuration data as multiple returned values.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     string work directory for executable.
+#     string executable name.
+#     optional string additional libraries needed by worker executable (could be undef if there are none).
+#
 sub getJobWorker {
     my $self = shift;
     my $type = shift;
@@ -267,6 +386,15 @@ sub getJobWorker {
         $config->{lib} || $workerSection->{lib});
 }
 
+###############################################################################
+# Check if job with given type is allowed to run on particular node.
+#
+# Arguments:
+#     type - string job type.
+#     node - optional string node name. If undefined, current node will be used.
+# Returns:
+#     0/1 flag. If set, job is allowed to run.
+#
 sub isJobSupported {
     my $self = shift;
     my $type = shift;
@@ -297,6 +425,15 @@ sub isJobSupported {
     return $result;
 }
 
+###############################################################################
+# Check if global controller need to be run on particular node.
+# Global controller manages jobsets and some other global things.
+#
+# Arguments:
+#     node - optional string node name. If undefined, current node will be used.
+# Returns:
+#     0/1 flag. If set, global controller need to be run.
+#
 sub isNodeGlobal {
     my $self = shift;
     my $node = shift;
@@ -308,6 +445,15 @@ sub isNodeGlobal {
     return $config->{global} ? 1 : 0;
 }
 
+###############################################################################
+# Check if regular controller need to be run on particular node.
+# Regular controller manages jobs on this node.
+#
+# Arguments:
+#     node - optional string node name. If undefined, current node will be used.
+# Returns:
+#     0/1 flag. If set, regular controller need to be run.
+#
 sub isNodeRegular {
     my $self = shift;
     my $node = shift;
@@ -319,6 +465,14 @@ sub isNodeRegular {
     return $config->{regular} ? 1 : 0;
 }
 
+###############################################################################
+# Get array of strings with names of observers that need to be run on particular node.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     array of strings with names of observers.
+#
 sub getNodeObservers {
     my $self = shift;
     my $node = shift;
@@ -330,6 +484,49 @@ sub getNodeObservers {
     return [ grep {$_} split(/\s*,\s*/, $config->{observers}) ];
 }
 
+###############################################################################
+# Get array of strings with names of all observers listening to provided event name in current node.
+#
+# Arguments:
+#     event - string event name, i.e. 'create', 'finish', etc.
+# Returns:
+#     array of strings with names of all observers listening to provided event name in current node.
+#
+sub getObserversForEvent {
+    my $self = shift;
+    my $event = shift;
+
+    $self->{eventObservers} ||= {};
+    if (exists($self->{eventObservers}->{$event})) {
+        return $self->{eventObservers}->{$event};
+    }
+
+    my $observers = [];
+    foreach my $observer (@{$self->getAllObservers()}) {
+        my $config = $self->getObserverConfig($observer);
+
+        if (not exists($config->{events}) or $config->{events} eq 'all' or
+            grep {$_ eq $event} split(/\s*,\s*/, $config->{events})
+        ) {
+            if (not exists($config->{nodes}) or $config->{nodes} eq 'all' or
+                grep {$_ eq $self->node} split(/\s*,\s*/, $config->{nodes})
+            ) {
+                push @$observers, $observer;
+            }
+        }
+    }
+
+    $self->{eventObservers}->{$event} = $observers;
+    return $observers;
+}
+
+###############################################################################
+# Get array of hashes with detailed information abount job properties.
+# All possible fields in that hashes see in documentation.
+#
+# Returns:
+#     array of hashes with detailed properties information.
+#
 sub getProps {
     my $self = shift;
 
@@ -362,6 +559,13 @@ sub getProps {
     return $props;
 }
 
+###############################################################################
+# Get array of strings with names of internal job properties which are legal but can't be set by creator's clients,
+# only by creator itself.
+#
+# Returns:
+#     array of strings with names of properties.
+#
 sub getInternalProps {
     my $self = shift;
 
@@ -378,32 +582,12 @@ sub getInternalProps {
     return $self->{internalProps};
 }
 
-sub getBuilderConfig {
-    my $self = shift;
-    my $name = shift;
-    return $self->section('builder_' . $name);
-}
-
-sub getAllBuilders {
-    my $self = shift;
-
-    if (exists($self->{builders})) {
-        return $self->{builders};
-    }
-
-    my @builders;
-    foreach my $section (keys(%{$self->{data}})) {
-        if (my ($builder) = ($section =~ /^builder_(.+)$/)) {
-            unless ($self->{data}->{$section}->{disabled}) {
-                push @builders, $builder;
-            }
-        }
-    }
-
-    $self->{builders} = \@builders;
-    return \@builders;
-}
-
+###############################################################################
+# Get path to templates used primarily by observers and creators (for private observers).
+#
+# Returns:
+#     string path to templates.
+#
 sub getTemplatesPath {
     my $self = shift;
     return $self->templates_path || injectPathIntoConstant(DEFAULT_TEMPLATES_PATH);

@@ -5,8 +5,6 @@ use strict;
 use warnings;
 use utf8;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_CONFIG_FILE injectPathIntoConstant);
-use AnyJob::Config;
 use AnyJob::Worker;
 
 BEGIN {
@@ -15,12 +13,10 @@ BEGIN {
     }
 }
 
-unless ($ENV{ANYJOB_ID}) {
+unless (defined($ENV{ANYJOB_ID})) {
     exit(1);
 }
 
-my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : injectPathIntoConstant(DEFAULT_CONFIG_FILE);
-my $worker = AnyJob::Worker->new(config => AnyJob::Config->new($configFile, 'anyjob'));
-$worker->run($ENV{ANYJOB_ID});
+AnyJob::Worker->new()->run($ENV{ANYJOB_ID});
 
 exit(0);

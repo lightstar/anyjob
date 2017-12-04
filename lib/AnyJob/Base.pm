@@ -7,7 +7,7 @@ package AnyJob::Base;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  01.12.2017
+# Last update:  04.12.2017
 #
 
 use strict;
@@ -17,15 +17,15 @@ use utf8;
 use Redis;
 use JSON::XS;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_REDIS);
+use AnyJob::Constants::Defaults qw(DEFAULT_CONFIG_FILE DEFAULT_REDIS injectPathIntoConstant);
+use AnyJob::Config;
 use AnyJob::Logger;
 
 ###############################################################################
 # Construct new AnyJob::Base object.
 #
 # Arguments:
-#     config - preconstructed AnyJob::Config object.
-#     type   - string component type. Must not be empty. Used in logging for example.
+#     type - string component type. Must not be empty. Used in logging for example.
 # Returns:
 #     AnyJob::Base object.
 #
@@ -34,15 +34,13 @@ sub new {
     my %args = @_;
     my $self = bless \%args, $class;
 
-    unless (defined($self->{config})) {
-        require Carp;
-        Carp::confess('No config provided');
-    }
-
     unless (defined($self->{type}) and $self->{type} ne '') {
         require Carp;
         Carp::confess('No component type provider');
     }
+
+    my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : injectPathIntoConstant(DEFAULT_CONFIG_FILE);
+    $self->{config} = AnyJob::Config->new($configFile, 'anyjob');
 
     $self->{redis} = Redis->new(server => $self->config->redis || DEFAULT_REDIS, encoding => undef);
     $self->{node} = $self->config->node;

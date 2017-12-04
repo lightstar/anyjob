@@ -4,8 +4,6 @@ use strict;
 use warnings;
 use utf8;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_CONFIG_FILE injectPathIntoConstant);
-use AnyJob::Config;
 use AnyJob::Creator::App;
 
 use Dancer2::Plugin;
@@ -32,13 +30,9 @@ sub BUILD {
 
 my $creator;
 sub creator {
-    if (defined($creator)) {
-        return $creator;
+    unless (defined($creator)) {
+        $creator = AnyJob::Creator::App->new();
     }
-
-    my $configFile = $ENV{ANYJOB_CONF} ? $ENV{ANYJOB_CONF} : injectPathIntoConstant(DEFAULT_CONFIG_FILE);
-    $creator = AnyJob::Creator::App->new(config => AnyJob::Config->new($configFile, 'anyjob'));
-
     return $creator;
 }
 

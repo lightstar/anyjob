@@ -1,5 +1,15 @@
 package AnyJob::Worker;
 
+###############################################################################
+# Worker component subclassed from AnyJob::Base, which primary task is to directly execute jobs.
+# Job logic is implemented by one of specific worker modules
+# (usually under 'Worker' package path but that's not strictly required).
+#
+# Author:       LightStar
+# Created:      17.10.2017
+# Last update:  04.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -11,6 +21,12 @@ use AnyJob::Utils qw(getModuleName requireModule);
 
 use base 'AnyJob::Base';
 
+###############################################################################
+# Construct new AnyJob::Worker object.
+#
+# Returns:
+#     AnyJob::Worker object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -19,6 +35,13 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Send message to daemon's progress queue.
+#
+# Arguments:
+#     id       - integer job id.
+#     progress - string progress value or hash with arbitrary message data.
+#
 sub sendProgress {
     my $self = shift;
     my $id = shift;
@@ -32,6 +55,13 @@ sub sendProgress {
     $self->redis->rpush('anyjob:progressq:' . $self->node, encode_json($progress));
 }
 
+###############################################################################
+# Send change state message to daemon's progress queue.
+#
+# Arguments:
+#     id    - integer job id.
+#     state - string state value.
+#
 sub sendState {
     my $self = shift;
     my $id = shift;
@@ -40,6 +70,12 @@ sub sendState {
     $self->sendProgress($id, { state => $state })
 }
 
+###############################################################################
+# Send message to daemon's progress queue changing state to 'run'.
+#
+# Arguments:
+#     id - integer job id.
+#
 sub sendRun {
     my $self = shift;
     my $id = shift;
@@ -47,6 +83,13 @@ sub sendRun {
     $self->sendState($id, STATE_RUN);
 }
 
+###############################################################################
+# Send message to daemon's progress queue with some log message.
+#
+# Arguments:
+#     id       - integer job id.
+#     message  - string log message.
+#
 sub sendLog {
     my $self = shift;
     my $id = shift;
@@ -60,6 +103,13 @@ sub sendLog {
         });
 }
 
+###############################################################################
+# Send message to daemon's progress queue redirecting job to given node.
+#
+# Arguments:
+#     id   - integer job id.
+#     node - string node name.
+#
 sub sendRedirect {
     my $self = shift;
     my $id = shift;
@@ -68,6 +118,13 @@ sub sendRedirect {
     $self->sendProgress($id, { redirect => $node });
 }
 
+###############################################################################
+# Send message to daemon's progress queue successfully finishing job.
+#
+# Arguments:
+#     id      - integer job id.
+#     message - string finish message.
+#
 sub sendSuccess {
     my $self = shift;
     my $id = shift;
@@ -76,6 +133,13 @@ sub sendSuccess {
     $self->sendProgress($id, { success => 1, message => $message });
 }
 
+###############################################################################
+# Send message to daemon's progress queue finishing job with error.
+#
+# Arguments:
+#     id      - integer job id.
+#     message - string finish message.
+#
 sub sendFailure {
     my $self = shift;
     my $id = shift;
@@ -84,6 +148,13 @@ sub sendFailure {
     $self->sendProgress($id, { success => 0, message => $message });
 }
 
+###############################################################################
+# Send message to daemon's jobset progress queue.
+#
+# Arguments:
+#     id       - integer jobset id.
+#     progress - string progress value or hash with arbitrary message data.
+#
 sub sendJobSetProgress {
     my $self = shift;
     my $id = shift;
@@ -97,6 +168,13 @@ sub sendJobSetProgress {
     $self->redis->rpush('anyjob:progressq', encode_json($progress));
 }
 
+###############################################################################
+# Send change state message to daemon's jobset progress queue.
+#
+# Arguments:
+#     id    - integer jobset id.
+#     state - string state value.
+#
 sub sendJobSetState {
     my $self = shift;
     my $id = shift;
@@ -105,6 +183,14 @@ sub sendJobSetState {
     $self->sendJobSetProgress($id, { state => $state })
 }
 
+###############################################################################
+# Execute job with given id calling configured module to do its logic.
+# To simplify job modules developing that call is wrapped around different checks,
+# logging and auto-changing to 'run' state.
+#
+# Arguments:
+#     id - integer job id.
+#
 sub run {
     my $self = shift;
     my $id = shift;
