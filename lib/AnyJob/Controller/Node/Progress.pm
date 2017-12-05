@@ -1,5 +1,13 @@
 package AnyJob::Controller::Node::Progress;
 
+###############################################################################
+# Controller which manages progressing and finishing jobs on specific node.
+#
+# Author:       LightStar
+# Created:      21.10.2017
+# Last update:  05.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -11,6 +19,36 @@ use AnyJob::Constants::Events qw(EVENT_PROGRESS EVENT_REDIRECT EVENT_FINISH);
 
 use base 'AnyJob::Controller::Node';
 
+###############################################################################
+# Method called on each iteration of daemon loop.
+# Its main task is to receive messages from job progress queue and to process them.
+# There can be four types of messages.
+# 1. 'Finish job' message. Sent by worker component.
+# {
+#     id => ...,
+#     success => 0/1,
+#     message => '...'
+# }
+# 2. 'Redirect job' message. Sent by worker component. Field 'redirect' here contains name of destination node.
+# {
+#     id => ...,
+#     redirect => '...'
+# }
+# 3. 'Job is redirected' message. Sent by destination node controller after job finished redirecting.
+# Field 'redirected' here contains id of redirected job.
+# {
+#     redirected => ...
+# }
+# 4. 'Progress job' message. Sent by worker component.
+# At least one of fields 'state', 'progress' and 'log' required here.
+# Field 'time' is log message time in integer unix timestamp format.
+# {
+#     id => ...,
+#     state => '...',
+#     progress => '...',
+#     log => { time => ..., message => '...' }
+# }
+#
 sub process {
     my $self = shift;
 
@@ -37,7 +75,7 @@ sub process {
         } elsif (exists($progress->{redirect})) {
             $self->redirectJob($progress);
         } elsif (exists($progress->{redirected})) {
-            $self->redirectedJob($progress);
+            $self->parent->updateActiveJobCount();
         } else {
             $self->progressJob($progress);
         }
@@ -47,6 +85,13 @@ sub process {
     }
 }
 
+###############################################################################
+# Progress job.
+#
+# Arguments:
+#     progress - hash with progress data
+#               (see 'Progress job' message in 'process' method description about fields it can contain).
+#
 sub progressJob {
     my $self = shift;
     my $progress = shift;
@@ -92,6 +137,13 @@ sub progressJob {
         });
 }
 
+###############################################################################
+# Redirect job.
+#
+# Arguments:
+#     progress - hash with progress data
+#               (see 'Redirect job' message in 'process' method description about fields it can contain).
+#
 sub redirectJob {
     my $self = shift;
     my $progress = shift;
@@ -133,13 +185,13 @@ sub redirectJob {
     $self->redis->rpush('anyjob:queue:' . $progress->{redirect}, encode_json($redirect));
 }
 
-sub redirectedJob {
-    my $self = shift;
-    my $progress = shift;
-
-    $self->parent->updateActiveJobCount();
-}
-
+###############################################################################
+# Finish job.
+#
+# Arguments:
+#     progress - hash with progress data
+#               (see 'Finish job' message in 'process' method description about fields it can contain).
+#
 sub finishJob {
     my $self = shift;
     my $progress = shift;

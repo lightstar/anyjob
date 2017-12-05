@@ -1,5 +1,16 @@
 package AnyJob::Controller::Observer;
 
+###############################################################################
+# Controller which manages observing and processing events in one specific queue.
+# Only one controller in whole system must run for each such queue.
+# It is abstract class as there may be may ways to deal with that events and such details must be handled by
+# descendants.
+#
+# Author:       LightStar
+# Created:      19.10.2017
+# Last update:  05.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -12,6 +23,15 @@ use AnyJob::EventFilter;
 
 use base 'AnyJob::Controller::Base';
 
+###############################################################################
+# Construct new AnyJob::Controller::Observer object.
+#
+# Arguments:
+#     parent - parent component which is usually AnyJob::Daemon object.
+#     name   - non-empty string with observer name which is also used as queue name.
+# Returns:
+#     AnyJob::Controller::Observer object.
+#
 sub new {
     my $class = shift;
     my $self = $class->SUPER::new(@_);
@@ -27,16 +47,67 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Returns:
+#     string observer name.
+#
 sub name {
     my $self = shift;
     return $self->{name};
 }
 
+###############################################################################
+# Get observer configuration or undef.
+#
+# Returns:
+#     hash with observer configuration or undef if there are no such observer in config.
+#
 sub getObserverConfig {
     my $self = shift;
     return $self->config->getObserverConfig($self->name);
 }
 
+###############################################################################
+# Method called on each iteration of daemon loop.
+# Its main task is to receive events from this observer queue and to process them using abstract method 'processEvent'
+# which must be implemented in descendants.
+# Also it calls 'cleanLogs' to clean too long stayed collected logs (see below).
+# There are two types of events: job-related and jobset-related.
+# 1. Job-related events have this structure (many fields are optional here, related to specific event types
+# or even conflicting with each other):
+# {
+#     event => '...',
+#     node => '...',
+#     time => ...,
+#     id => ...,
+#     jobset => ...,
+#     type => '...',
+#     params => { param1 => '...', param2 => '...', ... },
+#     props => { prop1 => '...', prop2 => '...', ... },
+#     progress => { state => '...', progress => '...', log => { time => ..., message => '...' } },
+#     success => ...,
+#     message => '...'
+# }
+# 2. And jobset-related events have this structure (many fields here are also optional or related to specific
+# event types):
+# {
+#     event => '...',
+#     node => '...',
+#     time => ...,
+#     id => ...,
+#     jobs => [ {
+#         id => ...,
+#         type => '...',
+#         node => '...',
+#         state => '...',
+#         progress => '...',
+#         params => { ... },
+#         props => { ... },
+#     }, ... ],
+#     props => { prop1 => '...', prop2 => '...', ... },
+#     progress => { state => '...', progress => '...' }
+# }
+#
 sub process {
     my $self = shift;
 
@@ -66,6 +137,12 @@ sub process {
     $self->cleanLogs();
 }
 
+###############################################################################
+# Abstract method which will be called to process specific event.
+#
+# Arguments:
+#     event - hash with event data.
+#
 sub processEvent {
     my $self = shift;
     my $event = shift;
@@ -74,12 +151,25 @@ sub processEvent {
     Carp::confess('Need to be implemented in descendant');
 }
 
+###############################################################################
+# Prepare event for further processing and check if it needs processing at all.
+# Inject 'job' (hash with job configuration if this is job-related event) and 'config'
+# (hash with observer configuration) fields into event data. Any configured filter is also applied here.
+# Descendants encouraged to overload it and append its own logic.
+#
+# Arguments:
+#     config - hash with observer configuration.
+#     event  - hash with event data.
+#
+# Returns:
+#     0/1 flag. If set, event should be processed, otherwise skipped.
+#
 sub preprocessEvent {
     my $self = shift;
     my $config = shift;
     my $event = shift;
 
-    if ($self->checkEventProp($event, 'silent')) {
+    if ($self->checkEventProp($event, 'silent', 0)) {
         return 0;
     }
 
@@ -99,6 +189,13 @@ sub preprocessEvent {
     return 1;
 }
 
+###############################################################################
+# Save log message from this job-related progress event into intermediate storage in order to collect all logs
+# later when job is finished.
+#
+# Arguments:
+#     event  - hash with event data.
+#
 sub saveLog {
     my $self = shift;
     my $event = shift;
@@ -116,6 +213,21 @@ sub saveLog {
         encode_json($event->{progress}->{log}));
 }
 
+###############################################################################
+# Collect all logs saved previously using provided event (usually 'finish' event but that's not strictly
+# required, it just must contain 'id' field with job id).
+# Collected logs are auto-removed from storage.
+#
+# Arguments:
+#     event  - hash with event data.
+# Returns:
+#     array of hashes with log data:
+#      [ {
+#           time => '...',
+#           message => '...'
+#      }, ... ]
+#     Notice that time is returned as formatted string value.
+#
 sub collectLogs {
     my $self = shift;
     my $event = shift;
@@ -144,6 +256,9 @@ sub collectLogs {
     return \@logs;
 }
 
+###############################################################################
+# Clean all saved logs that stayed too long (more than configured timeout time).
+#
 sub cleanLogs {
     my $self = shift;
 
@@ -158,6 +273,12 @@ sub cleanLogs {
     }
 }
 
+###############################################################################
+# Clean logs for specific job id.
+#
+# Arguments:
+#     id  - integer job id.
+#
 sub cleanLog {
     my $self = shift;
     my $id = shift;
@@ -168,12 +289,28 @@ sub cleanLog {
     $self->redis->del('anyjob:observer:' . $self->name . ':log:' . $id);
 }
 
+###############################################################################
+# Run configured filter for provided event.
+#
+# Arguments:
+#     event - hash with event data.
+# Returns:
+#     0/1 flag. If set, event should be processed, otherwise skipped.
+#
 sub eventFilter {
     my $self = shift;
     my $event = shift;
     return $self->{eventFilter}->filter($event);
 }
 
+###############################################################################
+# Run configured filter for array of events.
+#
+# Arguments:
+#     events - array of hashes with event data.
+# Returns:
+#     array of hashes with filtered events that should be processed.
+#
 sub filterEvents {
     my $self = shift;
     my $events = shift;

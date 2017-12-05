@@ -68,7 +68,7 @@ sub preprocessEvent {
         return 0;
     }
 
-    if ($self->checkEventProp($event, 'noslack')) {
+    if ($self->checkEventProp($event, 'noslack', 0)) {
         return 0;
     }
 

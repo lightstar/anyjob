@@ -1,23 +1,59 @@
 package AnyJob::Controller::Global;
 
+###############################################################################
+# Controller which manages creating and running jobsets. Only one such controller in whole system must run
+# (as it's name, 'global', suggests).
+#
+# Author:       LightStar
+# Created:      17.10.2017
+# Last update:  05.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
 
 use JSON::XS;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 use AnyJob::Constants::Events qw(EVENT_CREATE_JOBSET);
 use AnyJob::Constants::States qw(STATE_BEGIN);
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 
 use base 'AnyJob::Controller::Base';
 
+###############################################################################
+# Array with names of additional, also global, controllers which must run along.
+#
 our @MODULES = qw(
     Progress
     Clean
     BuildClean
     );
 
+###############################################################################
+# Method called on each iteration of daemon loop.
+# Its main task is to receive messages from new jobsets queue and to process them.
+# It also can receive messages with only one job inside redirecting it to queue of the right node (for that
+# it must contain string 'node' field).
+# There can be two types of messages.
+# 1. 'Create jobset' message. Sent by creator component.
+# {
+#     jobs => [ {
+#         type => '...',
+#         node => '...',
+#         params => { param1 => '...', param2 => '...', ... },
+#         props => { prop1 => '...', prop2 => '...', ... }
+#     }, ... ]
+#     props => { prop1 => '...', prop2 => '...', ... }
+# }
+# 2. 'Create job' message. Sent by creator component. Obviously provided 'node' field is required here.
+# {
+#     type => '...',
+#     node => '...',
+#     params => { param1 => '...', param2 => '...', ... },
+#     props => { prop1 => '...', prop2 => '...', ... }
+# }
+#
 sub process {
     my $self = shift;
 
@@ -37,7 +73,11 @@ sub process {
             $self->error('Can\'t decode job: ' . $job);
         } elsif (exists($job->{node})) {
             my $node = delete $job->{node};
-            $self->redis->rpush('anyjob:queue:' . $node, encode_json($job));
+            if (defined($node) and $node ne '') {
+                $self->redis->rpush('anyjob:queue:' . $node, encode_json($job));
+            } else {
+                $self->error('No node for job: ' . encode_json($job));
+            }
         } elsif ($job->{jobset}) {
             $self->createJobSet($job);
         }
@@ -47,6 +87,12 @@ sub process {
     }
 }
 
+###############################################################################
+# Register new jobset and create all jobs contained inside.
+#
+# Arguments:
+#     jobSet - hash with jobset data.
+#
 sub createJobSet {
     my $self = shift;
     my $jobSet = shift;
@@ -90,6 +136,12 @@ sub createJobSet {
     }
 }
 
+###############################################################################
+# Remove jobset data from storage.
+#
+# Arguments:
+#     id - integer jobset id.
+#
 sub cleanJobSet {
     my $self = shift;
     my $id = shift;
@@ -101,6 +153,12 @@ sub cleanJobSet {
     $self->parent->decActiveJobSetCount();
 }
 
+###############################################################################
+# Remove creator's build data from storage.
+#
+# Arguments:
+#     id - integer build id.
+#
 sub cleanBuild {
     my $self = shift;
     my $id = shift;
@@ -111,6 +169,12 @@ sub cleanBuild {
     $self->redis->del('anyjob:build:' . $id);
 }
 
+###############################################################################
+# Generate next available id for new jobset.
+#
+# Returns:
+#     integer jobset id.
+#
 sub getNextJobSetId {
     my $self = shift;
     return $self->redis->incr('anyjob:jobset:id');

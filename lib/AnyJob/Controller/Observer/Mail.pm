@@ -82,14 +82,14 @@ sub preprocessEvent {
         return 0;
     }
 
-    if ($self->checkEventProp($event, 'nomail')) {
+    if ($self->checkEventProp($event, 'nomail', 0)) {
         return 0;
     }
 
     if ($event->{event} eq EVENT_PROGRESS) {
         $self->saveLog($event);
 
-        unless ($config->{mail_progress} or $self->checkEventProp($event, 'mail_progress')) {
+        unless ($config->{mail_progress} or $self->checkEventProp($event, 'mail_progress', 0)) {
             return 0;
         }
     }

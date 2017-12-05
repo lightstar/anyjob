@@ -1,5 +1,13 @@
 package AnyJob::Controller::Node::Clean;
 
+###############################################################################
+# Controller which manages cleaning timeouted jobs on specific node.
+#
+# Author:       LightStar
+# Created:      21.10.2017
+# Last update:  05.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -11,6 +19,10 @@ use AnyJob::Constants::Events qw(EVENT_CLEAN);
 
 use base 'AnyJob::Controller::Node';
 
+###############################################################################
+# Method called on each iteration of daemon loop.
+# Its main task is to collect timeouted jobs and clean them.
+#
 sub process {
     my $self = shift;
 

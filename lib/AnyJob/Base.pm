@@ -7,7 +7,7 @@ package AnyJob::Base;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  04.12.2017
+# Last update:  05.12.2017
 #
 
 use strict;
@@ -126,7 +126,17 @@ sub error {
 # Arguments:
 #     id - integer job's id.
 # Returns:
-#     hash with job data.
+#     hash with job data ('jobset' field with owner jobset id is optional here,
+#     'progress' string field is also not required and initially does not exists):
+#      {
+#          type => '...',
+#          jobset => ...,
+#          state => '...',
+#          progress => '...',
+#          time => ...,
+#          params => { param1 => '...', param2 => '...', ... },
+#          props => { prop1 => '...', prop2 => '...', ... }
+#      }
 #
 sub getJob {
     my $self = shift;
@@ -140,7 +150,23 @@ sub getJob {
 # Arguments:
 #     id - integer jobset's id.
 # Returns:
-#     hash with jobset data.
+#     hash with jobset data ('progress' string field is not required and initially does not exists,
+#     many fields in jobs array are also optional and initialized only at specific moments in job life cycle,
+#     i.e. 'success' and 'message' fields are there only after job is finished):
+#      {
+#          state => '...',
+#          progress => '...',
+#          time => ...,
+#          jobs => [
+#                    {
+#                        id => ..., type => '...', node => '...', state => '...',
+#                        progress => '...', success => ..., message => '...',
+#                        params => { ... }, props => { ... }
+#                    },
+#                    ...
+#                  ],
+#          props => { prop1 => '...', prop2 => '...', ... }
+#      }
 #
 sub getJobSet {
     my $self = shift;
@@ -149,7 +175,7 @@ sub getJobSet {
 }
 
 ###############################################################################
-# Retrieve some object by key.
+# Retrieve some object by key from storage.
 #
 # Arguments:
 #     key - string object's key in data storage.
