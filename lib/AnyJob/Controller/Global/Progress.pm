@@ -112,7 +112,7 @@ sub progressJobInJobSet {
 
     $self->redis->zadd('anyjob:jobsets', time() + $self->getJobSetCleanTimeout($jobSet), $id);
 
-    $self->debug('Progress jobset \'' . $id . '\', job\'s \'' . $job->{id} . '\' progress: ' .
+    $self->debug('Progress jobset \'' . $id . '\', job\'s \'' . $progress->{job} . '\' progress: ' .
         encode_json($jobProgress));
 
     unless (exists($job->{id})) {
@@ -139,14 +139,13 @@ sub progressJobInJobSet {
     my @finishedJobs = grep {$_->{state} eq STATE_FINISHED} @{$jobSet->{jobs}};
     if (scalar(@finishedJobs) == scalar(@{$jobSet->{jobs}})) {
         $jobSetFinished = 1;
+        $self->debug('Jobset \'' . $id . '\' finished');
         $self->cleanJobSet($id);
     } else {
         $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
     }
 
     if ($jobSetFinished) {
-        $self->debug('Jobset \'' . $id . '\' finished');
-
         $self->sendEvent(EVENT_FINISH_JOBSET, {
                 id    => $id,
                 props => $jobSet->{props},
