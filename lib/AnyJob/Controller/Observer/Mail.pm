@@ -1,5 +1,13 @@
 package AnyJob::Controller::Observer::Mail;
 
+###############################################################################
+# Observer controller which sends events by email.
+#
+# Author:       LightStar
+# Created:      24.10.2017
+# Last update:  06.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -14,6 +22,15 @@ use AnyJob::Constants::Events qw(EVENT_PROGRESS EVENT_FINISH);
 
 use base 'AnyJob::Controller::Observer::Base';
 
+###############################################################################
+# Construct new AnyJob::Controller::Observer::Mail object.
+#
+# Arguments:
+#     parent - parent component which is usually AnyJob::Daemon object.
+#     name   - non-empty string with observer name which is also used as queue name.
+# Returns:
+#     AnyJob::Controller::Observer::Mail object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -30,6 +47,13 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# This method will be called by parent class for each event to process.
+# Log event data here and send it by email to configured recipients using configured subject/body templates.
+#
+# Arguments:
+#     event - hash with event data.
+#
 sub processEvent {
     my $self = shift;
     my $event = shift;
@@ -73,6 +97,19 @@ sub processEvent {
     }
 }
 
+###############################################################################
+# Prepare event for further processing and check if it needs processing at all.
+# In addition to base-class logic check 'nomail' property and
+# collect logs to send them all together when job is finished.
+# Also by default job progress events are not sent at all.
+#
+# Arguments:
+#     config - hash with observer configuration.
+#     event  - hash with event data.
+#
+# Returns:
+#     0/1 flag. If set, event should be processed, otherwise skipped.
+#
 sub preprocessEvent {
     my $self = shift;
     my $config = shift;
@@ -101,6 +138,15 @@ sub preprocessEvent {
     return 1;
 }
 
+###############################################################################
+# Get encoded sender title.
+#
+# Arguments:
+#     config - hash with observer configuration.
+#
+# Returns:
+#     string sender title.
+#
 sub getFromTitle {
     my $self = shift;
     my $config = shift;
@@ -111,6 +157,16 @@ sub getFromTitle {
     return $fromTitle;
 }
 
+###############################################################################
+# Generate mail subject by processing configured template.
+#
+# Arguments:
+#     config - hash with observer configuration.
+#     event  - hash with event data.
+#
+# Returns:
+#     string mail subject.
+#
 sub getSubject {
     my $self = shift;
     my $config = shift;
@@ -128,6 +184,16 @@ sub getSubject {
     return $subject;
 }
 
+###############################################################################
+# Generate mail body by processing configured template.
+#
+# Arguments:
+#     config - hash with observer configuration.
+#     event  - hash with event data.
+#
+# Returns:
+#     string mail body.
+#
 sub getBody {
     my $self = shift;
     my $config = shift;

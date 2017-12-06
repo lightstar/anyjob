@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  05.12.2017
+# Last update:  06.12.2017
 #
 
 use strict;
@@ -42,7 +42,7 @@ our @MODULES = qw(
 #     params => { param1 => '...', param2 => '...', ... },
 #     props => { prop1 => '...', prop2 => '...', ... }
 # }
-# 2. 'Run redirected job' message. Sent by controller of other node.
+# 2. 'Finish redirect job' message. Sent by controller of other node.
 # Here 'id' is integer job id (as job is already created), and 'from' is the name of source node.
 # {
 #     id => ...,
@@ -71,7 +71,7 @@ sub process {
         if ($@) {
             $self->error('Can\'t decode job: ' . $job);
         } elsif ($job->{from}) {
-            $self->runRedirectedJob($job);
+            $self->finishRedirectJob($job);
         } else {
             $self->createJob($job);
         }
@@ -138,7 +138,7 @@ sub createJob {
 #     redirect - hash with redirect data. It contains integer 'id' field with job id
 #                and string 'from' field with name of source node.
 #
-sub runRedirectedJob {
+sub finishRedirectJob {
     my $self = shift;
     my $redirect = shift;
 

@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  05.12.2017
+# Last update:  06.12.2017
 #
 
 use strict;
@@ -40,7 +40,7 @@ use base 'AnyJob::Controller::Node';
 #     redirected => ...
 # }
 # 4. 'Progress job' message. Sent by worker component.
-# At least one of fields 'state', 'progress' and 'log' required here.
+# At least one of fields 'state', 'progress' or 'log' required here.
 # Field 'time' is log message time in integer unix timestamp format.
 # {
 #     id => ...,

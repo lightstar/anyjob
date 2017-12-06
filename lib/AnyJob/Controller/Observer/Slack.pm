@@ -1,5 +1,13 @@
 package AnyJob::Controller::Observer::Slack;
 
+###############################################################################
+# Observer controller which sends events to slack (https://slack.com/) incoming webhook.
+#
+# Author:       LightStar
+# Created:      25.10.2017
+# Last update:  06.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -12,6 +20,15 @@ use Template;
 
 use base 'AnyJob::Controller::Observer::Base';
 
+###############################################################################
+# Construct new AnyJob::Controller::Observer::Slack object.
+#
+# Arguments:
+#     parent - parent component which is usually AnyJob::Daemon object.
+#     name   - non-empty string with observer name which is also used as queue name.
+# Returns:
+#     AnyJob::Controller::Observer::Slack object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -31,6 +48,13 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# This method will be called by parent class for each event to process.
+# Log event data here and send it to configured slack incoming webhook using configured payload template.
+#
+# Arguments:
+#     event - hash with event data.
+#
 sub processEvent {
     my $self = shift;
     my $event = shift;
@@ -59,6 +83,17 @@ sub processEvent {
     }
 }
 
+###############################################################################
+# Prepare event for further processing and check if it needs processing at all.
+# In addition to base-class logic check 'noslack' property.
+#
+# Arguments:
+#     config - hash with observer configuration.
+#     event  - hash with event data.
+#
+# Returns:
+#     0/1 flag. If set, event should be processed, otherwise skipped.
+#
 sub preprocessEvent {
     my $self = shift;
     my $config = shift;
@@ -75,6 +110,16 @@ sub preprocessEvent {
     return 1;
 }
 
+###############################################################################
+# Generate message payload by processing configured template.
+#
+# Arguments:
+#     config - hash with observer configuration.
+#     event  - hash with event data.
+#
+# Returns:
+#     string message payload.
+#
 sub getPayload {
     my $self = shift;
     my $config = shift;

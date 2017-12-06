@@ -1,5 +1,13 @@
 package AnyJob::Controller::Global::Progress;
 
+###############################################################################
+# Controller which manages progressing and finishing jobsets. Only one such controller in whole system must run.
+#
+# Author:       LightStar
+# Created:      21.10.2017
+# Last update:  06.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -12,6 +20,40 @@ use AnyJob::Constants::States qw(STATE_BEGIN STATE_FINISHED);
 
 use base 'AnyJob::Controller::Global';
 
+###############################################################################
+# Method called on each iteration of daemon loop.
+# Its main task is to receive messages from jobset progress queue and to process them.
+# There can be two types of messages.
+# 1. 'Progress jobset' message. Sent by worker component.
+# At least one of fields 'state' or 'progress' required here.
+# {
+#     id => ...,
+#     state => '...',
+#     progress => '...',
+# }
+# 2. 'Progress job in jobset' message. Sent by node-binded controller which creates and progresses jobs.
+# Here 'id' field is integer jobset id, and 'job' field - integer job id.
+# At least one of fields 'state', 'progress', 'log', 'redirect' or 'success' should be in 'jobProgress' hash.
+# Field 'message' should be here only along with 'success' field.
+# Fields 'type', 'node', 'params' and 'props' should be in 'jobProgress' hash only when job is first created and its
+# id is yet unknown.
+# {
+#     id => ...
+#     job => ...,
+#     jobProgress => {
+#         type => '...',
+#         node => '...',
+#         params => { ... },
+#         props => { ... },
+#         state => '...',
+#         progress => '...',
+#         log => { time => ..., message => '...' },
+#         redirect => '...',
+#         success => 0/1,
+#         message => '...'
+#     }
+# }
+#
 sub process {
     my $self = shift;
 
@@ -44,6 +86,13 @@ sub process {
     }
 }
 
+###############################################################################
+# Progress job inside jobset. Finish and clean jobset if all jobs in it are finished.
+#
+# Arguments:
+#     progress - hash with progress data.
+#                (see 'Progress job in jobset' message in 'process' method description about fields it can contain).
+#
 sub progressJobInJobSet {
     my $self = shift;
     my $progress = shift;
@@ -57,8 +106,7 @@ sub progressJobInJobSet {
 
     my $jobProgress = $progress->{jobProgress};
     my $job = $self->findJobInJobSet($progress->{job}, $jobSet, $jobProgress);
-
-    unless ($job) {
+    unless (defined($job)) {
         return;
     }
 
@@ -66,6 +114,10 @@ sub progressJobInJobSet {
 
     $self->debug('Progress jobset \'' . $id . '\', job\'s \'' . $job->{id} . '\' progress: ' .
         encode_json($jobProgress));
+
+    unless (exists($job->{id})) {
+        $job->{id} = $progress->{job};
+    }
 
     if (exists($jobProgress->{success})) {
         $job->{state} = STATE_FINISHED;
@@ -93,6 +145,8 @@ sub progressJobInJobSet {
     }
 
     if ($jobSetFinished) {
+        $self->debug('Jobset \'' . $id . '\' finished');
+
         $self->sendEvent(EVENT_FINISH_JOBSET, {
                 id    => $id,
                 props => $jobSet->{props},
@@ -101,6 +155,17 @@ sub progressJobInJobSet {
     }
 }
 
+###############################################################################
+# Find job in jobset's job array by job id or by its type and node if id is yet unknown.
+#
+# Arguments:
+#     jobId       - integer job id.
+#     jobSet      - hash with jobset data.
+#     jobProgress - hash with job progress data.
+#                   (see 'Progress job in jobset' message in 'process' method description about fields it can contain).
+# Returns:
+#     hash with job data or undef if job not found.
+#
 sub findJobInJobSet {
     my $self = shift;
     my $jobId = shift;
@@ -113,10 +178,6 @@ sub findJobInJobSet {
             $_->{node} eq $jobProgress->{node} and
                 $_->{type} eq $jobProgress->{type} and not exists($_->{id})
         } @{$jobSet->{jobs}};
-
-        if ($job) {
-            $job->{id} = $jobId;
-        }
     } else {
         ($job) = grep {$_->{id} == $jobId} @{$jobSet->{jobs}};
     }
@@ -124,6 +185,13 @@ sub findJobInJobSet {
     return $job;
 }
 
+###############################################################################
+# Progress jobset.
+#
+# Arguments:
+#     progress - hash with progress data.
+#                (see 'Progress jobset' message in 'process' method description about fields it can contain).
+#
 sub progressJobSet {
     my $self = shift;
     my $progress = shift;

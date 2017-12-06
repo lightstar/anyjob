@@ -1,5 +1,13 @@
 package AnyJob::Controller::Global::Clean;
 
+###############################################################################
+# Controller which manages cleaning timeouted jobsets. Only one such controller in whole system must run.
+#
+# Author:       LightStar
+# Created:      23.10.2017
+# Last update:  06.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -9,6 +17,10 @@ use AnyJob::Constants::Events qw(EVENT_CLEAN_JOBSET);
 
 use base 'AnyJob::Controller::Global';
 
+###############################################################################
+# Method called on each iteration of daemon loop.
+# Its main task is to collect timeouted jobsets and clean them.
+#
 sub process {
     my $self = shift;
 
