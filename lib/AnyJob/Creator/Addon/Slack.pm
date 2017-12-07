@@ -1,5 +1,13 @@
 package AnyJob::Creator::Addon::Slack;
 
+###############################################################################
+# Addon that helps creating jobs and observing them using slack application (https://slack.com/).
+#
+# Author:       LightStar
+# Created:      21.11.2017
+# Last update:  07.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -15,6 +23,14 @@ use AnyJob::Utils qw(getModuleName requireModule);
 
 use base 'AnyJob::Creator::Addon::Base';
 
+###############################################################################
+# Construct new AnyJob::Creator::Addon::Slack object.
+#
+# Arguments:
+#     parent - parent component which is usually AnyJob::Creator object.
+# Returns:
+#     AnyJob::Creator:Addon::Slack object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -35,6 +51,14 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Check slack application token which should be sent by slack with each request.
+#
+# Arguments:
+#     token - string token value sent in request.
+# Returns:
+#     0/1 flag. If set, token is valid.
+#
 sub checkToken {
     my $self = shift;
     my $token = shift;
@@ -44,9 +68,18 @@ sub checkToken {
         return 1;
     }
 
-    return undef;
+    return 0;
 }
 
+###############################################################################
+# Get slack builder object by its name. Actually full builder name in configuration will be 'slack_<name>'.
+#
+# Arguments:
+#     name - string builder name.
+# Returns:
+#     slack builder object (usually subclassed from AnyJob::Creator::Builder::Slack::Base)
+#     or undef if it is not exists.
+#
 sub getBuilder {
     my $self = shift;
     my $name = shift;
@@ -69,6 +102,16 @@ sub getBuilder {
     return $self->{builders}->{$name};
 }
 
+###############################################################################
+# Get slack builder object by slash command name.
+# See https://api.slack.com/slash-commands for detailed info about slack slash commands.
+#
+# Arguments:
+#     command - string slash command name.
+# Returns:
+#     slack builder object (usually subclassed from AnyJob::Creator::Builder::Slack::Base)
+#     or undef if it is not exists.
+#
 sub getBuilderByCommand {
     my $self = shift;
     my $command = shift;
@@ -81,6 +124,14 @@ sub getBuilderByCommand {
     return $self->getBuilder($name);
 }
 
+###############################################################################
+# Get slack builder name by slash command name.
+#
+# Arguments:
+#     command - string slash command name.
+# Returns:
+#     string slack builder name.
+#
 sub getBuilderNameByCommand {
     my $self = shift;
     my $command = shift;
@@ -92,6 +143,9 @@ sub getBuilderNameByCommand {
     return $self->{buildersByCommand}->{$command};
 }
 
+###############################################################################
+# Generate internal hashmap for fast lookup of slack builder name by name of its slash command.
+#
 sub generateBuildersByCommand {
     my $self = shift;
 
@@ -110,6 +164,10 @@ sub generateBuildersByCommand {
     $self->{buildersByCommand} = \%builders;
 }
 
+###############################################################################
+# Execute observing of private events using 'slack' as queue name.
+# Observing is done via AnyEvent's timer run with configured interval.
+#
 sub observePrivateEvents {
     my $self = shift;
 
@@ -122,6 +180,14 @@ sub observePrivateEvents {
         });
 }
 
+###############################################################################
+# Send messages with private events data to slack users who created corresponding jobs or jobsets.
+# Destination address is resolved using special property 'response_url' which should be set for every job and jobset
+# created in one of slack builders.
+#
+# Arguments:
+#     events - array of hashes with event data.
+#
 sub sendPrivateEvents {
     my $self = shift;
     my $events = shift;
@@ -141,6 +207,15 @@ sub sendPrivateEvents {
     }
 }
 
+###############################################################################
+# Generate message payload for private event by processing configured template.
+#
+# Arguments:
+#     event - hash with event data.
+#
+# Returns:
+#     string message payload.
+#
 sub getEventPayload {
     my $self = shift;
     my $event = shift;

@@ -1,11 +1,26 @@
 package AnyJob::Creator::App;
 
+###############################################################################
+# Version of creator component designed to use inside dancer2 web application.
+# Its main purpose is to catch interruption signals and shutdown application only when it is safe to do it.
+#
+# Author:       LightStar
+# Created:      30.10.2017
+# Last update:  07.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
 
 use base 'AnyJob::Creator';
 
+###############################################################################
+# Construct new AnyJob::Creator::App object.
+#
+# Returns:
+#     AnyJob::Creator:App object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -19,6 +34,10 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Set stop flag so application will shutdown when it is safe.
+# Shutdown immediately if it is safe right now.
+#
 sub stop {
     my $self = shift;
 
@@ -30,6 +49,13 @@ sub stop {
     }
 }
 
+###############################################################################
+# Set or unset 'busy' flag. When 'busy' flag is unset, it is safe to shutdown.
+# Shutdown right here if interruption signal was catched previously.
+#
+# Arguments:
+#     busy - 0/1 value for the 'busy' flag.
+#
 sub setBusy {
     my $self = shift;
     my $busy = shift;
@@ -41,6 +67,9 @@ sub setBusy {
     $self->{busy} = $busy || 0;
 }
 
+###############################################################################
+# Perform shutdown.
+#
 sub shutdown {
     my $self = shift;
     $self->debug('Stopped');

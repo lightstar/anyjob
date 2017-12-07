@@ -1,11 +1,46 @@
 package AnyJob::Creator::Parser;
 
+###############################################################################
+# Class used to parse text command-line into hash with job data which can be fed to creator's 'createJobs' method.
+# If there are any errors or warnings in arguments, they are returned in very detailed form.
+# Additionally command-line can contain some pre-defined extra arguments which are also returned as separate hash.
+#
+# Command-line must have this structure:
+# <job type> [arg1] [arg2] [arg3] ...
+# So the first argument is always job type and others may be any of:
+#   - job parameter in form '<name>=<value>'.
+#   - job property in form '<name>=<value>'.
+#   - nodes in form 'nodes=<list of nodes names separated by comma>'.
+#   - implicit nodes in form '<list of nodes names separated by comma>'.
+#   - extra parameters included in 'allowedExtra' in form '<name>=<value>'.
+# All possibilities are checked by parsing in exactly that order. Unrecognized arguments will produce errors.
+# You are free to use quotes and escapes here like in any shell command-line.
+#
+# If some parameter, property or nodes are missing, then configured default values will be used if any,
+# and appropriate warning will be included in 'errors' array.
+#
+# Author:       LightStar
+# Created:      23.11.2017
+# Last update:  07.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
 
 use Text::ParseWords qw(parse_line);
 
+###############################################################################
+# Construct new AnyJob::Creator::Parser object.
+#
+# Arguments:
+#     parent       - parent component which is usually AnyJob::Creator object.
+#     input        - input command-line as raw string text or already parsed array of arguments.
+#     allowedExtra - array of strings with allowed additional params in command-line which will be returned in
+#                    separate hash after parsing.
+# Returns:
+#     AnyJob::Creator::Parser object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -27,31 +62,83 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Returns:
+#     parent component which is usually AnyJob::Creator object.
+#
 sub parent {
     my $self = shift;
     return $self->{parent};
 }
 
+###############################################################################
+# Returns:
+#     AnyJob::Config object.
+#
 sub config {
     my $self = shift;
     return $self->{parent}->config;
 }
 
+###############################################################################
+# Returns:
+#     hash with parsed job data as described in creator's 'createJobs' method. Initially it will be undef.
+#     May be incomplete in case of errors, so check them first.
+#
 sub job {
     my $self = shift;
     return $self->{job};
 }
 
+###############################################################################
+# Returns:
+#     array of hashes with errors or warnings data. Initially it will be empty.
+#     Each hash has following structure:
+#     {
+#         type => '...',
+#         arg => '...',
+#         field => '...',
+#         param => '...',
+#         value => '...',
+#         text => '...'
+#     }
+#     Field 'type' is always here and have string value 'error' or 'warning'. 'error' means that command-line included
+#     some arguments or values that shouldn't be here and job can't be created. The same is with not-included required
+#     parameters. And 'warning' usually means that command-line missed some parameters or nodes, and default values
+#     were used.
+#     Field 'arg' is included if error related to the whole argument, and contains its value.
+#     Field 'field' is included if error related to some field of job data, and contains its name.
+#     Field 'param' is included if error related to some specific parameter or property in job data,
+#     and contains its name.
+#     Field 'value' is included if error related to some value of job field or parameter in job data,
+#     and contains it.
+#     Field 'text' is always here and contains detailed error or warning description.
+#
 sub errors {
     my $self = shift;
     return $self->{errors};
 }
 
+###############################################################################
+# Returns:
+#     hash with parsed additional parameters specified in 'allowedExtra' constructor parameter.
+#     Initially it will be undef.
+#     For example, if 'allowedExtra' is ['param1','param2','param3'], then result may be something as
+#     { 'param1' => '...', 'param2' => '...' }
+#     Only parameters really present in command-line will be included.
+#
 sub extra {
     my $self = shift;
     return $self->{extra};
 }
 
+###############################################################################
+# Prepare parsing. Check for basic correctness of command-line here and generate helper data structures.
+#
+# Returns:
+#     1/undef on success/error accordingly. In case of error further parsing is pointless and 'errors' will return
+#     array with errors. Otherwise you may proceed with 'parse' method.
+#
 sub prepare {
     my $self = shift;
 
@@ -99,6 +186,10 @@ sub prepare {
     return 1;
 }
 
+###############################################################################
+# Parse command-line. Must be called after 'prepare' method.
+# After this method is finished, you may call 'job', 'extra' and 'errors' methods to fetch results.
+#
 sub parse {
     my $self = shift;
 
@@ -133,6 +224,16 @@ sub parse {
     $self->injectDefaultProps();
 }
 
+###############################################################################
+# Check if current argument is job parameter and parse it.
+#
+# Arguments:
+#     name  - string parameter name.
+#     value - string parameter value.
+# Returns:
+#     1/undef on success/error accordingly. In case of error current argument is not job parameter at all, and
+#     on success it is, but not necessarily correct one.
+#
 sub processParamArg {
     my $self = shift;
     my $name = shift;
@@ -161,6 +262,16 @@ sub processParamArg {
     return undef;
 }
 
+###############################################################################
+# Check if current argument is job property and parse it.
+#
+# Arguments:
+#     name  - string parameter name.
+#     value - string parameter value.
+# Returns:
+#     1/undef on success/error accordingly. In case of error current argument is not job property at all, and
+#     on success it is, but not necessarily correct one.
+#
 sub processPropArg {
     my $self = shift;
     my $name = shift;
@@ -189,6 +300,16 @@ sub processPropArg {
     return undef;
 }
 
+###############################################################################
+# Check if current argument is 'nodes' parameter and parse it.
+#
+# Arguments:
+#     name  - string parameter name.
+#     value - string parameter value.
+# Returns:
+#     1/undef on success/error accordingly. In case of error current argument is not 'nodes' parameter, and
+#     on success it is, but not necessarily have correct value.
+#
 sub processNodesArg {
     my $self = shift;
     my $name = shift;
@@ -228,6 +349,16 @@ sub processNodesArg {
     return 1;
 }
 
+###############################################################################
+# Check if current argument is implicit nodes and parse it.
+#
+# Arguments:
+#     name  - string parameter name.
+#     value - string parameter value.
+# Returns:
+#     1/undef on success/error accordingly. In case of error current argument is not implicit nodes, and
+#     on success it is.
+#
 sub processImplicitNodesArg {
     my $self = shift;
     my $name = shift;
@@ -248,6 +379,16 @@ sub processImplicitNodesArg {
     return 1;
 }
 
+###############################################################################
+# Check if current argument is extra parameter and parse it.
+#
+# Arguments:
+#     name  - string parameter name.
+#     value - string parameter value.
+# Returns:
+#     1/undef on success/error accordingly. In case of error current argument is not extra parameter, and
+#     on success it is.
+#
 sub processExtraArg {
     my $self = shift;
     my $name = shift;
@@ -261,6 +402,15 @@ sub processExtraArg {
     return undef;
 }
 
+###############################################################################
+# Process any unknown argument. Generate an error in that case.
+#
+# Arguments:
+#     name  - string parameter name.
+#     value - string parameter value.
+# Returns:
+#     always 1.
+#
 sub processUnknownArg {
     my $self = shift;
     my $name = shift;
@@ -274,6 +424,10 @@ sub processUnknownArg {
     return 1;
 }
 
+###############################################################################
+# Inject default nodes into job data if there are no nodes in it yet.
+# Generate error in case of empty nodes.
+#
 sub injectDefaultNodes {
     my $self = shift;
 
@@ -303,6 +457,10 @@ sub injectDefaultNodes {
     }
 }
 
+###############################################################################
+# Inject default parameter values into job data for yet non-existent parameters.
+# Generate error in case of missing required parameters.
+#
 sub injectDefaultParams {
     my $self = shift;
 
@@ -334,6 +492,10 @@ sub injectDefaultParams {
     }
 }
 
+###############################################################################
+# Inject default property values into job data for yet non-existent properties.
+# Generate error in case of missing required properties.
+#
 sub injectDefaultProps {
     my $self = shift;
 

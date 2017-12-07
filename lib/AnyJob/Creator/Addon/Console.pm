@@ -1,5 +1,13 @@
 package AnyJob::Creator::Addon::Console;
 
+###############################################################################
+# Addon that creates jobs using command-line of console application.
+#
+# Author:       LightStar
+# Created:      29.11.2017
+# Last update:  07.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -8,6 +16,14 @@ use JSON::XS;
 
 use base 'AnyJob::Creator::Addon::Base';
 
+###############################################################################
+# Construct new AnyJob::Creator::Addon::Console object.
+#
+# Arguments:
+#     parent - parent component which is usually AnyJob::Creator object.
+# Returns:
+#     AnyJob::Creator:Addon::Console object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -16,6 +32,15 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Create job using command-line arguments.
+# Internally AnyJob::Creator::Parser is used, so see there for details of parsing args.
+#
+# Arguments:
+#     args - array of strings with command-line arguments.
+# Returns:
+#     reply string with error or success message.
+#
 sub create {
     my $self = shift;
     my $args = shift;
