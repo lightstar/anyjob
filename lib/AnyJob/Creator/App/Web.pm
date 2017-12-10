@@ -1,5 +1,14 @@
 package AnyJob::Creator::App::Web;
 
+###############################################################################
+# Dancer2 web application for creating and observing jobs via browser.
+# Requires client-side files in 'web' directory.
+#
+# Author:       LightStar
+# Created:      23.11.2017
+# Last update:  08.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -11,6 +20,9 @@ use Dancer2::Plugin::AnyJob;
 use Dancer2::Plugin::Auth::HTTP::Basic::DWIW;
 use Dancer2::Plugin::WebSocket;
 
+###############################################################################
+# Dancer2 application settings.
+#
 set public_dir => path(app->location, 'web');
 set static_handler => true;
 set serializer => 'JSON';
@@ -28,16 +40,31 @@ set plugins => {
         }
     };
 
+###############################################################################
+# Basic authorization handler.
+#
+# Arguments:
+#     user - string user name.
+#     pass - string password.
+# Returns:
+#     0/1 flag. If set, access is permitted.
+#
 http_basic_auth_set_check_handler sub {
         my $user = shift;
         my $pass = shift;
         return creator->addon('web')->checkAuth($user, $pass);
     };
 
+###############################################################################
+# Handle root path. Index page is sent here.
+#
 get '/' => http_basic_auth required => sub {
             send_file '/index.html';
         };
 
+###############################################################################
+# Retrieve hash with config data needed by client-side of web application.
+#
 get '/config' => http_basic_auth required => sub {
             my ($user, $pass) = http_basic_auth_login;
             return {
@@ -53,9 +80,12 @@ get '/config' => http_basic_auth required => sub {
             };
         };
 
+###############################################################################
+# Handle 'create jobs' request.
+#
 post '/create' => http_basic_auth required => sub {
-            # Хак, потребовавшийся из-за непонятного бага Dancer2.
-            # По идее serializer в объекте request должен установиться автоматически, но не устанавливается.
+            # Hack required because of strange bug in Dancer2.
+            # In theory serializer in request object should be set automatically but it doesn't.
             request->{serializer} = app->config->{serializer};
             my $jobs = request->data;
             creator->addon('web')->preprocessJobs($jobs);
@@ -77,6 +107,11 @@ post '/create' => http_basic_auth required => sub {
             };
         };
 
+###############################################################################
+# Opening websocket connection.
+# As 'Authorization' header not sent in such request, access is checked via 'user' and 'pass' query parameters.
+# Observe private events here.
+#
 websocket_on_open sub {
         my $conn = shift;
         my $env = shift;

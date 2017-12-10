@@ -1,5 +1,13 @@
 package AnyJob::Creator::App::Slack;
 
+###############################################################################
+# Dancer2 web application for creating and observing jobs via slack (https://slack.com/).
+#
+# Author:       LightStar
+# Created:      23.11.2017
+# Last update:  08.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -7,9 +15,18 @@ use utf8;
 use Dancer2 qw(!config !debug !error);
 use Dancer2::Plugin::AnyJob;
 
+###############################################################################
+# Dancer2 application settings.
+#
 set serializer => 'JSON';
 set charset => 'UTF-8';
 
+###############################################################################
+# Handle request from interactive components.
+# (https://api.slack.com/dialogs and https://api.slack.com/docs/message-buttons).
+# Only dialog submission supported right now.
+# It is expected that 'callback_id' parameter will contain slack builder name before colon.
+#
 post '/' => sub {
         my $params = body_parameters;
 
@@ -64,6 +81,9 @@ post '/' => sub {
         send_as html => '';
     };
 
+###############################################################################
+# Handle request from slash command execution (https://api.slack.com/slash-commands).
+#
 post '/cmd' => sub {
         my $params = body_parameters;
         my $slack = creator->addon('slack');
@@ -99,6 +119,9 @@ post '/cmd' => sub {
         send_as html => '';
     };
 
+###############################################################################
+# Observe slack private events.
+#
 creator->addon('slack')->observePrivateEvents();
 
 1;

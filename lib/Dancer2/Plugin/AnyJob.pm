@@ -1,5 +1,13 @@
 package Dancer2::Plugin::AnyJob;
 
+###############################################################################
+# Plugin used to integrate AnyJob creator component with Dancer2 web application.
+#
+# Author:       LightStar
+# Created:      30.10.2017
+# Last update:  08.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -10,6 +18,10 @@ use Dancer2::Plugin;
 
 our $VERSION = '0.1';
 
+###############################################################################
+# Register hooks for every request.
+# These hooks set 'busy' flag in creator during request execution to indicate that it is not safe to shutdown.
+#
 sub BUILD {
     my $plugin = shift;
 
@@ -28,6 +40,12 @@ sub BUILD {
     ));
 }
 
+###############################################################################
+# Instantiate and retrieve creator component object.
+#
+# Returns:
+#     AnyJob::Creator::App object.
+#
 my $creator;
 sub creator {
     unless (defined($creator)) {
@@ -36,6 +54,9 @@ sub creator {
     return $creator;
 }
 
+###############################################################################
+# Define plugin keywords to use within Dancer2 application.
+#
 plugin_keywords
     'creator',
     'config' => sub {
