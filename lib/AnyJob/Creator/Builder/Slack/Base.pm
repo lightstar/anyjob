@@ -1,5 +1,13 @@
 package AnyJob::Creator::Builder::Slack::Base;
 
+###############################################################################
+# Base abstract class for all builders used to create jobs by slack application (http://slack.com/).
+#
+# Author:       LightStar
+# Created:      22.11.2017
+# Last update:  12.12.2017
+#
+
 use strict;
 use warnings;
 use utf8;
@@ -10,6 +18,15 @@ use HTTP::Request::Common qw(POST);
 
 use base 'AnyJob::Creator::Builder::Base';
 
+###############################################################################
+# Construct new AnyJob::Creator::Builder::Slack::Base object.
+#
+# Arguments:
+#     parent - parent component which is usually AnyJob::Creator object.
+#     name   - string builder's name used to distinguish builders in configuration and other places.
+# Returns:
+#     AnyJob::Creator::Builder::Slack::Base object.
+#
 sub new {
     my $class = shift;
     my %args = @_;
@@ -21,11 +38,25 @@ sub new {
     return $self;
 }
 
+###############################################################################
+# Get builder configuration or undef.
+#
+# Returns:
+#     hash with builder configuration or undef if there are no such builder in config.
+#
 sub getBuilderConfig {
     my $self = shift;
     return $self->config->getBuilderConfig('slack_' . $self->name);
 }
 
+###############################################################################
+# Check if given slack user is allowed to use this builder.
+#
+# Arguments:
+#     user - string user id.
+# Returns:
+#     0/1 flag. If set, access is permitted.
+#
 sub isUserAllowed {
     my $self = shift;
     my $user = shift;
@@ -46,9 +77,19 @@ sub isUserAllowed {
         return 1;
     }
 
-    return undef;
+    return 0;
 }
 
+###############################################################################
+# Send message payload to provided response url.
+#
+# Arguments:
+#     response - hash with message payload. Content can be anything supported by slack.
+#                See https://api.slack.com/docs/messages for details.
+#     url      - string response url.
+# Returns:
+#     1/undef on success/error accordingly.
+#
 sub sendResponse {
     my $self = shift;
     my $response = shift;
@@ -68,14 +109,23 @@ sub sendResponse {
     return 1;
 }
 
-sub sendApiCommand {
+###############################################################################
+# Call slack Web API method. See https://api.slack.com/web for details.
+#
+# Arguments:
+#     method - string method name.
+#     data   - hash with body data.
+# Returns:
+#     hash with response data or undef on error.
+#
+sub callApiMethod {
     my $self = shift;
-    my $command = shift;
+    my $method = shift;
     my $data = shift;
 
-    unless (defined($command) and defined($data)) {
+    unless (defined($method) and defined($data)) {
         require Carp;
-        Carp::confess('No slack api command or data');
+        Carp::confess('No slack api method or data');
     }
 
     my $config = $self->config->section('creator_slack') || {};
@@ -84,7 +134,7 @@ sub sendApiCommand {
         Carp::confess('No api URL or token for slack');
     }
 
-    my $url = $config->{api} . $command;
+    my $url = $config->{api} . $method;
     my $request = POST($url,
         Content_Type  => 'application/json; charset=utf-8',
         Authorization => 'Bearer ' . $config->{api_token},
@@ -92,34 +142,75 @@ sub sendApiCommand {
     );
 
     my $result = $self->{ua}->request($request);
+    my $response;
     unless ($result->is_success) {
-        $self->error('Slack command failed, url: ' . $url . ', response: ' . $result->content);
+        $self->error('Slack method failed, url: ' . $url . ', response: ' . $result->content);
         return undef;
     } else {
-        my $response;
         eval {
             $response = decode_json($result->content);
         };
         if ($@ or not $response->{ok}) {
-            $self->error('Slack command failed, url: ' . $url . ', response: ' . $result->content);
+            $self->error('Slack method failed, url: ' . $url . ', response: ' . $result->content);
             return undef;
         }
+    }
+
+    return $response;
+}
+
+###############################################################################
+# Call Web API method to show dialog. See https://api.slack.com/dialogs for details.
+#
+# Arguments:
+#     triggerId - string trigger id.
+#     dialog    - hash with dialog data.
+# Returns:
+#     1/undef on success/error accordingly.
+#
+sub showDialog {
+    my $self = shift;
+    my $triggerId = shift;
+    my $dialog = shift;
+
+    unless (defined($self->callApiMethod('dialog.open', {
+            trigger_id => $triggerId,
+            dialog     => $dialog
+        })
+    )) {
+        return undef;
     }
 
     return 1;
 }
 
-sub sendDialog {
+###############################################################################
+# Show help for slack command.
+#
+# Returns:
+#     hash data with help message payload.
+#
+sub commandHelp {
     my $self = shift;
-    my $trigger = shift;
-    my $dialog = shift;
 
-    return $self->sendApiCommand('dialog.open', {
-            trigger_id => $trigger,
-            dialog     => $dialog
-        });
+    my $config = $self->getBuilderConfig() || {};
+    return {
+        text => $config->{help} || 'No help for this command'
+    };
 }
 
+###############################################################################
+# Handle slack slash command. See https://api.slack.com/slash-commands for details.
+# This is abstract method, needed to be implemented in descendants.
+#
+# Arguments:
+#     text        - string command text.
+#     user        - string user id.
+#     responseUrl - string response url.
+#     triggerId   - string trigger id.
+# Returns:
+#     string result to show user or undef.
+#
 sub command {
     my $self = shift;
     my $text = shift;
@@ -131,14 +222,15 @@ sub command {
     Carp::confess('Need to be implemented in descendant');
 }
 
-sub commandHelp {
-    my $self = shift;
-
-    return {
-        text => $self->getBuilderConfig()->{help} || 'No help for this command'
-    };
-}
-
+###############################################################################
+# Handle dialog submission. See https://api.slack.com/dialogs for details.
+# This is abstract method, needed to be implemented in descendants.
+#
+# Arguments:
+#     payload - hash data with dialog submission.
+# Returns:
+#     hash data with response payload, string result to show user or undef.
+#
 sub dialogSubmission {
     my $self = shift;
     my $payload = shift;
