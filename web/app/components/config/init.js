@@ -1,3 +1,13 @@
+/**
+ * Load configuration data from server and prepare it for use.
+ * That data will be loaded at application start and assigned to 'config' property of root scope.
+ * All other components should wait for it to appear there before proceed.
+ *
+ * Author:       LightStar
+ * Created:      15.11.2017
+ * Last update:  12.12.2017
+ */
+
 app.run(function ($http, $rootScope) {
         function init(jobs, props, observer, auth, error) {
             var config = {

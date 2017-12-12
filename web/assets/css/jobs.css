@@ -1,7 +1,23 @@
+/**
+ * Stylesheet related to job panel.
+ *
+ * Author:       LightStar
+ * Created:      13.11.2017
+ * Last update:  12.12.2017
+ */
+
+/**
+ * Transition to change opacity of job panel so it is gradually appearing on the page.
+ */
 .panel-job {
     transition: opacity 0.5s linear;
 }
 
+/**
+ * Classes 'ng-enter', 'ng-enter-prepare', 'ng-enter-active', 'ng-leave', 'ng-leave-active' are set by
+ * angularjs animation for the blocks that are binded to array elements so this is needed for the job panel
+ * animation to work.
+ */
 .panel-job.ng-enter,
 .panel-job.ng-enter-prepare,
 .panel-job.ng-leave.ng-leave-active {

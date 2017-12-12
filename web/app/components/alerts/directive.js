@@ -1,3 +1,19 @@
+/**
+ * Define 'alerts' directive used to show temporary or persistent alerts on page using bootstrap alerts.
+ * See https://www.w3schools.com/bootstrap/bootstrap_alerts.asp for details.
+ * Directive have 2 attributes:
+ *   control - control object where property 'add' will be created with function used to show new alert.
+ *             That function takes 3 arguments:
+ *               msg - string alert message.
+ *               type - string alert type as required by bootstrap.
+ *               persist - boolean flag. If true, alert will stay infinitely, otherwise - disappear after timeout.
+ *   timeout - timeout in milliseconds to expire non-persistent alerts. By default - 10000 (i.e. 10s).
+ *
+ * Author:       LightStar
+ * Created:      15.11.2017
+ * Last update:  12.12.2017
+ */
+
 app.directive('alerts', function () {
     return {
         restrict: 'A',

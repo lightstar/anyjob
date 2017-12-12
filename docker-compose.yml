@@ -7,16 +7,16 @@ services:
      - redis
     environment:
      - ANYJOB_NODE=broadcast
-  test:
+  example:
     build: .
     command: /opt/anyjob/bin/anyjobd.pl
     links:
      - redis
     environment:
-     - ANYJOB_NODE=test
+     - ANYJOB_NODE=example
   creator:
     build: .
-    command: /usr/local/bin/plackup -s Twiggy -p 80 /opt/anyjob/bin/anyjobc.psgi
+    command: /usr/local/bin/plackup --server Twiggy --port 80 --no-default-middleware /opt/anyjob/bin/anyjobc.psgi
     links:
      - redis
     ports:

@@ -1,5 +1,16 @@
 #!/bin/sh
 
+###############################################################################
+# Daemon startup script. You can use it to start, stop and restart anyjob daemon.
+# Use environment variables (such as ANYJOB_NODE, ANYJOB_PATH, ANYJOB_LIB, ANYJOB_CONF, etc)
+# to tweak default settings. Instead of environment variable you can create 'NODE' file
+# in anyjob home directory to provide current node name. See documentation for further details.
+#
+# Author:       LightStar
+# Created:      17.10.2017
+# Last update:  12.12.2017
+#
+
 NODE=${ANYJOB_NODE:-$(cat ${ANYJOB_PATH:-"/opt/anyjob"}/NODE)}
 ANYJOBD=${ANYJOB_PATH:-"/opt/anyjob"}"/bin/anyjobd.pl"
 PIDFILE=${ANYJOBD_PID:-"/var/run/anyjobd.pid"}

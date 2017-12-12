@@ -1,11 +1,29 @@
+/**
+ * Stylesheet related to observer panel.
+ *
+ * Author:       LightStar
+ * Created:      15.11.2017
+ * Last update:  12.12.2017
+ */
+
+/**
+ * Transition to change opacity of observer panel so it is gradually appearing on the page.
+ */
 .panel-observer {
     transition: opacity 0.5s linear;
 }
 
+/**
+ * Class 'ng-hide' is set for block by angularjs when it should not be visible so this is needed for observer panel
+ * animation to work.
+ */
 .panel-observer.ng-hide {
     opacity: 0;
 }
 
+/**
+ * Observer body should have fixed height and height transition so it is slides in when appearing.
+ */
 .panel-observer .panel-body {
     padding: 0;
     overflow: auto;
@@ -13,19 +31,33 @@
     transition: height 0.5s linear;
 }
 
+/**
+ * When observer will receive enough events it will have this class which set bigger height.
+ */
 .panel-observer .panel-body.big {
     height: 250px;
 }
 
+/**
+ * Transition to change opacity of new event block so it is gradually appearing in the observer panel.
+ */
 .panel-observer .event {
     transition: opacity 0.5s linear;
     padding: 10px 15px;
 }
 
+/**
+ * Slightly change color of event block when mouse pointer is over it.
+ */
 .panel-observer .event:hover {
     background-color: #f5f5f5;
 }
 
+/**
+ * Classes 'ng-enter', 'ng-enter-prepare', 'ng-enter-active' are set by
+ * angularjs animation for the blocks that are binded to array elements
+ * so this is needed for the event block animation to work.
+ */
 .panel-observer .event.ng-enter,
 .panel-observer .event.ng-enter-prepare {
     opacity: 0;

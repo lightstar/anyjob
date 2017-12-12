@@ -1,3 +1,16 @@
+/**
+ * Various utility functions.
+ *
+ * Author:       LightStar
+ * Created:      09.11.2017
+ * Last update:  12.12.2017
+ */
+
+/**
+ * Generate globally unique string which can be used for identificators.
+ *
+ * @return {string} guid.
+ */
 function guidGenerator() {
     /**
      * @return {string}
@@ -8,6 +21,10 @@ function guidGenerator() {
     return (S4() + S4() + '-' + S4() + '-' + S4() + '-' + S4() + '-' + S4() + S4() + S4());
 }
 
+/**
+ * Remove all items in provided objects which have false, zero or empty values.
+ * This function receives any number of arguments and processes them all.
+ */
 function deleteEmptyFields() {
     for (var i = 0; i < arguments.length; i++) {
         var params = arguments[i];
@@ -20,6 +37,13 @@ function deleteEmptyFields() {
     }
 }
 
+/**
+ * Generate error string by provided server reply data.
+ *
+ * @param       data   - object or string received from server.
+ * @param {int} status - integer status code received from server.
+ * @return {string} error string.
+ */
 function serverError(data, status) {
     if (typeof(data) === 'object' && data !== null) {
         if (data.message) {

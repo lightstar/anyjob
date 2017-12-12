@@ -1,5 +1,15 @@
 #!/bin/sh
 
+###############################################################################
+# Creator web application startup script. You can use it to start, stop and restart that application.
+# Use environment variables (such as ANYJOB_HOST, ANYJOB_PORT, ANYJOB_PATH, ANYJOB_LIB, ANYJOB_CONF, etc)
+# to tweak default settings. See documentation for further details.
+#
+# Author:       LightStar
+# Created:      17.11.2017
+# Last update:  12.12.2017
+#
+
 PLACKUP=${ANYJOBC_PLACKUP:-"/usr/bin/plackup"}
 SERVER=${ANYJOBC_SERVER:-"Twiggy"}
 HOST=${ANYJOBC_HOST:-"127.0.0.1"}
