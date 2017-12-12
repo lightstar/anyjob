@@ -16,14 +16,10 @@
                 cleaned
             [%  END %]
         ",
-        "color": "
-            [% IF event == 'finish' %]
-                [% success ? 'good' : 'danger' %]
-            [% ELSIF event == 'finishJobSet' %]
-                good
-            [% ELSIF event == 'clean' || event == 'cleanJobSet' %]
-                danger
-            [% END %]
-        ",
+        [% IF (event == 'finish' && success) || event == 'finishJobSet' %]
+            "color": "good"
+        [% ELSIF (event == 'finish' && !success) || event == 'clean' || event == 'cleanJobSet' %]
+            "color": "danger"
+        [% END %]
     } ]
 }
