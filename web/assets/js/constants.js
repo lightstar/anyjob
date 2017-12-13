@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      29.11.2017
- * Last update:  12.12.2017
+ * Last update:  13.12.2017
  */
 
 /**
@@ -18,3 +18,13 @@ var EVENT_CREATE_JOBSET = 'createJobSet';
 var EVENT_FINISH_JOBSET = 'finishJobSet';
 var EVENT_PROGRESS_JOBSET = 'progressJobSet';
 var EVENT_CLEAN_JOBSET = 'cleanJobSet';
+
+/**
+ * Minimal delay in milliseconds between appearings of new events in observer.
+ */
+var OBSERVER_EVENT_MIN_DELAY = 1000;
+
+/**
+ * Minimal total count of events for observer panel to take 'big' class.
+ */
+var OBSERVER_BIG_MIN_EVENTS = 5;

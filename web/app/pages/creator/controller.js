@@ -1,9 +1,29 @@
+/**
+ * Define creator page controller. Its main job is to let user describe what jobs he/she wants to create and than
+ * send request to server to actually create them.
+ * In parallel observing is launched so all private events happening with created jobs are immediately shown.
+ *
+ * Author:       LightStar
+ * Created:      15.11.2017
+ * Last update:  13.12.2017
+ */
+
 app.controller('creatorController', function ($scope, $http, $compile, creatorService) {
     $scope.jobs = [];
     $scope.events = [];
     $scope.control = {reset: null, event: null};
 
+    var isCreating = false;
+
+    /**
+     * Create jobs.
+     */
     $scope.create = function () {
+        if (isCreating) {
+            return;
+        }
+
+        isCreating = true;
         var jobs = [];
 
         angular.forEach($scope.jobs, function (job) {
@@ -34,9 +54,13 @@ app.controller('creatorController', function ($scope, $http, $compile, creatorSe
                 $scope.alert(message, 'success');
                 $scope.control.reset();
             }
+            isCreating = false;
         });
     };
 
+    /**
+     * Observing begins only after config is loaded and observer panel initialized.
+     */
     $scope.$watchGroup(['config.auth','control.event'], function () {
         if ($scope.config.auth.user === '' || $scope.control.event === null) {
             return;

@@ -6,7 +6,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  12.12.2017
+ * Last update:  13.12.2017
  */
 
 app.run(function ($rootScope) {
@@ -18,7 +18,8 @@ app.run(function ($rootScope) {
      * Show alert or save it until later when 'rootAlerts.add' control function will be initialized by directive.
      *
      * @param msg     {string}  alert message.
-     * @param type    {string}  alert type as described in https://www.w3schools.com/bootstrap/bootstrap_alerts.asp
+     * @param type    {string}  alert type as described in https://www.w3schools.com/bootstrap/bootstrap_alerts.asp.
+     *                          By default - 'info'.
      * @param persist {boolean} if true, alert will stay infinitely, otherwise - disappear after configured timeout
      *                          (10s by default).
      */

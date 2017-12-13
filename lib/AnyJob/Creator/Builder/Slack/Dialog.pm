@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Dialog;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  12.12.2017
+# Last update:  13.12.2017
 #
 
 use strict;
@@ -157,7 +157,7 @@ sub applySubmission {
 }
 
 ###############################################################################
-# Construct dialog payload which can be showed to slack user.
+# Construct dialog payload which can be shown to slack user.
 #
 # Arguments:
 #     job - hash with job data.

@@ -1,3 +1,17 @@
+/**
+ * Define 'observer' directive used to show observer panel which can receive private events and show them using
+ * configured template. This panel is initially hidden and shows when first event is received.
+ * User can collapse observer panel but it automatically expands on next event.
+ * Directive has attributes:
+ *   config  - config object.
+ *   control - control object where property 'event' will be created with function used to receive new event.
+ *             It takes object with event data as argument.
+ *
+ * Author:       LightStar
+ * Created:      15.11.2017
+ * Last update:  13.12.2017
+ */
+
 app.directive('observer', function ($timeout) {
     return {
         restrict: 'A',
@@ -16,6 +30,11 @@ app.directive('observer', function ($timeout) {
             var timeoutPromise = null;
             var index = 0;
 
+            /**
+             * Push one of received events stored in 'delayedEvents' array into scope 'events' array so it shows
+             * in the observer panel.
+             * That pushing cannot occur faster than with interval defined in 'OBSERVER_EVENT_MIN_DELAY' constant.
+             */
             var pushEvent = function () {
                 timeoutPromise = null;
                 if (delayedEvents.length === 0) {
@@ -29,13 +48,18 @@ app.directive('observer', function ($timeout) {
                     $scope.isCollapsed = false;
                 }, 0);
 
-                if ($scope.events.length >= 5) {
+                if ($scope.events.length >=  OBSERVER_BIG_MIN_EVENTS) {
                     $scope.bigClass = 'big';
                 }
 
-                timeoutPromise = $timeout(pushEvent, 1000);
+                timeoutPromise = $timeout(pushEvent, OBSERVER_EVENT_MIN_DELAY);
             };
 
+            /**
+             * Preprocess received event data. Inject '$index' and 'class' properties into it.
+             *
+             * @param {object} event - received event data.
+             */
             var preprocessEvent = function(event) {
                 event.$index = index++;
 
@@ -64,6 +88,12 @@ app.directive('observer', function ($timeout) {
                 }
             };
 
+            /**
+             * Receive new event. Events are not shown immediately but with some short interval
+             * to improve user experience.
+             *
+             * @param {object} event - received event data.
+             */
             $scope.control.event = function (event) {
                 preprocessEvent(event);
                 delayedEvents.push(event);
@@ -77,6 +107,9 @@ app.directive('observer', function ($timeout) {
     };
 });
 
+/**
+ * Helper internal directive 'observer-event' used to dynamically compile configured event template.
+ */
 app.directive('observerEvent', function ($compile) {
     return {
         restrict: 'A',

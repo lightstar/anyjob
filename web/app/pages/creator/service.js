@@ -1,6 +1,22 @@
+/**
+ * Define creator service used to create and observe jobs by communicating with server.
+ *
+ * Author:       LightStar
+ * Created:      15.11.2017
+ * Last update:  13.12.2017
+ */
+
 app.service('creatorService',
     function ($http) {
 
+        /**
+         * Create jobs.
+         *
+         * @param {array}    jobs     - array of objects with job data to create.
+         * @param {function} callback - function which will be called when operation completes. It will receive
+         *                              one argument containing string error message or empty string if there were
+         *                              no errors.
+         */
         function create(jobs, callback) {
             $http.post('create', jobs)
                 .then(function (response) {
@@ -10,12 +26,28 @@ app.service('creatorService',
                 });
         }
 
+        /**
+         * Begin observing private events using continuous websocket connection.
+         *
+         * @param {object}   auth     - object with 'user' and 'pass' string properties containing authentication
+         *                              credentials.
+         * @param {function} callback - function which will be called for each received event. It will receive
+         *                              one argument containing object with event data.
+         */
         function observe(auth, callback) {
             getWebSocket(auth).onmessage = function (event) {
                 callback(JSON.parse(event.data));
             };
         }
 
+        /**
+         * Instantiate websocket object or just return previously instantiated one.
+         * Library 'ReconnectingWebSocket' object is used which will automatically try to reconnect on any errors.
+         *
+         * @param {object} auth - object with 'user' and 'pass' string properties containing authentication
+         *                        credentials.
+         * @return {ReconnectingWebSocket} websocket object.
+         */
         var socket = null;
         function getWebSocket(auth) {
             if (socket !== null) {
