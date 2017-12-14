@@ -1,3 +1,12 @@
+###############################################################################
+# Docker compose configuration used to run example anyjob deployment.
+# There are containers for two nodes ('broadcast' and 'example'), creator web application and redis.
+#
+# Author:       LightStar
+# Created:      19.10.2017
+# Last update:  14.12.2017
+#
+
 version: "2"
 services:
   broadcast:

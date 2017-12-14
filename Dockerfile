@@ -1,3 +1,12 @@
+###############################################################################
+# Dockerfile for image used to run example anyjob deployment.
+# Official 'perl' image is used here with addition of all needed modules.
+#
+# Author:       LightStar
+# Created:      19.10.2017
+# Last update:  14.12.2017
+#
+
 FROM perl:5.26
 
 RUN cpanm JSON::XS
