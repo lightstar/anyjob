@@ -1,0 +1,69 @@
+1. Configuration location, sections and default sections.
+
+Configuration is done via configuration files. The path to main configuration file can be set in ANYJOB_CONF
+environment variable. By default it is '<ANYJOB_PATH>/etc/current/anyjob.cfg', where '<ANYJOB_PATH>' is path to anyjob
+installation set in ANYJOB_PATH environment variable (by default '/opt/anyjob').
+
+Configuration file must be divided into sections designated with line containing section name in square brackets.
+Each section consists of zero or more key-value pairs like this:
+
+[section]
+key = value
+...
+
+In addition to main configuration file configuration files are searched in some other paths. Key-value pairs
+in this files can have no explicit section name, in which case the default section name for this file is used.
+- builders path.
+      Default: 'builders' directory in main configuration file base path.
+      Default section name prefix: 'builder_'.
+- jobs path.
+      Default: 'jobs' directory in main configuration file base path.
+      Default section name prefix: 'job_'.
+- nodes path.
+      Default: 'nodes' directory in main configuration file base path.
+      Default section name prefix: 'node_'.
+- observers path.
+      Default: 'observers' directory in main configuration file base path.
+      Default section name prefix: 'observer_'.
+
+All these paths are searched for any files with '.cfg' extension and their names are concatenated to default section
+name. For example if in nodes path lies file named 'broadcast.cfg', all this file content without explicit section
+name will belong to section 'node_broadcast'. Names of all intermediate subdirectories are concatenated to default
+section name too, separated by underscores, so for file in builds path named 'slack/simple.cfg' default section name
+will be 'builder_slack_simple'.
+
+2. Key-value pairs.
+
+Each key-value pair consists of key and value separated by equal sign. Space characters around each line,
+key and value are ignored. Example:
+
+key = value
+
+By default each key-value pair must occupy just one line, but if there is backslash symbol at the end, value content
+will prolong to the next line. The backslash symbol itself is stripped as well as space characters at the end and
+beginning of each line (but not before backslash symbol). Example:
+
+key = some long \
+      value
+
+This is the same as:
+key = some long value
+
+Also limited 'here document' syntax can be used if value is too long to comfortably use backslashes. Example:
+
+key = <<END
+This value is extremely
+long.
+END
+
+This is the same as:
+key = This value is extremely long.
+
+This syntax is especially useful for json objects included in configuration.
+
+3. Global configuration section.
+
+Global configuration section is named 'anyjob' and must contain (surprisingly) anyjob global configuration.
+Below are all recognizible keys.
+
+

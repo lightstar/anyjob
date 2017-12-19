@@ -55,24 +55,24 @@ use constant DEFAULT_CONFIG_FILE => '{ANYJOB_PATH}/etc/current/anyjob.cfg';
 use constant DEFAULT_REDIS => '127.0.0.1:6379';
 
 ###############################################################################
-# Default directory for nodes configuration (relative to config file).
+# Default path for nodes configuration (relative to config file).
 #
-use constant DEFAULT_NODES_CONFIG_DIR => 'nodes';
+use constant DEFAULT_NODES_CONFIG_PATH => 'nodes';
 
 ###############################################################################
-# Default directory for jobs configuration (relative to config file).
+# Default path for jobs configuration (relative to config file).
 #
-use constant DEFAULT_JOBS_CONFIG_DIR => 'jobs';
+use constant DEFAULT_JOBS_CONFIG_PATH => 'jobs';
 
 ###############################################################################
-# Default directory for observers configuration (relative to config file).
+# Default path for observers configuration (relative to config file).
 #
-use constant DEFAULT_OBSERVERS_CONFIG_DIR => 'observers';
+use constant DEFAULT_OBSERVERS_CONFIG_PATH => 'observers';
 
 ###############################################################################
-# Default directory for builds configuration (relative to config file).
+# Default path for builds configuration (relative to config file).
 #
-use constant DEFAULT_BUILDS_CONFIG_DIR => 'builds';
+use constant DEFAULT_BUILDS_CONFIG_PATH => 'builds';
 
 ###############################################################################
 # Default directory for templates.
@@ -103,10 +103,10 @@ our @EXPORT = qw(
     DEFAULT_ANYJOB_PATH
     DEFAULT_CONFIG_FILE
     DEFAULT_REDIS
-    DEFAULT_NODES_CONFIG_DIR
-    DEFAULT_JOBS_CONFIG_DIR
-    DEFAULT_OBSERVERS_CONFIG_DIR
-    DEFAULT_BUILDS_CONFIG_DIR
+    DEFAULT_NODES_CONFIG_PATH
+    DEFAULT_JOBS_CONFIG_PATH
+    DEFAULT_OBSERVERS_CONFIG_PATH
+    DEFAULT_BUILDS_CONFIG_PATH
     DEFAULT_TEMPLATES_PATH
     DEFAULT_WORKER_WORK_DIR
     DEFAULT_WORKER_EXEC

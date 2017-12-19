@@ -1,0 +1,28 @@
+All keys created in redis are described here. They have prefix 'anyjob:' and are divided into 3 different groups:
+queues, data storage and id generators. Details about stored data and sent messages are in comments throughout code.
+
+1. Queues.
+
+anyjob:queue:<node>             - queue for create messages processed by node controllers.
+anyjob:queue                    - queue for create messages processed by global controller.
+anyjob:progressq:<node>         - queue for progress messages processed by node controllers.
+anyjob:progressq                - queue for progress messages processed by global controller.
+anyjob:observerq:<name>         - queue for events processed by observer with specified name.
+anyjob:observerq:private:<name> - queue for events processed by private observer with specified name.
+
+2. Data storage.
+
+anyjob:jobs:<node>              - sorted set with ids of all active jobs on specified node.
+anyjob:job:<id>                 - job data in JSON format for specified job id.
+anyjob:jobsets                  - sorted set with ids of all active jobsets.
+anyjob:jobset:<id>              - jobset data in JSON format for specified jobset id.
+anyjob:observer:<name>:log      - sorted set with job ids for which logs were collected by observer with specified name.
+anyjob:observer:<name>:log:<id> - list with log data collected by observer with specified name for job with specified id.
+anyjob:builds                   - sorted set with ids of all active creator builds.
+anyjob:build:<id>               - build data in JSON format for specified build id.
+
+3. Id generators
+
+anyjob:job:id                   - last job id.
+anyjob:jobset:id                - last jobset id.
+anyjob:build:id                 - last build id.

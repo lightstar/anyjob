@@ -1,0 +1,240 @@
+Events can be sent from anywhere but usually they are sent by controllers. After going through message queues they
+reach one of the observers - global or private ones. Global observers run as controllers on one of the nodes (usually
+global nodes), and private observers run inside creators and process events dedicated to specific users, usually
+authors of corresponding jobs or jobsets. In this document we will describe event data which is automatically injected
+into scope of observer templates.
+
+Every kind of observers has its own template, i.e. private ones are inside 'app' directory, and global observers has
+templates inside directories such as 'mail' or 'slack' dependent on observer type. Almost every template is in
+perl template toolkit format. If you don't familiar with it, you can look for its documentation here:
+http://www.template-toolkit.org/. And template for the web application is in angularjs template format, documentation
+is here: https://docs.angularjs.org/guide/templates. You can see example templates (which actually can already be used
+in production setup) in 'templates\example' directory. If you want use it, just set 'templates_path' in the config
+or make symbolic link to it from 'templates\current' which is default location for templates.
+
+So event data is injected into scope of every template and contains data which is dependent on event type
+but also contains some common fields. Event data is injected right into root of template toolkit stash and into
+'event' scope variable of angularjs template. Lets describe every event type and its corresponding data written in JSON
+format.
+
+1. 'Create' event. It indicates that some job was just created.
+{
+    "event": "create",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer job id>,
+    "jobset": <integer jobset id (optional, exists only if job is part of jobset)>,
+    "type": "<string job type>",
+    "params": {
+        "<string parameter name>": "<string parameter value>",
+        ...
+    },
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    }
+}
+
+2. 'Progress' event. It indicates progress of some job.
+{
+    "event": "progress",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer job id>,
+    "jobset": <integer jobset id (optional, exists only if job is part of jobset)>,
+    "type": "<string job type>",
+    "params": {
+        "<string parameter name>": "<string parameter value>",
+        ...
+    },
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    },
+    "progress": {
+        "state": "<string job state>",
+        "progress": "<string job progress>",
+        "log": {
+            "time": <integer unix timestamp>,
+            "message": "<string log message>"
+        }
+    }
+}
+
+Every field inside "progress" is optional but at least one (and usually its only one) should exists.
+
+3. 'Redirect' event. It indicates redirect of some job from one node to another.
+{
+    "event": "redirect",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer job id>,
+    "jobset": <integer jobset id (optional, exists only if job is part of jobset)>,
+    "progress": {
+        "redirect": "<string target node name>"
+    }
+}
+
+4. 'Finish' event. It indicates finish of some job.
+{
+    "event": "finish",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer job id>,
+    "jobset": <integer jobset id (optional, exists only if job is part of jobset)>,
+    "type": "<string job type>",
+    "params": {
+        "<string parameter name>": "<string parameter value>",
+        ...
+    },
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    },
+    "success": "<string '0' or '1'>",
+    "message": "<string result message>"
+}
+
+5. 'Clean' event. It indicates that job is executing too long and was cleaned on timeout.
+{
+    "event": "clean",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer job id>,
+    "jobset": <integer jobset id (optional, exists only if job is part of jobset)>,
+    "type": "<string job type>",
+    "params": {
+        "<string parameter name>": "<string parameter value>",
+        ...
+    },
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    }
+}
+
+6. 'Create jobset' event. It indicates that some jobset was just created.
+{
+    "event": "createJobSet",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer jobset id>,
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    },
+    "jobs": [
+        {
+            "node": "<string node name>",
+            "type": "<string job type>",
+            "params": {
+                "<string parameter name>": "<string parameter value>",
+                ...
+            },
+            "props": {
+                "<string property name>": "<string property value>",
+                ...
+            }
+        },
+        ...
+    ]
+}
+
+7. 'Progress jobset' event. It indicates progress of some jobset.
+{
+    "event": "progressJobSet",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer jobset id>,
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    },
+    "progress": {
+        "state": "<string jobset new state>",
+        "progress": "<string jobset progress>"
+    }
+}
+
+Every field inside "progress" is optional but at least one (and usually its only one) should exists.
+
+8. 'Finish jobset' event. It indicates finish of some jobset.
+{
+    "event": "finishJobSet",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer jobset id>,
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    },
+    "jobs": [
+        {
+            "node": "<string node name>",
+            "id": <integer job id>,
+            "type": "<string job type>",
+            "params": {
+                "<string parameter name>": "<string parameter value>",
+                ...
+            },
+            "props": {
+                "<string property name>": "<string property value>",
+                ...
+            },
+            "state": "<string job state>",
+            "progress": "<string job progress (optional)>",
+            "success": "<string '0' or '1'>",
+            "message": "<string job result message>"
+        },
+        ...
+    ]
+}
+
+9. 'Clean jobset' event. It indicates that jobset is executing too long and was cleaned on timeout.
+{
+    "event": "cleanJobSet",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer jobset id>,
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    },
+    "jobs": [
+        {
+            "node": "<string node name>",
+            "id": <integer job id>,
+            "type": "<string job type>",
+            "params": {
+                "<string parameter name>": "<string parameter value>",
+                ...
+            },
+            "props": {
+                "<string property name>": "<string property value>",
+                ...
+            },
+            "state": "<string job state>",
+            "progress": "<string job progress (optional)>",
+            "success": "<string '0' or '1' (if job is finished)>",
+            "message": "<string job result message (if job is finished)>"
+        },
+}
+
+Note that in global observers variables 'config' and 'job' are injected too. They refer to data with observer and
+job configuration respectively. In private observers there is only 'job' variable. In angularjs template
+none of it is available but you can use global 'config' object which is injected into root angularjs scope on
+application start.
+
+Also note that some observers ('mail' one for example) do some preprocessing, for example convert unix timestamps
+into strings with formatted datetime, and do log collecting so all logs are injected into 'finish' event data such as:
+{
+    "event": "finish",
+    ...,
+    "log": [
+        {
+            "time": "<string formatted datetime>",
+            "message": "<string log message>"
+        },
+        ...
+    ]
+}

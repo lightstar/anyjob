@@ -17,7 +17,7 @@ use File::Basename;
 use File::Spec;
 
 use AnyJob::Constants::Defaults qw(
-    DEFAULT_NODES_CONFIG_DIR DEFAULT_JOBS_CONFIG_DIR DEFAULT_OBSERVERS_CONFIG_DIR DEFAULT_BUILDS_CONFIG_DIR
+    DEFAULT_NODES_CONFIG_PATH DEFAULT_JOBS_CONFIG_PATH DEFAULT_OBSERVERS_CONFIG_PATH DEFAULT_BUILDS_CONFIG_PATH
     DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH DEFAULT_INTERNAL_PROPS
     injectPathIntoConstant
     );
@@ -37,13 +37,13 @@ sub new {
     my $fileName = shift;
     my $baseDir = dirname($fileName);
 
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->nodes_dir || DEFAULT_NODES_CONFIG_DIR)),
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->nodes_path || DEFAULT_NODES_CONFIG_PATH)),
         'node');
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->jobs_dir || DEFAULT_JOBS_CONFIG_DIR)),
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->jobs_path || DEFAULT_JOBS_CONFIG_PATH)),
         'job');
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->observers_dir || DEFAULT_OBSERVERS_CONFIG_DIR)),
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->observers_path || DEFAULT_OBSERVERS_CONFIG_PATH)),
         'observer');
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->builders_dir || DEFAULT_BUILDS_CONFIG_DIR)),
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->builders_path || DEFAULT_BUILDS_CONFIG_PATH)),
         'builder');
 
     return $self;
