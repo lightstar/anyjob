@@ -64,12 +64,14 @@ sub checkAuth {
 sub getEventTemplate {
     my $self = shift;
 
-    unless (exists($self->{appEventTemplate})) {
-        $self->{appEventTemplate} = getFileContent(File::Spec->catdir($self->config->getTemplatesPath(),
-            'observers/app/web/event.html'));
+    unless (exists($self->{eventTemplate})) {
+        my $config = $self->config->getCreatorConfig('web') || {};
+        my $eventTemplate = $config->{event_template} || 'event';
+        $self->{eventTemplate} = getFileContent(File::Spec->catdir($self->config->getTemplatesPath(),
+            'observers/app/web/' . $eventTemplate . '.html'));
     }
 
-    return $self->{appEventTemplate};
+    return $self->{eventTemplate};
 }
 
 ###############################################################################
@@ -130,7 +132,7 @@ sub observePrivateEvents {
     my $conn = shift;
     my $user = shift;
 
-    my $config = $self->config->section('creator_web') || {};
+    my $config = $self->config->getCreatorConfig('web') || {};
     my $delay = $config->{observe_delay} || DEFAULT_DELAY;
     my $timer = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
             $self->parent->setBusy(1);

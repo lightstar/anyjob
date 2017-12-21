@@ -17,9 +17,9 @@ use File::Basename;
 use File::Spec;
 
 use AnyJob::Constants::Defaults qw(
-    DEFAULT_NODES_CONFIG_PATH DEFAULT_JOBS_CONFIG_PATH DEFAULT_OBSERVERS_CONFIG_PATH DEFAULT_BUILDS_CONFIG_PATH
-    DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH DEFAULT_INTERNAL_PROPS
-    injectPathIntoConstant
+    DEFAULT_NODES_CONFIG_PATH DEFAULT_JOBS_CONFIG_PATH DEFAULT_OBSERVERS_CONFIG_PATH DEFAULT_CREATORS_CONFIG_PATH
+    DEFAULT_BUILDS_CONFIG_PATH DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH
+    DEFAULT_INTERNAL_PROPS injectPathIntoConstant
     );
 
 use base 'AnyJob::Config::Base';
@@ -43,6 +43,8 @@ sub new {
         'job');
     $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->observers_path || DEFAULT_OBSERVERS_CONFIG_PATH)),
         'observer');
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->creators_path || DEFAULT_CREATORS_CONFIG_PATH)),
+        'creator');
     $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->builders_path || DEFAULT_BUILDS_CONFIG_PATH)),
         'builder');
 
@@ -285,6 +287,20 @@ sub getObserverConfig {
 }
 
 ###############################################################################
+# Get creator configuration or undef.
+#
+# Arguments:
+#     name - string creator name.
+# Returns:
+#     hash with creator configuration or undef if there are no such creator.
+#
+sub getCreatorConfig {
+    my $self = shift;
+    my $name = shift;
+    return $self->section('creator_' . $name);
+}
+
+###############################################################################
 # Get builder configuration or undef.
 #
 # Arguments:
@@ -381,9 +397,11 @@ sub getJobWorker {
 
     my $workerSection = $self->section('worker') || {};
 
-    return ($config->{work_dir} || $workerSection->{work_dir} || injectPathIntoConstant(DEFAULT_WORKER_WORK_DIR),
-        $config->{exec} || $workerSection->{exec} || injectPathIntoConstant(DEFAULT_WORKER_EXEC),
-        $config->{lib} || $workerSection->{lib});
+    return (
+        injectPathIntoConstant($config->{work_dir} || $workerSection->{work_dir} || DEFAULT_WORKER_WORK_DIR),
+        injectPathIntoConstant($config->{exec} || $workerSection->{exec} || DEFAULT_WORKER_EXEC),
+        $config->{lib} || $workerSection->{lib}
+    );
 }
 
 ###############################################################################
@@ -590,7 +608,7 @@ sub getInternalProps {
 #
 sub getTemplatesPath {
     my $self = shift;
-    return $self->templates_path || injectPathIntoConstant(DEFAULT_TEMPLATES_PATH);
+    return injectPathIntoConstant($self->templates_path || DEFAULT_TEMPLATES_PATH);
 }
 
 1;

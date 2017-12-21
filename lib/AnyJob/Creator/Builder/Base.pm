@@ -124,7 +124,7 @@ sub getBuild {
 sub getCleanTimeout {
     my $self = shift;
 
-    my $config = $self->config->section('creator_' . $self->name) || {};
+    my $config = $self->config->getCreatorConfig($self->name) || {};
     return $config->{build_clean_timeout} || $self->config->clean_timeout || DEFAULT_CLEAN_TIMEOUT;
 }
 

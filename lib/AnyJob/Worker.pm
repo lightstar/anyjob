@@ -16,6 +16,7 @@ use utf8;
 
 use JSON::XS;
 
+use AnyJob::Constants::Defaults qw(DEFAULT_WORKER_PREFIX DEFAULT_WORKER_METHOD);
 use AnyJob::Constants::States qw(STATE_RUN);
 use AnyJob::Utils qw(getModuleName requireModule);
 
@@ -220,7 +221,7 @@ sub run {
     my $workerConfig = $self->config->section('worker') || {};
 
     my $module = getModuleName($jobConfig->{module} || $workerConfig->{module} || $job->{type});
-    my $prefix = $jobConfig->{prefix} || $workerConfig->{prefix} || 'AnyJob::Worker';
+    my $prefix = $jobConfig->{prefix} || $workerConfig->{prefix} || DEFAULT_WORKER_PREFIX;
     if (defined($prefix)) {
         $module = $prefix . '::' . $module;
     }
@@ -230,7 +231,7 @@ sub run {
 
     $self->sendRun($id);
 
-    my $method = $jobConfig->{method} || $workerConfig->{method} || 'run';
+    my $method = $jobConfig->{method} || $workerConfig->{method} || DEFAULT_WORKER_METHOD;
     eval {
         no strict 'refs';
         $module->new(parent => $self, id => $id, job => $job)->$method();

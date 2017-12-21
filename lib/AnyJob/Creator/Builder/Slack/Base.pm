@@ -16,6 +16,8 @@ use JSON::XS;
 use LWP::UserAgent;
 use HTTP::Request::Common qw(POST);
 
+use AnyJob::Constants::Defaults qw(DEFAULT_SLACK_API);
+
 use base 'AnyJob::Creator::Builder::Base';
 
 ###############################################################################
@@ -66,7 +68,7 @@ sub isUserAllowed {
     if (exists($self->{users})) {
         $users = $self->{users};
     } else {
-        my $config = $self->getBuilderConfig();
+        my $config = $self->getBuilderConfig() || {};
         if (defined($config->{users})) {
             $users = { map {$_ => 1} split(/\s*,\s*/, $config->{users}) };
         }
@@ -128,13 +130,14 @@ sub callApiMethod {
         Carp::confess('No slack api method or data');
     }
 
-    my $config = $self->config->section('creator_slack') || {};
-    unless (defined($config->{api}) and defined($config->{api_token})) {
+    my $config = $self->config->getCreatorConfig('slack') || {};
+    unless (defined($config->{api_token})) {
         require Carp;
-        Carp::confess('No api URL or token for slack');
+        Carp::confess('No token for slack api calls');
     }
 
-    my $url = $config->{api} . $method;
+    my $api = $config->{api} || DEFAULT_SLACK_API;
+    my $url = $api . $method;
     my $request = POST($url,
         Content_Type  => 'application/json; charset=utf-8',
         Authorization => 'Bearer ' . $config->{api_token},

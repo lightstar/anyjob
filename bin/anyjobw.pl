@@ -9,7 +9,7 @@
 # Last update:  12.12.2017
 #
 
-use lib ($ENV{ANYJOB_LIB} || '/opt/anyjob/lib');
+use lib ($ENV{ANYJOB_LIB} || ($ENV{ANYJOB_PATH} || '/opt/anyjob') . '/lib');
 use strict;
 use warnings;
 use utf8;

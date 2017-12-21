@@ -63,7 +63,7 @@ sub checkToken {
     my $self = shift;
     my $token = shift;
 
-    my $config = $self->config->section('creator_slack') || {};
+    my $config = $self->config->getCreatorConfig('slack') || {};
     if (defined($config->{token}) and defined($token) and $config->{token} eq $token) {
         return 1;
     }
@@ -94,7 +94,12 @@ sub getBuilder {
 
     $self->{builders} ||= {};
 
-    my $config = $self->config->getBuilderConfig('slack_' . $name);
+    my $config = $self->config->getBuilderConfig('slack_' . $name) || {};
+    unless (defined($config->{module})) {
+        $self->{builders}->{$name} = undef;
+        return undef;
+    }
+
     my $module = 'AnyJob::Creator::Builder::Slack::' . getModuleName($config->{module});
     requireModule($module);
 
@@ -171,7 +176,7 @@ sub generateBuildersByCommand {
 sub observePrivateEvents {
     my $self = shift;
 
-    my $config = $self->config->section('creator_slack') || {};
+    my $config = $self->config->getCreatorConfig('slack') || {};
     my $delay = $config->{observe_delay} || DEFAULT_DELAY;
     $self->{observer_timer} = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
             $self->parent->setBusy(1);
@@ -224,8 +229,8 @@ sub getEventPayload {
         $event->{job} = $self->config->getJobConfig($event->{type});
     }
 
-    my $config = $self->config->section('creator_slack') || {};
-    my $payloadTemplate = $config->{event_payload_template} || 'payload';
+    my $config = $self->config->getCreatorConfig('slack') || {};
+    my $payloadTemplate = $config->{event_template} || 'payload';
 
     my $payload = '';
     unless ($self->{tt}->process($payloadTemplate . '.tt', $event, \$payload)) {

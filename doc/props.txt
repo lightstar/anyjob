@@ -1,0 +1,16 @@
+Here are all job and jobset properties recognized by anyjob.
+
+observer          - private observer name. Default: none.
+response_url      - url where slack private events should go. Default: none.
+silent            - 0/1 flag. If set, events related to this job or jobset will not be processed by global observers.
+                    By default corresponding setting in job configuration is used.
+nomail            - 0/1 flag. If set, events related to this job or jobset will not be processed by mail global
+                    observer. By default corresponding setting in job configuration is used.
+noslack           - 0/1 flag. If set, events related to this job or jobset will not be processed by slack global
+                    observer. By default corresponding setting in job configuration is used.
+mail_progress     - 0/1 flag. If set, progress events related to this job or jobset will be processed by mail global
+                    observer. By default corresponding setting in job configuration is used.
+clean_timeout     - override timeout in seconds for this active job or jobset existing in storage. By default
+                    corresponding settings in job or node configuration are used.
+log_clean_timeout - override timeout in seconds for cleaning too long existing collected logs. By default
+                    corresponding setting in observer configuration is used.

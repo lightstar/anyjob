@@ -39,7 +39,7 @@ sub new {
         Carp::confess('No addon type provided');
     }
 
-    my $config = $self->config->section('creator_' . $self->{type}) || {};
+    my $config = $self->config->getCreatorConfig($self->{type}) || {};
     $self->{eventFilter} = AnyJob::EventFilter->new(filter => $config->{event_filter});
 
     return $self;

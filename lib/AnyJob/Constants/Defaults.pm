@@ -70,6 +70,11 @@ use constant DEFAULT_JOBS_CONFIG_PATH => 'jobs';
 use constant DEFAULT_OBSERVERS_CONFIG_PATH => 'observers';
 
 ###############################################################################
+# Default path for creators configuration (relative to config file).
+#
+use constant DEFAULT_CREATORS_CONFIG_PATH => 'creators';
+
+###############################################################################
 # Default path for builds configuration (relative to config file).
 #
 use constant DEFAULT_BUILDS_CONFIG_PATH => 'builds';
@@ -90,9 +95,24 @@ use constant DEFAULT_WORKER_WORK_DIR => '{ANYJOB_PATH}';
 use constant DEFAULT_WORKER_EXEC => '{ANYJOB_PATH}/bin/anyjobw.pl';
 
 ###############################################################################
+# Default prefix for specific job modules.
+#
+use constant DEFAULT_WORKER_PREFIX => 'AnyJob::Worker';
+
+###############################################################################
+# Default method in specific job module to run.
+#
+use constant DEFAULT_WORKER_METHOD => 'run';
+
+###############################################################################
 # Default list of creator internal properties.
 #
 use constant DEFAULT_INTERNAL_PROPS => 'observer,response_url';
+
+###############################################################################
+# Default slack api url.
+#
+use constant DEFAULT_SLACK_API => 'https://slack.com/api/';
 
 our @EXPORT = qw(
     DEFAULT_LIMIT
@@ -106,11 +126,15 @@ our @EXPORT = qw(
     DEFAULT_NODES_CONFIG_PATH
     DEFAULT_JOBS_CONFIG_PATH
     DEFAULT_OBSERVERS_CONFIG_PATH
+    DEFAULT_CREATORS_CONFIG_PATH
     DEFAULT_BUILDS_CONFIG_PATH
     DEFAULT_TEMPLATES_PATH
     DEFAULT_WORKER_WORK_DIR
     DEFAULT_WORKER_EXEC
+    DEFAULT_WORKER_PREFIX
+    DEFAULT_WORKER_METHOD
     DEFAULT_INTERNAL_PROPS
+    DEFAULT_SLACK_API
     injectPathIntoConstant
     );
 

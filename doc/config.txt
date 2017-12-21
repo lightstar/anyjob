@@ -1,10 +1,10 @@
 1. Configuration location, sections and default sections.
 
 Configuration is done via configuration files. The path to main configuration file can be set in ANYJOB_CONF
-environment variable. By default it is '<ANYJOB_PATH>/etc/current/anyjob.cfg', where '<ANYJOB_PATH>' is path to anyjob
+environment variable. By default it is '{ANYJOB_PATH}/etc/current/anyjob.cfg', where '{ANYJOB_PATH}' is path to anyjob
 installation set in ANYJOB_PATH environment variable (by default '/opt/anyjob').
 
-Configuration file must be divided into sections designated with line containing section name in square brackets.
+Configuration file must be divided into sections designated by lines containing section name in square brackets.
 Each section consists of zero or more key-value pairs like this:
 
 [section]
@@ -13,23 +13,26 @@ key = value
 
 In addition to main configuration file configuration files are searched in some other paths. Key-value pairs
 in this files can have no explicit section name, in which case the default section name for this file is used.
-- builders path.
-      Default: 'builders' directory in main configuration file base path.
-      Default section name prefix: 'builder_'.
-- jobs path.
-      Default: 'jobs' directory in main configuration file base path.
-      Default section name prefix: 'job_'.
 - nodes path.
       Default: 'nodes' directory in main configuration file base path.
       Default section name prefix: 'node_'.
+- jobs path.
+      Default: 'jobs' directory in main configuration file base path.
+      Default section name prefix: 'job_'.
 - observers path.
       Default: 'observers' directory in main configuration file base path.
       Default section name prefix: 'observer_'.
+- creators path.
+      Default: 'creators' directory in main configuration file base path.
+      Default section name prefix: 'creator_'.
+- builders path.
+      Default: 'builders' directory in main configuration file base path.
+      Default section name prefix: 'builder_'.
 
 All these paths are searched for any files with '.cfg' extension and their names are concatenated to default section
-name. For example if in nodes path lies file named 'broadcast.cfg', all this file content without explicit section
+name. For example if in nodes path lies a file named 'broadcast.cfg', all this file content without explicit section
 name will belong to section 'node_broadcast'. Names of all intermediate subdirectories are concatenated to default
-section name too, separated by underscores, so for file in builds path named 'slack/simple.cfg' default section name
+section name too, separated by underscores, so for a file in builds path named 'slack/simple.cfg' default section name
 will be 'builder_slack_simple'.
 
 2. Key-value pairs.
@@ -47,9 +50,11 @@ key = some long \
       value
 
 This is the same as:
+
 key = some long value
 
-Also limited 'here document' syntax can be used if value is too long to comfortably use backslashes. Example:
+Also limited 'here document' syntax can be used if value is too long and backslashes may clutter it too much.
+Example:
 
 key = <<END
 This value is extremely
@@ -59,11 +64,277 @@ END
 This is the same as:
 key = This value is extremely long.
 
-This syntax is especially useful for json objects included in configuration.
+This syntax is especially useful for JSON objects included in configuration.
 
-3. Global configuration section.
+3. Module names.
 
-Global configuration section is named 'anyjob' and must contain (surprisingly) anyjob global configuration.
-Below are all recognizible keys.
+Every module name written in configuration should be the last part of actual perl module name after double colon.
+First letter of that name will capitalize, letters after underscores will capitalize too with underscores themselves
+removed. That way every module will need predefined or configured prefix which will concatenate with double colon and
+module name to construct full perl module name.
 
+For example if configured module name is 'my_example' and prefix is 'AnyJob::Worker' then full perl module will be
+'AnyJob::Worker::MyExample'.
 
+4. Global configuration section.
+
+Global configuration section is named 'anyjob'. Below are all recognizible keys.
+
+syslog                - 0/1 flag. If set, syslog is used for logging, otherwise log messages are just printed
+                        to stdout/stderr. Default: 0. To log all anyjob messages to separate file the following
+                        rsyslog configuration line is suggested:
+                        if $syslogfacility-text == 'local0' and $syslogtag contains 'anyjob' then /var/log/anyjob.log
+redis                 - host and port of redis server separated by colon. Default: '127.0.0.1:6379'.
+nodes_path            - path to nodes configuration relative to main configuration file base path.
+                        Default: 'nodes'.
+jobs_path             - path to jobs configuration relative to main configuration file base path.
+                        Default: 'jobs'.
+observers_path        - path to observers configuration relative to main configuration file base path.
+                        Default: 'observers'.
+creators_path         - path to creators configuration relative to main configuration file base path.
+                        Default: 'creators'.
+builders_path         - path to builders configuration relative to main configuration file base path.
+                        Default: 'builders'.
+templates_path        - path to observer event templates. Default: '{ANYJOB_PATH}/templates/current' where
+                        '{ANYJOB_PATH}' is value of ANYJOB_PATH environment variable or '/opt/anyjob' by default.
+limit                 - default limit for every processing in loop iteration (i.e. maximum messages processed in one
+                        iteration, maximum timeouted jobs cleaned in one iteration, etc). Default: 10.
+clean_timeout         - default timeout in seconds for each active entity existing in storage. Default: 3600.
+clean_delay           - default delay in seconds between timeouted active entity cleanings. Default: 60.
+observe_delay         - default delay in seconds between global observer queue checkings. Default: none.
+
+5. Daemon configuration section.
+
+Daemon configuration section is named 'daemon'. Below are all recognizible keys.
+
+detached              - 0/1 flag. If set, daemon will detach at start, i.e. fork, unbind from console, etc. Default: 1.
+delay                 - delay in seconds between daemon process loop iterations. Default: 1.
+pidfile               - path to file where daemon process pid is stored. Default: '/var/run/anyjobd.pid'.
+
+6. Worker configuration section.
+
+Worker configuration section is named 'worker'. Below are all recognizible keys.
+Note that all this settings can be overriden in specific job configuration.
+
+work_dir              - work directory for external worker. Default: '{ANYJOB_PATH}', i.e. value of ANYJOB_PATH
+                        environment variable or '/opt/anyjob' by default.
+exec                  - path to external worker executable. Default: '{ANYJOB_PATH}/bin/anyjobw.pl' where
+                        '{ANYJOB_PATH}' is value of ANYJOB_PATH environment variable or '/opt/anyjob' by default.
+lib                   - optional additional library path needed by external worker. Set path to your perl modules here
+                        which are required by your specific job modules. Default: none.
+module                - specific job module name. If none specified, job type will be used.
+prefix                - prefix of specific job modules. Default: 'AnyJob::Worker'.
+method                - method in specific job module to run. Default: 'run'.
+
+7. Creator configuration section.
+
+Creator configuration section is named 'creator'. Below are all recognizible keys.
+
+props                 - JSON array of objects describing all properties that can be set by creator user. All fields for
+                        every that object are the same as for job parameters (see below about job configuration).
+                        Default: '[]'.
+internal_props        - list of internal properties names separated by comma. Those names are not set by user but by
+                        creator itself. Default: 'observer,response_url'.
+observe_limit         - maximum events received by private observers in one iteration. If none specified,
+                        global limit configuration is used.
+
+8. Node configuration sections.
+
+Each node must have its own configuration section which should be named 'node_<name>' where '<name>' is node's name.
+Usually they are located in 'nodes/<name>.cfg' files relative to main configuration file base path. Below are all
+recognizible keys.
+
+disabled              - 0/1 flag. If set, this node will be unavailable. Default: 0.
+global                - 0/1 flag. If set, daemon on this node will run global controller. Default: 0.
+regular               - 0/1 flag. If set, daemon on this node will run node-specific controller. Default: 0.
+observers             - list of global observer names separated by comma which will run by daemon on this node.
+                        Default: none.
+create_delay          - delay in seconds between create queue checkings by node controller. Default: none.
+create_limit          - maximum create messages processed by node controller in one iteration. By default global
+                        'limit' setting is used.
+max_jobs              - maximum number of active jobs allowed on node. Infinite by default.
+global_create_delay   - delay in seconds between create queue checkings by global controller. Default: none.
+global_create_limit   - maximum create messages processed by global controller in one iteration. By default global
+                        'limit' setting is used.
+progress_delay        - delay in seconds between progress queue checkings by node controller. Default: none.
+progress_limit        - maximum progress messages processed by node controller in one iteration. By default global
+                        'limit' setting is used.
+global_progress_delay - delay in seconds between progress queue checkings by global controller. Default: none.
+global_progress_limit - maximum progress messages processed by global controller in one iteration. By default global
+                       'limit' setting is used.
+clean_delay           - delay in seconds between timeouted jobs checkings. By default global 'clean_delay'
+                        setting is used.
+clean_limit           - maximum timeouted jobs cleaned in one iteration. By default global 'limit' setting is used.
+global_clean_delay    - delay in seconds between timeouted jobsets checkings. By default global 'clean_delay'
+                        setting is used.
+global_clean_limit    - maximum timeouted jobsets cleaned in one iteration. By default global 'limit' setting is used.
+build_clean_delay     - delay in seconds between timeouted builds checkings. By default global 'clean_delay'
+                        setting is used.
+build_clean_limit     - maximum timeouted builds cleaned in one iteration. By default global 'limit' setting is used.
+job_clean_timeout     - default timeout in seconds for each active job existing in storage. By default global
+                        'clean_timeout' setting is used.
+jobset_clean_timeout  - default timeout in seconds for each active jobset existing in storage. By default global
+                        'clean_timeout' setting is used.
+
+9. Job configuration sections.
+
+Each job must have its own configuration section which should be named 'job_<type>' where '<type>' is job's type.
+Usually they are located in 'jobs/<type>.cfg' files relative to main configuration file base path. Below are all
+recognizible keys.
+
+disabled              - 0/1 flag. If set, this job will be unavailable. Default: 0.
+nodes                 - list of node names separated by comma on which this job can be executed. If set to 'all', this
+                        job can be executed on all nodes. Default: 'all'.
+except                - list of node names separated by comma on which this job can't be executed. Default: none.
+defaultNodes          - list of node names separated by comma on which this job will execute by default. Default: none.
+label                 - short text description of this job. By default job type itself is used.
+work_dir              - work directory for external worker. By default corresponding setting in 'worker' section is
+                        used.
+exec                  - path to external worker executable. By default corresponding setting in 'worker' section is
+                        used.
+lib                   - optional additional library path needed for external worker. By default corresponding setting
+                        in 'worker' section is used.
+module                - specific job module name. By default corresponding setting in 'worker' section or job type
+                        is used.
+prefix                - prefix of specific job modules. By default corresponding setting in 'worker' section is used.
+method                - method in specific job module to run. By default corresponding setting in 'worker' section is
+                        used.
+clean_timeout         - timeout in seconds for each active job existing in storage. By default node
+                       'job_clean_timeout' setting is used.
+silent                - 0/1 flag. If set, events related to this job will not be processed by global observers.
+                        Default: 0.
+noslack               - 0/1 flag. If set, events related to this job will not be processed by slack global observer.
+                        Default: 0.
+nomail                - 0/1 flag. If set, events related to this job will not be processed by mail global observer.
+                        Default: 0.
+mail_progress         - 0/1 flag. If set, progress events related to this job will be processed by mail global
+                        observer. Default: 0.
+params                - JSON array of objects with job parameters description. That array is used in creators
+                        to validate user input or to render some form elements. Default: '[]'.
+                        Each object should have following fields:
+                         type     - parameter type. Required field. It must be one of 'flag', 'text', 'textarea'
+                                    or 'combo' strings.
+                         name     - parameter name used as key in actual job parameters data. Required field.
+                         label    - parameter label to use in form element. By default it is the same as name.
+                         required - boolean flag. If set, this parameter is required. Default: false.
+                         default  - default parameter value. Default: none.
+                         options  - used only for 'combo' parameter. It describes all possible values and is array
+                                    of objects with two fields: 'label' (value label) and 'value' (value itself).
+
+Note that there is only one specific job module included in distribution: 'AnyJob::Worker::Example'. So its prefix is
+'AnyJob::Worker' and name is 'example'. You can use it for reference before writing your own modules which should
+extent 'AnyJob::Worker::Base' module.
+
+10. Observer configuration sections.
+
+Each global observer must have its own configuration section which should be named 'observer_<name>' where '<name>' is
+observer's name. Usually they are located in 'observers/<name>.cfg' files relative to main configuration file base
+path. Below are all recognizible keys.
+
+module                - module name. Module should have prefix 'AnyJob::Controller::Observer'.
+events                - list of event names separated by comma which will be processed by this observer. If set to
+                        'all', this observer will process all events. Default: 'all'.
+nodes                 - list of node names separated by comma whose events will be processed by this observer. If set
+                        to 'all', this observer will process events from all nodes. Default: 'all'.
+event_filter          - javascript code which will run for every received event. If that code evaluates to true,
+                        event will be processed, otherwise - skipped. Object with event data is accessible as variable
+                        'event'. Default: none (all events will be processed).
+delay                 - delay in seconds between observer queue checkings. By default global 'observe_delay' setting
+                        is used.
+limit                 - maximum events processed in one iteration. If none specified, global 'limit' setting is used.
+log_clean_timeout     - timeout in seconds for cleaning too long existing collected logs. By default global
+                        'clean_timeout' setting is used.
+log_clean_limit       - maximum log lists cleaned in one iteration. If none specified, global 'limit' setting is used.
+
+Specific observer modules can support additional configuration keys. Two of them are included in anyjob distribution:
+'slack' and 'mail' modules.
+
+Slack observer supports next additional keys.
+
+url                   - incoming webhook url where to send event notifications. If none specified, processing will
+                        fail.
+payload_template      - base file name with event payload template used in template toolkit. Default: 'payload'.
+                        So by default full path for that template will be 'observers/slack/payload.tt' relative
+                        to templates path.
+
+Mail observer supports next additional keys.
+
+from                  - sender email address. If none specified, processing will fail.
+to                    - list of destination email addresses separated by comma. If none specified, processing will
+                        fail.
+mail_progress         - 0/1 flag. By default progress events are not sent by mail. But if this flag is set, they do.
+                        By default corresponding job's 'mail_progress' setting is used.
+from_title            - sender title. Default: 'AnyJob'.
+subject_template      - base file name with subject template used in template toolkit. Default: 'subject'.
+                        So by default full path for that template will be 'observers/mail/subject.tt' relative
+                        to templates path.
+body_template         - base file name with body template used in template toolkit. Default: 'body'.
+                        So by default full path for that template will be 'observers/mail/body.tt' relative
+                        to templates path.
+
+Your own observer modules should extend 'AnyJob::Controller::Observer::Base' and have prefix
+'AnyJob::Controller::Observer'.
+
+11. Web creator configuration section.
+
+Web creator configuration section is named 'creator_web'. Usually it is located in 'creators/web.cfg' file
+relative to main configuration file base path. Below are all recognizible keys.
+
+event_template        - base file name with private event template used in angularjs application.
+                        Default: 'event'. So by default full path for that template will be
+                        'observers/app/web/event.html' relative to templates path.
+observe_delay         - delay in seconds between private event receivings. Default: 1.
+event_filter          - javascript code which will run for every received private event. If that code evaluates to true,
+                        event will be processed, otherwise - skipped. Object with event data is accessible as variable
+                        'event'. Default: none (all events will be processed).
+
+12. Web creator authentication section.
+
+Web creator authentication section is named 'creator_web_auth' and used for basic authentication in creator web
+application. Every key here is user login and value - its encrypted password. To generate encrypted password in
+Debian linux use 'mkpasswd' utility included in 'whois' package like this: 'mkpasswd -m sha-512'.
+Command 'openssl passwd' can be used too, but for some reasons it can't generate passwords with secure sha-based
+algorithms, only crypt and md5 ones.
+
+Usually it is located in 'creators/web/auth.cfg' file relative to main configuration file base path.
+
+13. Slack creator configuration section.
+
+Slack creator configuration section is named 'creator_slack'. Usually it is located in 'creators/slack.cfg' file
+relative to main configuration file base path. Below are all recognizible keys.
+
+token                 - application verification token which slack should send with each request. You can get it in
+                        'Basic Information' section of your slack application control panel on
+                        https://api.slack.com/apps. Default: none (i.e. token will not be checked).
+api                   - slack api url. Default: 'https://slack.com/api/'.
+api_token             - slack api token. It is required for slack api calls to work. You can get it in
+                        'OAuth & Permissions' section of your slack application control panel on
+                        https://api.slack.com/apps.
+event_template        - base file name with private event template used in template toolkit. Default: 'payload'.
+                        So by default full path for that template will be 'observers/app/slack/payload.tt' relative
+                        to templates path.
+observe_delay         - delay in seconds between private event receivings. Default: 1.
+event_filter          - javascript code which will run for every received private event. If that code evaluates to
+                        true, event will be processed, otherwise - skipped. Object with event data is accessible as
+                        variable 'event'. Default: none (all events will be processed).
+build_clean_timeout   - timeout in seconds for cleaning too long existing active builds. If none specified,
+                        'clean_timeout' setting from global section is used.
+
+14. Slack builder configuration sections.
+
+Each slack builder must have its own configuration section which should be named 'builder_slack_<name>' where '<name>'
+is builder's name. Usually they are located in 'builders/slack/<name>.cfg' files relative to main configuration file
+base path. Below are all recognizible keys.
+
+module                - module name. Module should have prefix 'AnyJob::Creator::Builder::Slack'.
+                        If not specified, builder will be unavailable.
+command               - slack slash command name which will use this builder. Default: none.
+aliases               - optional additional slash commands separated by comma which will also use this builder.
+                        Default: none.
+users                 - user identificators separated by comma who allowed to use this builder. Default: none.
+help                  - text which will be sent to user after calling slash command with 'help' argument.
+                        Default: 'No help for this command'.
+
+Two slack builder modules are included in anyjob distribution: 'simple' and 'dialog'.
+But you can add any additional builders by creating modules with prefix 'AnyJob::Creator::Builder::Slack'
+which should extend 'AnyJob::Creator::Builder::Slack::Base' module.
