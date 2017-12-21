@@ -1,6 +1,6 @@
 # AnyJob
 
-_This is russian version of README file. To read in english go to [README.ENG.md](README.ENG.md)_
+_This is russian version of README file. To read in english go to [README.en.md](README.en.md)._
 
 Система, позволяющая запускать произвольные задачи на разных узлах (нодах) linux и отслеживать
 их выполнение. На данном этапе находится в начале разработки, и использовать в продакшне ее пока

@@ -328,10 +328,13 @@ base path. Below are all recognizible keys.
 
 module                - module name. Module should have prefix 'AnyJob::Creator::Builder::Slack'.
                         If not specified, builder will be unavailable.
-command               - slack slash command name which will use this builder. Default: none.
+command               - slack slash command name which will use this builder. Details about slash commands are here:
+                        https://api.slack.com/slash-commands. Default: none.
 aliases               - optional additional slash commands separated by comma which will also use this builder.
                         Default: none.
-users                 - user identificators separated by comma who allowed to use this builder. Default: none.
+users                 - user identificators separated by comma who allowed to use this builder. To discover
+                        identificators of users in your workspace you can use 'users.list' api method:
+                        https://api.slack.com/methods/users.list. Default: none.
 help                  - text which will be sent to user after calling slash command with 'help' argument.
                         Default: 'No help for this command'.
 
