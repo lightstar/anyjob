@@ -3,6 +3,9 @@
 Program system used to run arbitrary jobs on different linux nodes and observe how they run.
 By now it is on alpha testing stage, and you should not use it in production.
 
+AnyJob can be used to simplify automation inside your distributed project or to quickly perform some
+frequent tasks and request information from the single entry point.
+
 For data storage and communication between different system parts *redis* server is used.
 
 As main programming platform *perl* was choosed. In theory you can develop job modules in any language
