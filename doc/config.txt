@@ -188,6 +188,7 @@ nodes                 - list of node names separated by comma on which this job 
 except                - list of node names separated by comma on which this job can't be executed. Default: none.
 defaultNodes          - list of node names separated by comma on which this job will execute by default. Default: none.
 label                 - short text description of this job. By default job type itself is used.
+group                 - optional group name for this job. Used to organize jobs and simplify selecting them in creator.
 work_dir              - work directory for external worker. By default corresponding setting in 'worker' section is
                         used.
 exec                  - path to external worker executable. By default corresponding setting in 'worker' section is
