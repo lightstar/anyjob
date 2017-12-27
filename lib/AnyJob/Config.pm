@@ -18,7 +18,7 @@ use File::Spec;
 
 use AnyJob::Constants::Defaults qw(
     DEFAULT_NODES_CONFIG_PATH DEFAULT_JOBS_CONFIG_PATH DEFAULT_OBSERVERS_CONFIG_PATH DEFAULT_CREATORS_CONFIG_PATH
-    DEFAULT_BUILDS_CONFIG_PATH DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH
+    DEFAULT_BUILDERS_CONFIG_PATH DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH
     DEFAULT_INTERNAL_PROPS injectPathIntoConstant
     );
 
@@ -45,7 +45,7 @@ sub new {
         'observer');
     $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->creators_path || DEFAULT_CREATORS_CONFIG_PATH)),
         'creator');
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->builders_path || DEFAULT_BUILDS_CONFIG_PATH)),
+    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->builders_path || DEFAULT_BUILDERS_CONFIG_PATH)),
         'builder');
 
     return $self;
@@ -268,7 +268,11 @@ sub getJobConfig {
 sub getNodeConfig {
     my $self = shift;
     my $node = shift;
-    $node ||= $self->node;
+
+    unless (defined($node)) {
+        $node = $self->node;
+    }
+
     return $self->section('node_' . $node);
 }
 
@@ -417,7 +421,10 @@ sub isJobSupported {
     my $self = shift;
     my $type = shift;
     my $node = shift;
-    $node ||= $self->node;
+
+    unless (defined($node)) {
+        $node = $self->node;
+    }
 
     if (exists($self->{jobSupported}->{$node}->{$type})) {
         return $self->{jobSupported}->{$node}->{$type};
@@ -455,7 +462,10 @@ sub isJobSupported {
 sub isNodeGlobal {
     my $self = shift;
     my $node = shift;
-    $node ||= $self->node;
+
+    unless (defined($node)) {
+        $node = $self->node;
+    }
 
     my $config = $self->getNodeConfig($node);
     return 0 unless defined($config) and not $config->{disabled};
@@ -475,7 +485,10 @@ sub isNodeGlobal {
 sub isNodeRegular {
     my $self = shift;
     my $node = shift;
-    $node ||= $self->node;
+
+    unless (defined($node)) {
+        $node = $self->node;
+    }
 
     my $config = $self->getNodeConfig($node);
     return 0 unless defined($config) and not $config->{disabled};
@@ -494,7 +507,10 @@ sub isNodeRegular {
 sub getNodeObservers {
     my $self = shift;
     my $node = shift;
-    $node ||= $self->node;
+
+    unless (defined($node)) {
+        $node = $self->node;
+    }
 
     my $config = $self->getNodeConfig($node);
     return [] unless defined($config) and not $config->{disabled} and exists($config->{observers});

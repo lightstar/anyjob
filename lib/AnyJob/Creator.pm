@@ -55,7 +55,13 @@ sub addon {
     }
 
     my $module = 'AnyJob::Creator::Addon::' . getModuleName($name);
-    requireModule($module);
+    eval {
+        requireModule($module);
+    };
+    if ($@) {
+        $self->error('Error loading module \'' . $module . '\': ' . $@);
+        return undef;
+    }
 
     $self->{addons}->{$name} = $module->new(parent => $self);
     return $self->{addons}->{$name};

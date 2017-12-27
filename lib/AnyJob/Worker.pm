@@ -185,6 +185,19 @@ sub sendJobSetState {
 }
 
 ###############################################################################
+# Send redo message to daemon's queue. You shouldn't send it if any progress messages are already sent.
+#
+# Arguments:
+#     id    - integer job id.
+#
+sub sendRedo {
+    my $self = shift;
+    my $id = shift;
+
+    $self->redis->rpush('anyjob:queue:' . $self->node, encode_json({ redo => $id }));
+}
+
+###############################################################################
 # Execute job with given id calling configured module to do its logic.
 # To simplify job modules developing that call is wrapped around different checks,
 # logging and auto-changing to 'run' state.
@@ -225,7 +238,14 @@ sub run {
     if (defined($prefix)) {
         $module = $prefix . '::' . $module;
     }
-    requireModule($module);
+
+    eval {
+        requireModule($module);
+    };
+    if ($@) {
+        $self->error('Error loading module \'' . $module . '\': ' . $@);
+        return;
+    }
 
     $self->debug('Execute job \'' . $id . '\' on node \'' . $self->node . '\': ' . encode_json($job));
 

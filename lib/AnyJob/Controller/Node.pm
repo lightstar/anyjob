@@ -33,7 +33,7 @@ our @MODULES = qw(
 ###############################################################################
 # Method called on each iteration of daemon loop.
 # Its main task is to receive messages from new (or redirected) jobs queue and to process them.
-# There can be two types of messages.
+# There can be three types of messages.
 # 1. 'Create job' message. Sent by creator component or by global controller as part of creating jobset.
 # Integer 'jobset' field is optional here. If provided, this job is part of jobset.
 # {
@@ -47,6 +47,11 @@ our @MODULES = qw(
 # {
 #     id => ...,
 #     from => '...'
+# }
+# 3. 'Redo job' message. Sent by worker if it can't perform job right now. Here 'redo' field contains
+# integer job id.
+# {
+#     redo => ...
 # }
 #
 sub process {
@@ -72,6 +77,8 @@ sub process {
             $self->error('Can\'t decode job: ' . $job);
         } elsif ($job->{from}) {
             $self->finishRedirectJob($job);
+        } elsif ($job->{redo}) {
+            $self->redoJob($job->{redo});
         } else {
             $self->createJob($job);
         }
@@ -163,6 +170,35 @@ sub finishRedirectJob {
         }));
 
     $self->debug('Run redirected job \'' . $id . '\' ' .
+        (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
+        '\', params ' . encode_json($job->{params}) . ' and props ' . encode_json($job->{props}));
+
+    $self->runJob($job, $id);
+}
+
+###############################################################################
+# Repeat running job.
+#
+# Arguments:
+#     id - integer job id.
+#
+sub redoJob {
+    my $self = shift;
+    my $id = shift;
+
+    my $job = $self->getJob($id);
+    unless (defined($job)) {
+        return;
+    }
+
+    unless ($self->config->isJobSupported($job->{type})) {
+        $self->error('Job with type \'' . $job->{type} . '\' is not supported on this node');
+        return;
+    }
+
+    $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
+
+    $self->debug('Redo job \'' . $id . '\' ' .
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
         '\', params ' . encode_json($job->{params}) . ' and props ' . encode_json($job->{props}));
 

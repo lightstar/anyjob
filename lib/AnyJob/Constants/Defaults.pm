@@ -75,9 +75,9 @@ use constant DEFAULT_OBSERVERS_CONFIG_PATH => 'observers';
 use constant DEFAULT_CREATORS_CONFIG_PATH => 'creators';
 
 ###############################################################################
-# Default path for builds configuration (relative to config file).
+# Default path for builders configuration (relative to config file).
 #
-use constant DEFAULT_BUILDS_CONFIG_PATH => 'builds';
+use constant DEFAULT_BUILDERS_CONFIG_PATH => 'builders';
 
 ###############################################################################
 # Default directory for templates.
@@ -127,7 +127,7 @@ our @EXPORT = qw(
     DEFAULT_JOBS_CONFIG_PATH
     DEFAULT_OBSERVERS_CONFIG_PATH
     DEFAULT_CREATORS_CONFIG_PATH
-    DEFAULT_BUILDS_CONFIG_PATH
+    DEFAULT_BUILDERS_CONFIG_PATH
     DEFAULT_TEMPLATES_PATH
     DEFAULT_WORKER_WORK_DIR
     DEFAULT_WORKER_EXEC

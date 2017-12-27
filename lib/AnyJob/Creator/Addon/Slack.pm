@@ -101,7 +101,13 @@ sub getBuilder {
     }
 
     my $module = 'AnyJob::Creator::Builder::Slack::' . getModuleName($config->{module});
-    requireModule($module);
+    eval {
+        requireModule($module);
+    };
+    if ($@) {
+        $self->error('Error loading module \'' . $module . '\': ' . $@);
+        return undef;
+    }
 
     $self->{builders}->{$name} = $module->new(parent => $self->{parent}, name => $name);
     return $self->{builders}->{$name};

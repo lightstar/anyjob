@@ -267,8 +267,19 @@ sub sendJobSetState {
     my $self = shift;
     my $state = shift;
     if (defined($self->jobset)) {
-        $self->{parent}->sendJobSetState($state);
+        $self->{parent}->sendJobSetState($self->jobset, $state);
     }
+}
+
+###############################################################################
+# Send redo message to daemon's queue. You shouldn't send it if any progress messages are already sent.
+#
+# Arguments:
+#     id    - integer job id.
+#
+sub sendRedo {
+    my $self = shift;
+    $self->{parent}->sendRedo($self->id);
 }
 
 ###############################################################################

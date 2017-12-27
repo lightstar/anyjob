@@ -148,6 +148,10 @@ sub redirectJob {
     my $self = shift;
     my $progress = shift;
 
+    unless (defined($progress->{redirect})) {
+        return;
+    }
+
     my $id = delete $progress->{id};
 
     my $job = $self->getJob($id);
