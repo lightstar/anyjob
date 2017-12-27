@@ -76,7 +76,7 @@ sub debug {
     my $message = shift;
 
     if (utf8::is_utf8($message)) {
-        utf8::decode($message);
+        utf8::encode($message);
     }
 
     if ($self->{syslog}) {
@@ -100,7 +100,7 @@ sub error {
     my $message = shift;
 
     if (utf8::is_utf8($message)) {
-        utf8::decode($message);
+        utf8::encode($message);
     }
 
     if ($self->{syslog}) {
