@@ -429,7 +429,7 @@ sub isJobSupported {
 
     if (not defined($jobConfig) or $jobConfig->{disabled}) {
         $result = 0;
-    } elsif (not defined($nodeConfig) or $nodeConfig->{disabled}) {
+    } elsif (not defined($nodeConfig) or $nodeConfig->{disabled} or not $nodeConfig->{regular}) {
         $result = 0;
     } elsif (not exists($jobConfig->{nodes}) or $jobConfig->{nodes} eq 'all') {
         my $except = $jobConfig->{except} || '';
