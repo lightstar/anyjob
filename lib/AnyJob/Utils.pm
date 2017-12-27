@@ -28,7 +28,7 @@ our @EXPORT_OK = qw(
 #
 sub getModuleName {
     my $name = shift;
-    return join('', map {ucfirst($_)} split(/_/, $name));
+    return join('::', map {ucfirst($_)} split(/\//, join('', map {ucfirst($_)} split(/_/, $name))));
 }
 
 ###############################################################################
