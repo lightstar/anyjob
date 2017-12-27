@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Base;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  12.12.2017
+# Last update:  21.12.2017
 #
 
 use strict;

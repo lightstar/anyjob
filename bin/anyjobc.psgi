@@ -9,7 +9,7 @@
 #
 # Author:       LightStar
 # Created:      17.11.2017
-# Last update:  12.12.2017
+# Last update:  21.12.2017
 #
 
 use lib ($ENV{ANYJOB_LIB} || ($ENV{ANYJOB_PATH} || '/opt/anyjob') . '/lib');

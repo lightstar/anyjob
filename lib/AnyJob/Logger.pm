@@ -6,7 +6,7 @@ package AnyJob::Logger;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  01.12.2017
+# Last update:  27.12.2017
 #
 
 use strict;

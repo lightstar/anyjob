@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  07.12.2017
+# Last update:  27.12.2017
 #
 
 use strict;

@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  06.12.2017
+# Last update:  27.12.2017
 #
 
 use strict;

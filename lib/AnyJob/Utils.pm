@@ -5,7 +5,7 @@ package AnyJob::Utils;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  04.12.2017
+# Last update:  27.12.2017
 #
 
 use strict;
