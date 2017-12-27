@@ -45,8 +45,9 @@ sub new {
     $self->{redis} = Redis->new(server => $self->config->redis || DEFAULT_REDIS, encoding => undef);
     $self->{node} = $self->config->node;
 
+    my $develop = $self->config->develop ? 1 : 0;
     my $syslog = $self->config->syslog ? 1 : 0;
-    $self->{logger} = AnyJob::Logger->new(syslog => $syslog, type => $self->{type});
+    $self->{logger} = AnyJob::Logger->new(develop => $develop, syslog => $syslog, type => $self->{type});
 
     return $self;
 }

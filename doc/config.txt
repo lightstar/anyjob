@@ -83,7 +83,8 @@ Global configuration section is named 'anyjob'. Below are all recognizible keys.
 syslog                - 0/1 flag. If set, syslog is used for logging, otherwise log messages are just printed
                         to stdout/stderr. Default: 0. To log all anyjob messages to separate file the following
                         rsyslog configuration line is suggested:
-                        if $syslogfacility-text == 'local0' and $syslogtag contains 'anyjob' then /var/log/anyjob.log
+                        if $syslogfacility-text == 'local0' and $syslogtag startswith 'anyjob' then /var/log/anyjob.log
+develop               - 0/1 flag. If set, syslog will use tag 'anyjob-dev' instead of 'anyjob'.
 redis                 - host and port of redis server separated by colon. Default: '127.0.0.1:6379'.
 nodes_path            - path to nodes configuration relative to main configuration file base path.
                         Default: 'nodes'.

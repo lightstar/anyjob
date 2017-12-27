@@ -36,8 +36,9 @@ sub get {
 # Construct new AnyJob::Logger object or return previously created one.
 #
 # Arguments:
-#     type   - string component's type added to each log message. Must not be empty.
-#     syslog - 0/1 flag. Will use syslog if it's set.
+#     type    - string component's type added to each log message. Must not be empty.
+#     syslog  - 0/1 flag. Will use syslog if it's set.
+#     develop - 0/1 flag. If set, logger will use develop syslog tag.
 # Returns:
 #     AnyJob::Logger object.
 #
@@ -56,7 +57,8 @@ sub new {
     }
 
     if ($self->{syslog}) {
-        openlog('anyjob' . ($self->{type} ? '-' . $self->{type} : ''), 'ndelay,nofatal,pid', 'local0');
+        my $tag = ($self->{develop} ? 'anyjob-dev' : 'anyjob') . ($self->{type} ? '-' . $self->{type} : '');
+        openlog($tag, 'ndelay,nofatal,pid', 'local0');
     }
 
     $logger = $self;
