@@ -6,7 +6,7 @@ package AnyJob::Controller::Global;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  05.12.2017
+# Last update:  28.12.2017
 #
 
 use strict;
@@ -78,7 +78,7 @@ sub process {
             } else {
                 $self->error('No node for job: ' . encode_json($job));
             }
-        } elsif ($job->{jobset}) {
+        } elsif (exists($job->{jobset})) {
             $self->createJobSet($job);
         }
 

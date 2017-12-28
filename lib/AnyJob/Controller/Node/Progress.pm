@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  27.12.2017
+# Last update:  28.12.2017
 #
 
 use strict;
@@ -22,7 +22,7 @@ use base 'AnyJob::Controller::Node';
 ###############################################################################
 # Method called on each iteration of daemon loop.
 # Its main task is to receive messages from job progress queue and to process them.
-# There can be four types of messages.
+# There can be five types of messages.
 # 1. 'Finish job' message. Sent by worker component.
 # {
 #     id => ...,
@@ -39,7 +39,12 @@ use base 'AnyJob::Controller::Node';
 # {
 #     redirected => ...
 # }
-# 4. 'Progress job' message. Sent by worker component.
+# 4. 'Redo job' message. Sent by worker component.
+# {
+#     id => ...,
+#     redo => 1
+# }
+# 5. 'Progress job' message. Sent by worker component.
 # At least one of fields 'state', 'progress' or 'log' required here.
 # Field 'time' is log message time in integer unix timestamp format.
 # {
@@ -76,6 +81,8 @@ sub process {
             $self->redirectJob($progress);
         } elsif (exists($progress->{redirected})) {
             $self->parent->updateActiveJobCount();
+        } elsif (exists($progress->{redo})) {
+            $self->redoJob($progress);
         } else {
             $self->progressJob($progress);
         }
@@ -187,6 +194,26 @@ sub redirectJob {
         from => $self->node
     };
     $self->redis->rpush('anyjob:queue:' . $progress->{redirect}, encode_json($redirect));
+}
+
+###############################################################################
+# Redo job.
+#
+# Arguments:
+#     progress - hash with redo data
+#               (see 'Redo job' message in 'process' method description about fields it can contain).
+#
+sub redoJob {
+    my $self = shift;
+    my $progress = shift;
+
+    my $id = $progress->{id};
+    $self->debug('Redo job \'' . $id . '\'');
+
+    my $redo = {
+        redo => $id
+    };
+    $self->redis->rpush('anyjob:queue:' . $self->node, encode_json($redo));
 }
 
 ###############################################################################

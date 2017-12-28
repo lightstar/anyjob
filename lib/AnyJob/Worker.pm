@@ -7,7 +7,7 @@ package AnyJob::Worker;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  27.12.2017
+# Last update:  28.12.2017
 #
 
 use strict;
@@ -17,7 +17,7 @@ use utf8;
 use JSON::XS;
 
 use AnyJob::Constants::Defaults qw(DEFAULT_WORKER_PREFIX DEFAULT_WORKER_METHOD);
-use AnyJob::Constants::States qw(STATE_RUN);
+use AnyJob::Constants::States qw(STATE_BEGIN STATE_RUN);
 use AnyJob::Utils qw(getModuleName requireModule);
 
 use base 'AnyJob::Base';
@@ -185,16 +185,16 @@ sub sendJobSetState {
 }
 
 ###############################################################################
-# Send redo message to daemon's queue. You shouldn't send it if any progress messages are already sent.
+# Send redo message to daemon's progress queue which will lead to running this job again.
 #
 # Arguments:
-#     id    - integer job id.
+#     id - integer job id.
 #
 sub sendRedo {
     my $self = shift;
     my $id = shift;
 
-    $self->redis->rpush('anyjob:queue:' . $self->node, encode_json({ redo => $id }));
+    $self->sendProgress($id, { redo => 1 });
 }
 
 ###############################################################################
@@ -249,7 +249,9 @@ sub run {
 
     $self->debug('Execute job \'' . $id . '\' on node \'' . $self->node . '\': ' . encode_json($job));
 
-    $self->sendRun($id);
+    if ($job->{state} eq STATE_BEGIN) {
+        $self->sendRun($id);
+    }
 
     my $method = $jobConfig->{method} || $workerConfig->{method} || DEFAULT_WORKER_METHOD;
     eval {

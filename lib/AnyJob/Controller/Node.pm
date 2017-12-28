@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  27.12.2017
+# Last update:  28.12.2017
 #
 
 use strict;
@@ -48,7 +48,7 @@ our @MODULES = qw(
 #     id => ...,
 #     from => '...'
 # }
-# 3. 'Redo job' message. Sent by worker if it can't perform job right now. Here 'redo' field contains
+# 3. 'Finish redo job' message. Sent by progress controller of this node. Here 'redo' field contains
 # integer job id.
 # {
 #     redo => ...
@@ -75,10 +75,10 @@ sub process {
         };
         if ($@) {
             $self->error('Can\'t decode job: ' . $job);
-        } elsif ($job->{from}) {
+        } elsif (exists($job->{from})) {
             $self->finishRedirectJob($job);
-        } elsif ($job->{redo}) {
-            $self->redoJob($job->{redo});
+        } elsif (exists($job->{redo})) {
+            $self->finishRedoJob($job);
         } else {
             $self->createJob($job);
         }
@@ -177,15 +177,16 @@ sub finishRedirectJob {
 }
 
 ###############################################################################
-# Repeat running job.
+# Finish redo job operation.
 #
 # Arguments:
-#     id - integer job id.
+#     redo - hash with redo data. It contains integer 'redo' field with job id.
 #
-sub redoJob {
+sub finishRedoJob {
     my $self = shift;
-    my $id = shift;
+    my $redo = shift;
 
+    my $id = $redo->{redo};
     my $job = $self->getJob($id);
     unless (defined($job)) {
         return;
@@ -198,7 +199,7 @@ sub redoJob {
 
     $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
 
-    $self->debug('Redo job \'' . $id . '\' ' .
+    $self->debug('Run again job \'' . $id . '\' ' .
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
         '\', params ' . encode_json($job->{params}) . ' and props ' . encode_json($job->{props}));
 

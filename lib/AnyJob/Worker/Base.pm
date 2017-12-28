@@ -7,7 +7,7 @@ package AnyJob::Worker::Base;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  27.12.2017
+# Last update:  28.12.2017
 #
 
 use strict;
@@ -272,7 +272,7 @@ sub sendJobSetState {
 }
 
 ###############################################################################
-# Send redo message to daemon's queue. You shouldn't send it if any progress messages are already sent.
+# Send redo message to daemon's progress queue which will lead to running this job again.
 #
 # Arguments:
 #     id    - integer job id.
