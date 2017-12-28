@@ -68,13 +68,14 @@ This syntax is especially useful for JSON objects included in configuration.
 
 3. Module names.
 
-Every module name written in configuration should be the last part of actual perl module name after double colon.
-First letter of that name will capitalize, letters after underscores will capitalize too with underscores themselves
-removed. That way every module will need predefined or configured prefix which will concatenate with double colon and
-module name to construct full perl module name.
+Every module name written in configuration should be the ending of actual perl module name after double colon.
+First letter of that name will capitalize, letters after underscores and slashes will capitalize too with
+underscores themselves removed and slashes transformed into double colons. That way every module will need predefined
+or configured prefix which will concatenate with double colon and module name to construct full perl module name.
 
 For example if configured module name is 'my_example' and prefix is 'AnyJob::Worker' then full perl module will be
-'AnyJob::Worker::MyExample'.
+'AnyJob::Worker::MyExample'. And for module name 'subdir/my_example' full perl module will be
+'AnyJob::Worker::Subdir::MyExample'.
 
 4. Global configuration section.
 
