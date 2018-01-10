@@ -442,7 +442,7 @@ sub isJobSupported {
         my $except = $jobConfig->{except} || '';
         $result = (grep {$_ eq $node} split(/\s*,\s*/, $except)) ? 0 : 1;
     } else {
-        $result = (grep {$_ eq $node} split(/\s*,\s*/, $jobConfig->{nodes})) ? 0 : 1;
+        $result = (grep {$_ eq $node} split(/\s*,\s*/, $jobConfig->{nodes})) ? 1 : 0;
     }
 
     $self->{jobSupported}->{$node}->{$type} = $result;
