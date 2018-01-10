@@ -173,7 +173,7 @@ sub getDialog {
     my $config = $self->config->getJobConfig($job->{type}) || {};
     my $dialog = {
         callback_id  => $self->name . ':' . $id,
-        title        => 'Create job \'' . ($config->{label} || $job->{type}) . '\'',
+        title        => substr('Create job \'' . ($config->{label} || $job->{type}) . '\'', 0, 24),
         submit_label => 'Create',
         elements     => []
     };
