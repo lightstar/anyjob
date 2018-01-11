@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  27.12.2017
+# Last update:  10.01.2018
 #
 
 use strict;

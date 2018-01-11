@@ -7,7 +7,7 @@ package AnyJob::Worker::Base;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  28.12.2017
+# Last update:  11.01.2018
 #
 
 use strict;
@@ -78,11 +78,14 @@ sub job {
 
 ###############################################################################
 # Returns:
-#     integer jobset id or undef if current job is not part of any jobset.
+#     hash with jobset data or undef if current job is not part of any jobset.
 #
 sub jobset {
     my $self = shift;
-    return $self->{job}->{jobset};
+    unless (exists($self->{job}->{jobset})) {
+        return undef;
+    }
+    return $self->parent->getJobSet($self->{job}->{jobset});
 }
 
 ###############################################################################
