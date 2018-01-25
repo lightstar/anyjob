@@ -194,8 +194,7 @@ sub parse {
     my $self = shift;
 
     foreach my $arg (@{$self->{args}}) {
-        my ($name, @value) = split(/=/, $arg);
-        my $value = scalar(@value) > 0 ? join('=', @value) : undef;
+        my ($name, $value) = ($arg =~ /^([^=]+)(?:\=(.+))?$/);
 
         if ($name eq '') {
             next;
