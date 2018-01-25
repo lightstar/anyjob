@@ -195,7 +195,7 @@ sub parse {
 
     foreach my $arg (@{$self->{args}}) {
         my ($name, @value) = split(/=/, $arg);
-        my $value = join('=', @value);
+        my $value = scalar(@value) > 0 ? join('=', @value) : undef;
 
         if ($name eq '') {
             next;
