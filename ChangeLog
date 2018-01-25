@@ -1,3 +1,8 @@
+25.01.2018
+  API change: method 'jobset' in AnyJob::Worker::Base module now returns hash with jobset data.
+  Various bug fixes.
+  Version is v0.0.3.
+
 28.12.2017
   Bug fixes. Add 'redo job' functionality and support for complex module names.
   Version is v0.0.2.

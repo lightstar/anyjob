@@ -21,7 +21,7 @@ package AnyJob::Creator::Parser;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  07.12.2017
+# Last update:  25.01.2018
 #
 
 use strict;
