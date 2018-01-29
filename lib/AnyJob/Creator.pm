@@ -306,6 +306,12 @@ sub createJobs {
             }
         }
 
+        foreach my $name (keys(%{$job->{props}})) {
+            unless (exists($props->{$name})) {
+                $props->{$name} = $job->{props}->{$name};
+            }
+        }
+
         foreach my $node (@{$job->{nodes}}) {
             push @$separatedJobs, {
                     node   => $node,
