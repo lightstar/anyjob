@@ -7,7 +7,7 @@ package AnyJob::Worker::Base;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  11.01.2018
+# Last update:  29.01.2018
 #
 
 use strict;
@@ -254,8 +254,8 @@ sub sendFailure {
 sub sendJobSetProgress {
     my $self = shift;
     my $progress = shift;
-    if (defined($self->jobset)) {
-        $self->{parent}->sendJobSetProgress($self->jobset, $progress);
+    if (exists($self->job->{jobset})) {
+        $self->{parent}->sendJobSetProgress($self->job->{jobset}, $progress);
     }
 }
 
@@ -269,8 +269,8 @@ sub sendJobSetProgress {
 sub sendJobSetState {
     my $self = shift;
     my $state = shift;
-    if (defined($self->jobset)) {
-        $self->{parent}->sendJobSetState($self->jobset, $state);
+    if (exists($self->job->{jobset})) {
+        $self->{parent}->sendJobSetState($self->job->{jobset}, $state);
     }
 }
 
