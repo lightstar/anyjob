@@ -78,14 +78,11 @@ sub job {
 
 ###############################################################################
 # Returns:
-#     hash with jobset data or undef if current job is not part of any jobset.
+#     integer jobset id or undef if current job is not part of any jobset.
 #
 sub jobset {
     my $self = shift;
-    unless (exists($self->{job}->{jobset})) {
-        return undef;
-    }
-    return $self->parent->getJobSet($self->{job}->{jobset});
+    return $self->{job}->{jobset};
 }
 
 ###############################################################################
@@ -146,6 +143,27 @@ sub prop {
 sub node {
     my $self = shift;
     return $self->{parent}->node;
+}
+
+###############################################################################
+# Returns:
+#     hash with job data loaded from storage.
+#
+sub getJob {
+    my $self = shift;
+    return $self->parent->getJob($self->id);
+}
+
+###############################################################################
+# Returns:
+#     hash with jobset data loaded from storage or undef if current job is not part of any jobset.
+#
+sub getJobSet {
+    my $self = shift;
+    if (defined(my $jobset = $self->jobset)) {
+        return $self->parent->getJobSet($jobset);
+    }
+    return undef;
 }
 
 ###############################################################################
@@ -254,8 +272,8 @@ sub sendFailure {
 sub sendJobSetProgress {
     my $self = shift;
     my $progress = shift;
-    if (exists($self->job->{jobset})) {
-        $self->{parent}->sendJobSetProgress($self->job->{jobset}, $progress);
+    if (defined(my $jobset = $self->jobset)) {
+        $self->{parent}->sendJobSetProgress($jobset, $progress);
     }
 }
 
@@ -269,8 +287,8 @@ sub sendJobSetProgress {
 sub sendJobSetState {
     my $self = shift;
     my $state = shift;
-    if (exists($self->job->{jobset})) {
-        $self->{parent}->sendJobSetState($self->job->{jobset}, $state);
+    if (defined(my $jobset = $self->jobset)) {
+        $self->{parent}->sendJobSetState($jobset, $state);
     }
 }
 
