@@ -8,10 +8,14 @@
             [% END %]
         ",
         "text": "
-            [% IF event == 'progress' || event == 'progressJobSet' %]
+            [% IF event == 'create' || event == 'createJobSet' %]
+                created
+            [% ELSIF event == 'progress' || event == 'progressJobSet' %]
                 [% progress.state || progress.progress || progress.log.message %]
             [% ELSIF event == 'finish' %]
                 [% message %]
+            [% ELSIF event == 'finishJobSet' %]
+                finished
             [% ELSIF event == 'clean' || event == 'cleanJobSet' %]
                 cleaned
             [%  END %]
