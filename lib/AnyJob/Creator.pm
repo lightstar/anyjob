@@ -8,7 +8,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  27.12.2017
+# Last update:  30.01.2017
 #
 
 use strict;
@@ -270,6 +270,7 @@ sub parseJob {
 # Create provided jobs. If there is only one job, it will be created by itself,
 # otherwise jobset is created containing all jobs.
 # At first created jobs are checked using 'checkJobs' method, and creating fails if there are any errors.
+# If all jobs contain identical properties with identical values, they all are injected into jobset properties.
 #
 # Arguments:
 #     jobs - array of hashes with job information. I.e.:
@@ -298,22 +299,28 @@ sub createJobs {
         return 'wrong props';
     }
 
-    my $separatedJobs = [];
+    my @separatedJobs;
+    my %jobProps;
     foreach my $job (@$jobs) {
+        foreach my $name (keys(%{$job->{props}})) {
+            unless (exists($jobProps{$name})) {
+                $jobProps{$name} = {
+                    value => $job->{props}->{$name},
+                    count => scalar(@{$job->{nodes}})
+                };
+            } elsif ($jobProps{$name}->{value} eq $job->{props}->{$name}) {
+                $jobProps{$name}->{count} += scalar(@{$job->{nodes}});
+            }
+        }
+
         foreach my $name (keys(%$props)) {
             unless (exists($job->{props}->{$name})) {
                 $job->{props}->{$name} = $props->{$name};
             }
         }
 
-        foreach my $name (keys(%{$job->{props}})) {
-            unless (exists($props->{$name})) {
-                $props->{$name} = $job->{props}->{$name};
-            }
-        }
-
         foreach my $node (@{$job->{nodes}}) {
-            push @$separatedJobs, {
+            push @separatedJobs, {
                     node   => $node,
                     type   => $job->{type},
                     params => $job->{params},
@@ -322,11 +329,16 @@ sub createJobs {
         }
     }
 
-    if (scalar(@$separatedJobs) == 1) {
-        $self->createJob($separatedJobs->[0]->{node}, $separatedJobs->[0]->{type},
-            $separatedJobs->[0]->{params}, $separatedJobs->[0]->{props});
-    } elsif (scalar(@$separatedJobs) > 1) {
-        $self->createJobSet($separatedJobs, $props);
+    if (scalar(@separatedJobs) == 1) {
+        $self->createJob($separatedJobs[0]->{node}, $separatedJobs[0]->{type},
+            $separatedJobs[0]->{params}, $separatedJobs[0]->{props});
+    } elsif (scalar(@separatedJobs) > 1) {
+        foreach my $name (keys(%jobProps)) {
+            if ($jobProps{$name}->{count} == scalar(@separatedJobs) and not exists($props->{$name})) {
+                $props->{$name} = $jobProps{$name}->{value};
+            }
+        }
+        $self->createJobSet(\@separatedJobs, $props);
     }
 
     return undef;
