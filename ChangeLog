@@ -1,3 +1,10 @@
+05.02.2018
+  Modify creator's 'createJobs' method to inject jobs properties into jobset if they all are identical.
+  API change: method 'jobset' in AnyJob::Worker::Base module now returns jobset id again.
+  Add new methods to AnyJob::Worker::Base used to load hashes with job and jobset data from storage.
+  Various fixes.
+  Bump version to 0.0.4 Alpha.
+
 25.01.2018
   API change: method 'jobset' in AnyJob::Worker::Base module now returns hash with jobset data.
   Various bug fixes.
