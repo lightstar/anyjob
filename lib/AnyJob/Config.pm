@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  10.01.2018
+# Last update:  06.02.2018
 #
 
 use strict;
@@ -13,12 +13,11 @@ use warnings;
 use utf8;
 
 use JSON::XS;
-use File::Basename;
 use File::Spec;
+use File::Basename;
 
 use AnyJob::Constants::Defaults qw(
-    DEFAULT_NODES_CONFIG_PATH DEFAULT_JOBS_CONFIG_PATH DEFAULT_OBSERVERS_CONFIG_PATH DEFAULT_CREATORS_CONFIG_PATH
-    DEFAULT_BUILDERS_CONFIG_PATH DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH
+    DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH
     DEFAULT_INTERNAL_PROPS injectPathIntoConstant
     );
 
@@ -35,20 +34,18 @@ sub new {
     my $self = $class->SUPER::new(@_);
 
     my $fileName = shift;
-    my $baseDir = dirname($fileName);
-
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->nodes_path || DEFAULT_NODES_CONFIG_PATH)),
-        'node');
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->jobs_path || DEFAULT_JOBS_CONFIG_PATH)),
-        'job');
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->observers_path || DEFAULT_OBSERVERS_CONFIG_PATH)),
-        'observer');
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->creators_path || DEFAULT_CREATORS_CONFIG_PATH)),
-        'creator');
-    $self->addConfigFromDir(File::Spec->catdir($baseDir, ($self->builders_path || DEFAULT_BUILDERS_CONFIG_PATH)),
-        'builder');
+    $self->{baseDir} = dirname($fileName);
 
     return $self;
+}
+
+###############################################################################
+# Returns:
+#     string config base directory.
+#
+sub baseDir {
+    my $self = shift;
+    return $self->{baseDir};
 }
 
 ###############################################################################

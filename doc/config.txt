@@ -11,6 +11,11 @@ Each section consists of zero or more key-value pairs like this:
 key = value
 ...
 
+But you are not required to use section names at all as by default 'anyjob' section name will be used in main
+configuration file. Also you are allowed and even encouraged to use 'creator.cfg', 'daemon.cfg' and 'worker.cfg'
+files in base directory of main configuration file which will contain 'creator', 'daemon' and 'worker' sections
+respectively.
+
 In addition to main configuration file configuration files are searched in some other paths. Key-value pairs
 in this files can have no explicit section name, in which case the default section name for this file is used.
 - nodes path.
@@ -19,6 +24,8 @@ in this files can have no explicit section name, in which case the default secti
 - jobs path.
       Default: 'jobs' directory in main configuration file base path.
       Default section name prefix: 'job_'.
+      2 subdirectories are independently searched here: 'work' for daemon and worker components and 'create'
+      for creator component.
 - observers path.
       Default: 'observers' directory in main configuration file base path.
       Default section name prefix: 'observer_'.

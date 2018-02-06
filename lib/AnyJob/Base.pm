@@ -7,7 +7,7 @@ package AnyJob::Base;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  27.12.2017
+# Last update:  06.02.2018
 #
 
 use strict;
@@ -19,6 +19,7 @@ use JSON::XS;
 
 use AnyJob::Constants::Defaults qw(DEFAULT_CONFIG_FILE DEFAULT_REDIS injectPathIntoConstant);
 use AnyJob::Config;
+use AnyJob::Config::Selector::Factory;
 use AnyJob::Logger;
 
 ###############################################################################
@@ -48,6 +49,8 @@ sub new {
     my $develop = $self->config->develop ? 1 : 0;
     my $syslog = $self->config->syslog ? 1 : 0;
     $self->{logger} = AnyJob::Logger->new(develop => $develop, syslog => $syslog, type => $self->{type});
+
+    AnyJob::Config::Selector::Factory->new(parent => $self)->build()->addConfig();
 
     return $self;
 }

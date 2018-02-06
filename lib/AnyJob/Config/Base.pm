@@ -25,7 +25,7 @@ package AnyJob::Config::Base;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  01.12.2017
+# Last update:  06.02.2018
 #
 
 use strict;
@@ -37,8 +37,8 @@ use utf8;
 #
 # Arguments:
 #     fileName      - string name of root file with config.
-#     globalSection - optional string with name of global section which will be used by AUTOLOAD
-#                     when you will try to retrieve some value without providing section name.
+#     globalSection - optional string with name of global section which will be used as default section name and
+#                     by AUTOLOAD when you will try to retrieve some value without providing section name.
 # Returns:
 #     AnyJob::Config::Base object.
 #
@@ -50,7 +50,7 @@ sub new {
     my $self = bless {}, $class;
     $self->{global} = $globalSection;
     $self->{data} = {};
-    $self->addConfig($fileName);
+    $self->addConfig($fileName, $globalSection);
 
     return $self;
 }
@@ -70,7 +70,7 @@ sub addConfig {
 
     my $data = $self->readFile($fileName, $fileSection);
     while (my ($section, $var) = each(%$data)) {
-        $self->{data}->{$section} = {};
+        $self->{data}->{$section} ||= {};
         while (my ($key, $val) = each(%$var)) {
             $self->{data}->{$section}->{$key} = $val;
         }
@@ -148,7 +148,7 @@ sub readFile {
 
             if (my ($newSection) = ($var =~ /^\[([^\[\]]+)\]$/)) {
                 $section = $newSection;
-                $data->{$section} = {};
+                $data->{$section} ||= {};
             } elsif (my ($key, $val) = ($var =~ /^([^=]+)\=(.+)$/s)) {
                 next unless $section;
                 $key =~ s/^\s+//;

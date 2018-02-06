@@ -2,11 +2,11 @@
 
 ###############################################################################
 # Worker executable which is launched by daemon to run job in separate process.
-# ANYJOB_NODE and ANYJOB_ID environment variables are required here and some others are optional.
+# ANYJOB_NODE, ANYJOB_ID and ANYJOB_JOB environment variables are required here and some others are optional.
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  21.12.2017
+# Last update:  06.02.2018
 #
 
 use lib ($ENV{ANYJOB_LIB} || ($ENV{ANYJOB_PATH} || '/opt/anyjob') . '/lib');
@@ -25,7 +25,7 @@ BEGIN {
     }
 }
 
-unless (defined($ENV{ANYJOB_ID})) {
+unless (defined($ENV{ANYJOB_ID}) and defined($ENV{ANYJOB_JOB})) {
     exit(1);
 }
 
