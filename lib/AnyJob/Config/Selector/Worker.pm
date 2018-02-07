@@ -5,7 +5,7 @@ package AnyJob::Config::Selector::Worker;
 #
 # Author:       LightStar
 # Created:      06.02.2018
-# Last update:  06.02.2018
+# Last update:  07.02.2018
 #
 
 use strict;
@@ -32,8 +32,19 @@ sub addConfig {
 
     if (defined($ENV{ANYJOB_JOB})) {
         my $type = $ENV{ANYJOB_JOB};
-        $self->addConfigFromFile(File::Spec->catfile(($config->jobs_path || DEFAULT_JOBS_CONFIG_PATH), 'work',
-                $type . '.cfg'), 'job_' . $type);
+        my $configFile = $type . '.cfg';
+        unless ($self->addConfigFromFile(File::Spec->catfile(($config->jobs_path || DEFAULT_JOBS_CONFIG_PATH),
+                'work', $configFile), 'job_' . $type)
+        ) {
+            my $pathSeparator = File::Spec->catfile('', '');
+            while ($configFile =~ s/_/$pathSeparator/) {
+                if ($self->addConfigFromFile(File::Spec->catfile(($config->jobs_path || DEFAULT_JOBS_CONFIG_PATH),
+                        'work', $configFile), 'job_' . $type)
+                ) {
+                    last;
+                }
+            }
+        }
     }
 }
 

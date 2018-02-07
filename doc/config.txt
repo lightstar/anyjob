@@ -42,6 +42,8 @@ name will belong to section 'node_broadcast'. Names of all intermediate subdirec
 section name too, separated by underscores, so for a file in builds path named 'slack/simple.cfg' default section name
 will be 'builder_slack_simple'.
 
+Note that for correct parsing all subdirectories must not contain underscores (but files themselves can).
+
 2. Key-value pairs.
 
 Each key-value pair consists of key and value separated by equal sign. Space characters around each line,

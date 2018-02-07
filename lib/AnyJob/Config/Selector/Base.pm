@@ -6,7 +6,7 @@ package AnyJob::Config::Selector::Base;
 #
 # Author:       LightStar
 # Created:      06.02.2018
-# Last update:  06.02.2018
+# Last update:  07.02.2018
 #
 
 use strict;
@@ -51,6 +51,8 @@ sub config {
 # Arguments:
 #     fileName - string relative file name. File name is relative to main configuration base path.
 #     section  - optional string default section name for that file.
+# Returns:
+#     0/1 flag. If set, file exists and config was added.
 #
 sub addConfigFromFile {
     my $self = shift;
@@ -60,7 +62,9 @@ sub addConfigFromFile {
     my $fullFileName = File::Spec->catfile($self->config->baseDir, $fileName);
     if (-f $fullFileName) {
         $self->config->addConfig($fullFileName, $section);
+        return 1;
     }
+    return 0;
 }
 
 ###############################################################################
@@ -70,6 +74,8 @@ sub addConfigFromFile {
 #     dirName - string relative directory name. Directory name is relative to main configuration base path.
 #     section - string prefix of default section names for files in that directory. For details see AnyJob::Config
 #               class.
+# Returns:
+#     0/1 flag. If set, directory exists and config was added.
 #
 sub addConfigFromDir {
     my $self = shift;
@@ -79,7 +85,9 @@ sub addConfigFromDir {
     my $fullDirName = File::Spec->catdir($self->config->baseDir, $dirName);
     if (-d $fullDirName) {
         $self->config->addConfigFromDir($fullDirName, $section);
+        return 1;
     }
+    return 0;
 }
 
 ###############################################################################
