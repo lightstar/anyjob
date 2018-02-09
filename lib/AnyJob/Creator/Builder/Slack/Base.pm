@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Base;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  21.12.2017
+# Last update:  09.02.2018
 #
 
 use strict;
@@ -41,6 +41,15 @@ sub new {
 }
 
 ###############################################################################
+# Returns:
+#     parent component's slack addon object.
+#
+sub parentAddon {
+    my $self = shift;
+    return $self->{parent}->addon('slack');
+}
+
+###############################################################################
 # Get builder configuration or undef.
 #
 # Returns:
@@ -49,37 +58,6 @@ sub new {
 sub getBuilderConfig {
     my $self = shift;
     return $self->config->getBuilderConfig('slack_' . $self->name);
-}
-
-###############################################################################
-# Check if given slack user is allowed to use this builder.
-#
-# Arguments:
-#     user - string user id.
-# Returns:
-#     0/1 flag. If set, access is permitted.
-#
-sub isUserAllowed {
-    my $self = shift;
-    my $user = shift;
-
-    my $users;
-
-    if (exists($self->{users})) {
-        $users = $self->{users};
-    } else {
-        my $config = $self->getBuilderConfig() || {};
-        if (defined($config->{users})) {
-            $users = { map {$_ => 1} split(/\s*,\s*/, $config->{users}) };
-        }
-        $self->{users} = $users;
-    }
-
-    if (defined($users) and defined($user) and exists($users->{$user})) {
-        return 1;
-    }
-
-    return 0;
 }
 
 ###############################################################################

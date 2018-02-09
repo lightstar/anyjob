@@ -109,6 +109,7 @@ AnyJob может применяться как для упрощения авт
    - [doc/install.txt](doc/install.txt) - требования и шаги установки.
    - [doc/env.txt](doc/env.txt) - переменные окружения.
    - [doc/config.txt](doc/config.txt) - конфигурация.
+   - [doc/access.txt](doc/access.txt) - доступы к задачам, а также к узлам, параметрам и свойствам задач.
    - [doc/event.txt](doc/event.txt) - события и наблюдатели.
    - [doc/props.txt](doc/props.txt) - свойства (*properties*) задач и наборов задач.
    - [doc/redis.txt](doc/redis.txt) - используемые ключи *redis*.

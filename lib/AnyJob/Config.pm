@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  06.02.2018
+# Last update:  09.02.2018
 #
 
 use strict;
@@ -20,6 +20,7 @@ use AnyJob::Constants::Defaults qw(
     DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH
     DEFAULT_INTERNAL_PROPS injectPathIntoConstant
     );
+use AnyJob::Access::Resource;
 
 use base 'AnyJob::Config::Base';
 
@@ -132,6 +133,10 @@ sub getAllNodes {
 
 ###############################################################################
 # Get array of hashes with detailed information about all available jobs.
+# Field 'access' here contains instance of AnyJob::Access:Resource class.
+# It signifies access needed to create this job.
+# Values of 'nodes.access' field are hashes where keys are node names and values are instances of
+# AnyJob::Access::Resource class too. They signify access needed to create job on corresponding nodes.
 #
 # Returns:
 #     array of hashes with detailed information about all available jobs:
@@ -139,11 +144,14 @@ sub getAllNodes {
 #         type => '...',
 #         nodes => {
 #             available => [ 'node1', 'node2', node3', ... ],
-#             default   => { 'node1' => 1, 'node2' => 1, ... }
+#             default   => { 'node1' => 1, 'node2' => 1, ... },
+#             access    => { 'node1' => ..., 'node2' => ..., ... },
 #         },
+#         access => ...,
 #         label => '...',
 #         group => '...',
-#         params => { 'param1': '...', 'param2': '...', ... }
+#         params => [ { name => 'param1', ... }, { name => 'param2', ... }, ... ],
+#         sort => ...
 #     },...]
 #
 sub getAllJobs {
@@ -165,12 +173,18 @@ sub getAllJobs {
                 next;
             }
 
+            my $nodesHash = { map {$_ => 1} @$nodes };
+            my $defaultNodes = { map {$_ => 1} grep {exists($nodesHash->{$_})}
+                split(/\s*,\s*/, $self->{data}->{$section}->{defaultNodes} || '') };
+
             push @jobs, {
                     type   => $type,
                     nodes  => {
                         available => $nodes,
-                        default   => { map {$_ => 1} split(/\s*,\s*/, $self->{data}->{$section}->{defaultNodes} || '') }
+                        default   => $defaultNodes,
+                        access    => $self->getJobNodesAccess($type)
                     },
+                    access => $self->getJobAccess($type),
                     label  => $self->{data}->{$section}->{label} || $type,
                     group  => $self->{data}->{$section}->{group} || '',
                     params => $self->getJobParams($type),
@@ -340,6 +354,8 @@ sub getJobNodes {
 ###############################################################################
 # Get array of hashes with detailed information about parameters for given job type.
 # All possible fields in that hashes see in documentation.
+# Each hash here has 'access' field which contains instance of AnyJob::Access::Resource class.
+# It signifies access needed to set this parameter.
 #
 # Arguments:
 #     type - string job type.
@@ -357,26 +373,99 @@ sub getJobParams {
     $self->{jobParams}->{$type} = [];
 
     my $config = $self->getJobConfig($type);
-    unless (defined($config)) {
+    unless (defined($config) and exists($config->{params})) {
         return [];
     }
 
-    my $params = $config->{params} || '[]';
+    my $params = $config->{params};
     utf8::encode($params);
 
     eval {
         $params = decode_json($params);
     };
-    if ($@) {
-        return [];
+    if ($@ or ref($params) ne 'ARRAY') {
+        require Carp;
+        Carp::confess('Wrong params of job \'' . $type . '\': ' . $config->{params});
     }
 
-    unless (ref($params) eq 'ARRAY') {
-        return [];
+    foreach my $param (@$params) {
+        if (exists($param->{access}) and $param->{access} ne '') {
+            $param->{access} = AnyJob::Access::Resource->new(input => $param->{access});
+        } else {
+            $param->{access} = $AnyJob::Access::Resource::ACCESS_ANY;
+        }
     }
 
     $self->{jobParams}->{$type} = $params;
     return $params;
+}
+
+###############################################################################
+# Get hash with nodes access for given job type.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     hash with nodes access. Each key in that hash is node name and value is appropriate instance
+#     of AnyJob::Access::Resource class.
+#
+sub getJobNodesAccess {
+    my $self = shift;
+    my $type = shift;
+
+    if (exists($self->{jobNodesAccess}->{$type})) {
+        return $self->{jobNodesAccess}->{$type};
+    }
+
+    $self->{jobNodesAccess}->{$type} = {};
+
+    my $config = $self->getJobConfig($type);
+    unless (defined($config) and exists($config->{nodesAccess})) {
+        return {};
+    }
+
+    my $nodesAccess = $config->{nodesAccess};
+    eval {
+        $nodesAccess = decode_json($nodesAccess);
+    };
+    if ($@ or ref($nodesAccess) ne 'HASH') {
+        require Carp;
+        Carp::confess('Wrong nodes access of job \''. $type .'\': ' . $config->{nodesAccess});
+    }
+
+    foreach my $node (keys(%$nodesAccess)) {
+        $nodesAccess->{$node} = AnyJob::Access::Resource->new(input => $nodesAccess->{$node});
+    }
+
+    $self->{jobNodesAccess}->{$type} = $nodesAccess;
+    return $nodesAccess;
+}
+
+###############################################################################
+# Get AnyJob::Access::Resource object which represents access to job with specified type.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     AnyJob::Access::Resource object.
+#
+sub getJobAccess {
+    my $self = shift;
+    my $type = shift;
+
+    if (exists($self->{jobAccess}->{$type})) {
+        return $self->{jobAccess}->{$type};
+    }
+
+    $self->{jobAccess}->{$type} = $AnyJob::Access::Resource::ACCESS_ANY;
+
+    my $config = $self->getJobConfig($type);
+    unless (defined($config) and exists($config->{access})) {
+        return $self->{jobAccess}->{$type};
+    }
+
+    $self->{jobAccess}->{$type} = AnyJob::Access::Resource->new(input => $config->{access});
+    return $self->{jobAccess}->{$type};
 }
 
 ###############################################################################
@@ -554,6 +643,8 @@ sub getObserversForEvent {
 ###############################################################################
 # Get array of hashes with detailed information abount job properties.
 # All possible fields in that hashes see in documentation.
+# Each hash here has 'access' field which contains instance of AnyJob::Access::Resource class.
+# It signifies access needed to set this property.
 #
 # Returns:
 #     array of hashes with detailed properties information.
@@ -578,12 +669,17 @@ sub getProps {
     eval {
         $props = decode_json($props);
     };
-    if ($@) {
-        return [];
+    if ($@ or ref($props) ne 'ARRAY') {
+        require Carp;
+        Carp::confess('Wrong props: ' . $config->{props});
     }
 
-    unless (ref($props) eq 'ARRAY') {
-        return [];
+    foreach my $prop (@$props) {
+        if (exists($prop->{access}) and $prop->{access} ne '') {
+            $prop->{access} = AnyJob::Access::Resource->new(input => $prop->{access});
+        } else {
+            $prop->{access} = $AnyJob::Access::Resource::ACCESS_ANY;
+        }
     }
 
     $self->{props} = $props;
@@ -611,6 +707,47 @@ sub getInternalProps {
 
     $self->{internalProps} = [ split(/\s*,\s*/, $internalProps) ];
     return $self->{internalProps};
+}
+
+###############################################################################
+# Get hash with access groups. Each element of that hash is an array with accesses and groups.
+# Details see in documentation.
+#
+# Returns:
+#     hash with access groups information.
+#
+sub getAccessGroups {
+    my $self = shift;
+
+    if (exists($self->{accessGroups})) {
+        return $self->{accessGroups};
+    }
+
+    $self->{accessGroups} = {};
+
+    my $config = $self->section('creator') || {};
+    unless (exists($config->{access_groups})) {
+        return {};
+    }
+
+    my $accessGroups;
+    eval {
+        $accessGroups = decode_json($config->{access_groups});
+    };
+    if ($@ or ref($accessGroups) ne 'HASH') {
+        require Carp;
+        Carp::confess('Wrong access groups: ' . $config->{access_groups});
+    }
+
+    foreach my $accesses (values(%$accessGroups)) {
+        unless (ref($accesses) eq 'ARRAY') {
+            require Carp;
+            Carp::confess('Wrong access groups: ' . $config->{access_groups});
+        }
+    }
+
+    $self->{accessGroups} = $accessGroups;
+    return $accessGroups;
 }
 
 ###############################################################################

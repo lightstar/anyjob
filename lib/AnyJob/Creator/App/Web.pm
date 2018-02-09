@@ -6,7 +6,7 @@ package AnyJob::Creator::App::Web;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  08.12.2017
+# Last update:  08.02.2018
 #
 
 use strict;
@@ -67,11 +67,12 @@ get '/' => http_basic_auth required => sub {
 #
 get '/config' => http_basic_auth required => sub {
             my ($user, $pass) = http_basic_auth_login;
+            my $web = creator->addon('web');
             return {
-                jobs     => config->getAllJobs(),
-                props    => config->getProps(),
+                jobs     => $web->getUserJobs($user),
+                props    => $web->getUserProps($user),
                 observer => {
-                    eventTemplate => creator->addon('web')->getEventTemplate(),
+                    eventTemplate => $web->getEventTemplate(),
                 },
                 auth     => {
                     user => $user,
@@ -88,9 +89,17 @@ post '/create' => http_basic_auth required => sub {
             # In theory serializer in request object should be set automatically but it doesn't.
             request->{serializer} = app->config->{serializer};
             my $jobs = request->data;
-            creator->addon('web')->preprocessJobs($jobs);
+            my $web = creator->addon('web');
+            $web->preprocessJobs($jobs);
 
             my ($user) = http_basic_auth_login;
+
+            unless ($web->checkJobsAccess($user, $jobs)) {
+                return {
+                    success => 0,
+                    error   => 'access denied'
+                };
+            }
 
             debug('Create jobs using web app by user \'' . $user . '\': ' . encode_json($jobs));
 

@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  21.12.2017
+# Last update:  09.02.2018
 #
 
 use strict;
@@ -13,6 +13,7 @@ use warnings;
 use utf8;
 
 use AnyJob::EventFilter;
+use AnyJob::Access::User;
 
 ###############################################################################
 # Construct new AnyJob::Creator::Addon::Base object.
@@ -113,6 +114,158 @@ sub filterEvents {
     my $self = shift;
     my $events = shift;
     return [ grep {$self->{eventFilter}->filter($_)} @$events ];
+}
+
+###############################################################################
+# Retrieve array with detailed information about all jobs accesible by specified user.
+# All jobs nodes and parameters are filtered by user's access too.
+#
+# Arguments:
+#     user - string user name.
+# Returns:
+#     array of hashes with jobs data. Details about its structure see in 'getAllJobs' method of AnyJob::Config class.
+#
+sub getUserJobs {
+    my $self = shift;
+    my $user = shift;
+
+    if (exists($self->{userJobs}->{$user})) {
+        return $self->{userJobs}->{$user};
+    }
+
+    my $config = $self->config;
+    my $userAccess = $self->getUserAccess($user);
+
+    $self->{userJobs}->{$user} = [];
+    foreach my $job (@{$config->getAllJobs()}) {
+        unless ($job->{access}->hasAccess($userAccess)) {
+            next;
+        }
+
+        my $jobCopy = { %$job };
+        delete $jobCopy->{access};
+
+        my $nodesAccess = $job->{nodes}->{access};
+        my $nodes = [ grep {not exists($nodesAccess->{$_}) or $nodesAccess->{$_}->hasAccess($userAccess)}
+            @{$job->{nodes}->{available}} ];
+        my $nodesHash = { map {$_ => 1} @$nodes };
+        my $defaultNodes = { map {$_ => 1} grep {exists($nodesHash->{$_})} keys(%{$job->{nodes}->{default}}) };
+
+        $jobCopy->{nodes} = {
+            available => $nodes,
+            default   => $defaultNodes
+        };
+
+        $jobCopy->{params} = [];
+        foreach my $param (@{$job->{params}}) {
+            unless ($param->{access}->hasAccess($userAccess)) {
+                next;
+            }
+            my $paramCopy = { %$param };
+            delete $paramCopy->{access};
+            push @{$jobCopy->{params}}, $paramCopy;
+        }
+
+        push @{$self->{userJobs}->{$user}}, $jobCopy;
+    }
+
+    return $self->{userJobs}->{$user};
+}
+
+###############################################################################
+# Retrieve array with detailed information about all job properties accesible by specified user.
+#
+# Arguments:
+#     user - string user name.
+# Returns:
+#     array of hashes with properties data. Details about its structure see in documentation.
+#     Note that 'access' field is removed here.
+#
+sub getUserProps {
+    my $self = shift;
+    my $user = shift;
+
+    if (exists($self->{userProps}->{$user})) {
+        return $self->{userProps}->{$user};
+    }
+
+    my $userAccess = $self->getUserAccess($user);
+    $self->{userProps}->{$user} = [];
+    foreach my $prop (@{$self->config->getProps()}) {
+        unless ($prop->{access}->hasAccess($userAccess)) {
+            next;
+        }
+        my $propCopy = { %$prop };
+        delete $propCopy->{access};
+        push @{$self->{userProps}->{$user}}, $propCopy;
+    }
+
+    return $self->{userProps}->{$user};
+}
+
+###############################################################################
+# Retrieve instance of AnyJob::Access:User class which represents access given to specified user.
+#
+# Arguments:
+#     user - string user name.
+# Returns:
+#     AnyJob::Access:User object.
+#
+sub getUserAccess {
+    my $self = shift;
+    my $user = shift;
+
+    if (exists($self->{userAccess}->{$user})) {
+        return $self->{userAccess}->{$user};
+    }
+
+    my $config = $self->config->section('creator_' . $self->{type} . '_access') || {};
+    if (exists($config->{$user})) {
+        my $groups = $self->config->getAccessGroups();
+        $self->{userAccess}->{$user} = AnyJob::Access::User->new(groups => $groups, input => $config->{$user});
+    } else {
+        $self->{userAccess}->{$user} = $AnyJob::Access::User::ACCESS_NONE;
+    }
+
+    return $self->{userAccess}->{$user};
+}
+
+###############################################################################
+# Check if specified user has access to create some job. Access to job itself, its parameters and
+# properties are checked here.
+#
+# Arguments:
+#     user - string user name.
+#     job  - hash with data about job this user wishes to create.
+# Returns:
+#     0/1 flag. If set, user is permitted to create this job, otherwise - not.
+#
+sub checkJobAccess {
+    my $self = shift;
+    my $user = shift;
+    my $job = shift;
+
+    my $userJobs = $self->getUserJobs($user);
+    my $userProps = $self->getUserProps($user);
+
+    my ($userJob) = grep {$_->{type} eq $job->{type}} @$userJobs;
+    unless (defined($userJob)) {
+        return 0;
+    }
+
+    foreach my $name (keys(%{$job->{params}})) {
+        unless (grep {$_->{name} eq $name} @{$userJob->{params}}) {
+            return 0;
+        }
+    }
+
+    foreach my $name (keys(%{$job->{props}})) {
+        unless (grep {$_->{name} eq $name} @$userProps) {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 1;

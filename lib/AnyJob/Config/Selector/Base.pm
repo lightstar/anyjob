@@ -28,7 +28,7 @@ sub new {
     my %args = @_;
     my $self = bless \%args, $class;
 
-    unless ($self->{config}) {
+    unless (defined($self->{config})) {
         require Carp;
         Carp::confess('No config provided');
     }

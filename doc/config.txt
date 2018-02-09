@@ -146,6 +146,9 @@ props                 - JSON array of objects describing all properties that can
                         Default: '[]'.
 internal_props        - list of internal properties names separated by comma. Those names are not set by user but by
                         creator itself. Default: 'observer,response_url'.
+access_groups         - JSON hash with access groups used to access jobs, jobs nodes, jobs parameters and properties.
+                        Each hash key here is group name, and value - array of strings with provided accesses.
+                        Look for details about what accesses and access groups are in access.txt documentation file.
 observe_limit         - maximum events received by private observers in one iteration. If none specified,
                         global limit configuration is used.
 
@@ -198,6 +201,9 @@ nodes                 - list of node names separated by comma on which this job 
                         job can be executed on all nodes. Default: 'all'.
 except                - list of node names separated by comma on which this job can't be executed. Default: none.
 defaultNodes          - list of node names separated by comma on which this job will execute by default. Default: none.
+access                - string with accesses required to create this job.
+nodesAccess           - JSON hash where keys are node names and values are strings with accesses needed to create job
+                        on these nodes. Missing nodes here means no required access.
 label                 - short text description of this job. By default job type itself is used.
 group                 - optional group name for this job. Used to organize jobs and simplify selecting them in creator.
 work_dir              - work directory for external worker. By default corresponding setting in 'worker' section is
@@ -226,6 +232,7 @@ params                - JSON array of objects with job parameters description. T
                         Each object should have following fields:
                          type     - parameter type. Required field. It must be one of 'flag', 'text', 'textarea'
                                     or 'combo' strings.
+                         access   - string with accesses needed to set this param.
                          name     - parameter name used as key in actual job parameters data. Required field.
                          label    - parameter label to use in form element. By default it is the same as name.
                          required - boolean flag. If set, this parameter is required. Default: false.
@@ -310,7 +317,14 @@ algorithms, only crypt and md5 ones.
 
 Usually it is located in 'creators/web/auth.cfg' file relative to main configuration file base path.
 
-13. Slack creator configuration section.
+13. Web creator access section.
+
+Web creator access section is named 'creator_web_access' and used for providing accesses to users in creator web
+application. Every key here is user login and value - provided accesses separated by comma.
+
+Usually it is located in 'creators/web/access.cfg' file relative to main configuration file base path.
+
+14. Slack creator configuration section.
 
 Slack creator configuration section is named 'creator_slack'. Usually it is located in 'creators/slack.cfg' file
 relative to main configuration file base path. Below are all recognizible keys.
@@ -322,6 +336,9 @@ api                   - slack api url. Default: 'https://slack.com/api/'.
 api_token             - slack api token. It is required for slack api calls to work. You can get it in
                         'OAuth & Permissions' section of your slack application control panel on
                         https://api.slack.com/apps.
+users                 - user identificators separated by comma who allowed to use slack creator. To discover
+                        identificators of users in your workspace you can use 'users.list' api method:
+                        https://api.slack.com/methods/users.list. By default any user is permitted to use it.
 event_template        - base file name with private event template used in template toolkit. Default: 'payload'.
                         So by default full path for that template will be 'observers/app/slack/payload.tt' relative
                         to templates path.
@@ -332,7 +349,14 @@ event_filter          - javascript code which will run for every received privat
 build_clean_timeout   - timeout in seconds for cleaning too long existing active builds. If none specified,
                         'clean_timeout' setting from global section is used.
 
-14. Slack builder configuration sections.
+15. Slack creator access section.
+
+Slack creator access section is named 'creator_slack_access' and used for providing accesses to users in creator slack
+application. Every key here is slack user id and value - provided accesses separated by comma.
+
+Usually it is located in 'creators/slack/access.cfg' file relative to main configuration file base path.
+
+16. Slack builder configuration sections.
 
 Each slack builder must have its own configuration section which should be named 'builder_slack_<name>' where '<name>'
 is builder's name. Usually they are located in 'builders/slack/<name>.cfg' files relative to main configuration file
@@ -344,9 +368,6 @@ command               - slack slash command name which will use this builder. De
                         https://api.slack.com/slash-commands. Default: none.
 aliases               - optional additional slash commands separated by comma which will also use this builder.
                         Default: none.
-users                 - user identificators separated by comma who allowed to use this builder. To discover
-                        identificators of users in your workspace you can use 'users.list' api method:
-                        https://api.slack.com/methods/users.list. Default: none.
 help                  - text which will be sent to user after calling slash command with 'help' argument.
                         Default: 'No help for this command'.
 

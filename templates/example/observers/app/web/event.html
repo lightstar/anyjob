@@ -9,7 +9,7 @@
     </span>
 
     <span data-ng-if="event.type && event.node">
-        {{config.jobsByType[event.type].label}}
+        {{config.jobsByType[event.type].label || event.type}}
         ({{event.node}}<span data-ng-if="event.progress && event.progress.redirect"> -> {{event.progress.redirect}}</span>).
     </span>
 

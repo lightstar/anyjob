@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Simple;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  12.12.2017
+# Last update:  08.02.2018
 #
 
 use strict;
@@ -39,6 +39,10 @@ sub command {
     ($job, undef, $errors) = $self->parent->parseJob($text);
     unless (defined($job)) {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
+    }
+
+    unless ($self->parentAddon->checkJobAccess($user, $job)) {
+        return 'Error: access denied';
     }
 
     $errors = [ grep {$_->{type} eq 'error'} @$errors ];

@@ -2,7 +2,7 @@
     "attachments": [ {
         "title": "
             [% IF job && node %]
-                [% job.label %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])
+                [% job.label || job.type %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])
             [% ELSE %]
                 Job Set
             [% END %]

@@ -1,0 +1,41 @@
+Accesses are used to constraint creator's users from creating some jobs on some nodes, setting their certain
+parameters and properties. Actually by now that is applied to web and slack creators only. Console creator has no
+restrictions.
+
+Minimum access unit is some arbitrary non-empty string consisting of letters, ciphers, hyphens and underscores.
+Each user can have arbitrary number of such accesses and this is described by string with accesses separated by comma.
+Every access in that string can be access unit itself, negated access unit (with exlamation mark in front) and access
+group (with 'at' sign in front). Groups are just lists of accesses and must be provided as value of 'access_groups'
+key in creator's configuration.
+
+Example:
+access1,access2,@group,!access2
+
+It is assumed here that group 'group' is described in configuration as ['access3','access4'].
+
+This access string is processed from left to right. Every group unfolds to corresponding access list and every
+occuring of negated access removes that previously given access. So in previous example user will have next accesses:
+access1, access3 and access4.
+
+Of course groups can include negated accesses and other groups as well, so group 'group' could be described as
+['access3','access4','!access1','@group2'] and group 'group2' as ['access5','access6']. In the end user will have next
+accesses: access3, access4, access5, access6.
+
+Access string can include one special group called 'all' which means that user has every access that is not negated
+afterwards.
+
+Example:
+@all,!access5
+
+That means that user has every possible required access except 'access5'.
+
+On the other hand every restricted resource can have string with required accesses in another format. Actually that
+string is an logical expression consisting of accesses and operators. It can include ',' character as 'and' logical
+operator, '|' character as 'or' logical operator, '!' character as 'not' logical operator and brackets. Priorities
+are the same as in algebra of logic.
+
+Example:
+(access1|access2),access3,!access4
+
+That means that to access the resource user must have access 'access1' or 'access2', access 'access3' and must
+not have access 'access4'.

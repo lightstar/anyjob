@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Dialog;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  10.01.2018
+# Last update:  08.02.2018
 #
 
 use strict;
@@ -41,6 +41,10 @@ sub command {
     ($job, undef, $errors) = $self->parent->parseJob($text);
     unless (defined($job)) {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
+    }
+
+    unless ($self->parentAddon->checkJobAccess($user, $job)) {
+        return 'Error: access denied';
     }
 
     $errors = [ grep {$_->{type} eq 'error' and $_->{text} !~ /no required param/} @$errors ];
@@ -86,6 +90,10 @@ sub dialogSubmission {
     (undef, $id) = split(/:/, $payload->{callback_id});
     unless (defined($id) and defined($build = $self->getBuild($id))) {
         return 'Error: no build';
+    }
+
+    unless (defined($payload->{user}) and $self->parentAddon->checkJobAccess($payload->{user}->{id}, $build->{job})) {
+        return 'Error: access denied';
     }
 
     my $errors = $self->applySubmission($build->{job}, $payload->{submission});

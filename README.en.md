@@ -90,6 +90,7 @@ now only for *perl* convenient environment and base class (*AnyJob::Worker::Base
    - [doc/install.txt](doc/install.txt) - prerequisites and installation steps.
    - [doc/env.txt](doc/env.txt) - environment variables.
    - [doc/config.txt](doc/config.txt) - configuration.
+   - [doc/access.txt](doc/access.txt) - accesses to jobs, jobs nodes, jobs parameters and jobs properties.
    - [doc/event.txt](doc/event.txt) - events and observers.
    - [doc/props.txt](doc/props.txt) - properties of jobs and jobsets.
    - [doc/redis.txt](doc/redis.txt) - keys used in *redis*.

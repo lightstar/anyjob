@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  27.12.2017
+# Last update:  09.02.2018
 #
 
 use strict;
@@ -65,6 +65,41 @@ sub checkToken {
 
     my $config = $self->config->getCreatorConfig('slack') || {};
     if (defined($config->{token}) and defined($token) and $config->{token} eq $token) {
+        return 1;
+    }
+
+    return 0;
+}
+
+###############################################################################
+# Check if given slack user is allowed to use creator.
+#
+# Arguments:
+#     user - string user id.
+# Returns:
+#     0/1 flag. If set, access is permitted.
+#
+sub isUserAllowed {
+    my $self = shift;
+    my $user = shift;
+
+    my $users;
+
+    if (exists($self->{users})) {
+        $users = $self->{users};
+    } else {
+        my $config = $self->config->getCreatorConfig('slack') || {};
+        if (exists($config->{users})) {
+            $users = { map {$_ => 1} split(/\s*,\s*/, $config->{users}) };
+        }
+        $self->{users} = $users;
+    }
+
+    unless (defined($users)) {
+        return 1;
+    }
+
+    if (defined($user) and exists($users->{$user})) {
         return 1;
     }
 

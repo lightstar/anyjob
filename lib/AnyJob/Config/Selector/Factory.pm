@@ -6,7 +6,7 @@ package AnyJob::Config::Selector::Factory;
 #
 # Author:       LightStar
 # Created:      06.02.2018
-# Last update:  06.02.2018
+# Last update:  07.02.2018
 #
 
 use strict;
@@ -28,7 +28,7 @@ sub new {
     my %args = @_;
     my $self = bless \%args, $class;
 
-    unless ($self->{parent}) {
+    unless (defined($self->{parent})) {
         require Carp;
         Carp::confess('No parent provided');
     }

@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Web;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  21.12.2017
+# Last update:  08.02.2018
 #
 
 use strict;
@@ -53,6 +53,29 @@ sub checkAuth {
 
     my $config = $self->config->section('creator_web_auth') || {};
     return (exists($config->{$user}) and crypt($pass, $config->{$user}) eq $config->{$user}) ? 1 : 0;
+}
+
+###############################################################################
+# Check if given user is allowed to create specified jobs.
+#
+# Arguments:
+#     user - string user login.
+#     jobs - array of hashes with jobs that this user wishes to create.
+# Returns:
+#     0/1 flag. If set, access is permitted.
+#
+sub checkJobsAccess {
+    my $self = shift;
+    my $user = shift;
+    my $jobs = shift;
+
+    foreach my $job (@$jobs) {
+        unless ($self->checkJobAccess($user, $job)) {
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 ###############################################################################

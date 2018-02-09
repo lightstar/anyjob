@@ -5,7 +5,7 @@ package AnyJob::Creator::App::Slack;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  08.12.2017
+# Last update:  09.02.2018
 #
 
 use strict;
@@ -50,17 +50,17 @@ post '/' => sub {
             send_as html => 'Error: no callback_id';
         }
 
+        my $user = defined($payload->{user}) ? $payload->{user}->{id} : undef;
+        unless ($slack->isUserAllowed($user)) {
+            status 401;
+            send_as html => 'Error: access denied';
+        }
+
         my ($name) = split(/:/, $payload->{callback_id});
         my $builder = $slack->getBuilder($name);
         unless (defined($builder)) {
             status 400;
             send_as html => 'Error: unknown builder';
-        }
-
-        my $user = defined($payload->{user}) ? $payload->{user}->{id} : undef;
-        unless ($builder->isUserAllowed($user)) {
-            status 401;
-            send_as html => 'Error: access denied';
         }
 
         if ($payload->{type} eq 'dialog_submission') {
@@ -93,17 +93,17 @@ post '/cmd' => sub {
             send_as html => 'Error: wrong token';
         }
 
+        my $user = $params->get('user_id');
+        unless ($slack->isUserAllowed($user)) {
+            return {
+                text => 'Error: access denied'
+            };
+        }
+
         my $builder = $slack->getBuilderByCommand(substr($params->get('command'), 1));
         unless (defined($builder)) {
             status 400;
             send_as html => 'Error: unknown command';
-        }
-
-        my $user = $params->get('user_id');
-        unless ($builder->isUserAllowed($user)) {
-            return {
-                text => 'Error: access denied'
-            };
         }
 
         my $text = $params->get('text');
