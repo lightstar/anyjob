@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  09.02.2018
+# Last update:  12.02.2018
 #
 
 use strict;
@@ -477,6 +477,8 @@ sub getJobAccess {
 #     string work directory for executable.
 #     string executable name.
 #     optional string additional libraries needed by worker executable (could be undef if there are none).
+#     optional string user name to run this job under.
+#     optional string group name to run this job under.
 #
 sub getJobWorker {
     my $self = shift;
@@ -490,7 +492,9 @@ sub getJobWorker {
     return (
         injectPathIntoConstant($config->{work_dir} || $workerSection->{work_dir} || DEFAULT_WORKER_WORK_DIR),
         injectPathIntoConstant($config->{exec} || $workerSection->{exec} || DEFAULT_WORKER_EXEC),
-        $config->{lib} || $workerSection->{lib}
+        $config->{lib} || $workerSection->{lib},
+        $config->{suser} || $workerSection->{suser},
+        $config->{sgroup} || $workerSection->{sgroup}
     );
 }
 

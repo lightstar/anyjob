@@ -148,14 +148,11 @@ it is possible to limit active jobs count only globally.
 some arbitrary program and intercept its input and output, or run specific method in some perl module with defined
 parameters, etc.
 
-10. By now all worker processes are executed under *root* system user. It is worth implementing possibility to specify
-user and group under which they will be executed.
-
-11. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
+10. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
 add translations for all messages and possibility to switch between languages (russian is priority of course).
 
-12. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
+11. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
 adding possibility to specify group, type and nodes using separate dialogs.
 
-13. It is worth to add support for links leading to partially created jobs in the web application to simplify job
+12. It is worth to add support for links leading to partially created jobs in the web application to simplify job
 creation.

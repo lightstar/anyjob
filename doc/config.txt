@@ -131,6 +131,8 @@ work_dir              - work directory for external worker. Default: '{ANYJOB_PA
                         environment variable or '/opt/anyjob' by default.
 exec                  - path to external worker executable. Default: '{ANYJOB_PATH}/bin/anyjobw.pl' where
                         '{ANYJOB_PATH}' is value of ANYJOB_PATH environment variable or '/opt/anyjob' by default.
+suser                 - system user name to run jobs under. Default: root.
+sgroup                - system group name to run jobs under. Default: root.
 lib                   - optional additional library path needed by external worker. Set path to your perl modules here
                         which are required by your specific job modules. Default: none.
 module                - specific job module name. If none specified, job type will be used.
@@ -210,6 +212,10 @@ work_dir              - work directory for external worker. By default correspon
                         used.
 exec                  - path to external worker executable. By default corresponding setting in 'worker' section is
                         used.
+suser                 - system user name to run this job under. By default corresponding setting in 'worker' section
+                        is used.
+sgroup                - system group name to run this job under. Default: By default corresponding setting in 'worker'
+                        section is used.
 lib                   - optional additional library path needed for external worker. By default corresponding setting
                         in 'worker' section is used.
 module                - specific job module name. By default corresponding setting in 'worker' section or job type

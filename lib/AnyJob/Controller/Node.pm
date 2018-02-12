@@ -5,13 +5,14 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  06.02.2018
+# Last update:  12.02.2018
 #
 
 use strict;
 use warnings;
 use utf8;
 
+use English;
 use JSON::XS;
 use File::Basename;
 
@@ -218,7 +219,22 @@ sub runJob {
     my $job = shift;
     my $id = shift;
 
-    my ($workDir, $exec, $lib) = $self->config->getJobWorker($job->{type});
+    my ($workDir, $exec, $lib, $user, $group) = $self->config->getJobWorker($job->{type});
+    my ($uid, $gid) = (0, 0);
+
+    if (defined($user)) {
+        unless (defined($uid = getpwnam($user))) {
+            $self->error('Wrong user name: \'' . $user . '\'');
+            return;
+        }
+    }
+
+    if (defined($group)) {
+        unless (defined($gid = getgrnam($group))) {
+            $self->error('Wrong group name: \'' . $group . '\'');
+            return;
+        }
+    }
 
     my $pid = fork();
     if ($pid != 0) {
@@ -230,7 +246,13 @@ sub runJob {
         return;
     }
 
+    $EGID = $GID = $gid;
+    $EUID = $UID = $uid;
+
     $self->debug('Run job \'' . $id . '\' executing \'' . $exec . '\' in work directory \'' . $workDir . '\'' .
+        ((defined($user) and defined($group)) ? ' under user \'' . $user . '\' and group \'' . $group . '\'' :
+            (defined($user) ? ' under user \'' . $user . '\'' :
+                (defined($group) ? ' under group \'' . $group . '\'' : ''))) .
         (defined($lib) ? ' including libs in \'' . $lib . '\'' : ''));
 
     exec('/bin/sh', '-c',
