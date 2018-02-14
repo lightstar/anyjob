@@ -5,7 +5,7 @@ package AnyJob::Daemon::Base;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  01.12.2017
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -114,7 +114,7 @@ sub run {
         exit(1);
     }
 
-    $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {$self->stop()};
+    $self->stopOnSignal();
 
     $self->debug('Started');
 
@@ -141,12 +141,38 @@ sub run {
 }
 
 ###############################################################################
-# Set stop flag for daemon so its loop will break on next iteration.
+# Set daemon's stop flag so its loop will break on next iteration.
 #
 sub stop {
     my $self = shift;
     $self->debug('Stopping by signal');
     $self->{running} = 0;
+}
+
+###############################################################################
+# Set daemon's stop flag so its loop will break on next iteration and call 'die' to interrupt any running process.
+#
+sub stopAndDie {
+    my $self = shift;
+    $self->stop();
+    die "Stop";
+}
+
+###############################################################################
+# Set handler for all known interruption signals to set daemon's stop flag so its loop will break on next iteration.
+#
+sub stopOnSignal {
+    my $self = shift;
+    $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {$self->stop()};
+}
+
+###############################################################################
+# Set handler for all known interruption signals to set daemon's stop flag so its loop will break on next iteration
+# and call 'die' to interrupt any running process.
+#
+sub stopAndDieOnSignal {
+    my $self = shift;
+    $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {$self->stopAndDie()};
 }
 
 ###############################################################################

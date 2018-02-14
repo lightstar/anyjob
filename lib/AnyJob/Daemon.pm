@@ -96,8 +96,13 @@ sub process {
     }
 
     if (scalar(@queues) > 0) {
-        my ($queue, $event) = $self->redis->blpop(@queues, $minDelay || 0);
-        if (defined($event)) {
+        my ($queue, $event);
+        eval {
+            $self->{daemon}->stopAndDieOnSignal();
+            ($queue, $event) = $self->redis->blpop(@queues, $minDelay || 0);
+        };
+        $self->{daemon}->stopOnSignal();
+        if (defined($queue) and defined($event)) {
             eval {
                 $event = decode_json($event);
             };

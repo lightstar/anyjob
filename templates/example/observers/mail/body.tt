@@ -37,7 +37,7 @@
     <br>
 
     [% IF job && node %]
-        Job: <b>[% job.label || job.type %]</b><br>
+        Job: <b>[% job.label || type %]</b><br>
         Node: <b>[% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %]</b><br>
         [% IF params && params.size %]
             Parameters:<br>

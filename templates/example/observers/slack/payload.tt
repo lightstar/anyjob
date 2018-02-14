@@ -22,7 +22,7 @@
         "fields": [
             [% IF job && node %]
                 {
-                    "title": "[% job.label || job.type %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])",
+                    "title": "[% job.label || type %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])",
                     "value": "
                         [% IF params && params.size %]
                             [% FOR param IN params.pairs %]
