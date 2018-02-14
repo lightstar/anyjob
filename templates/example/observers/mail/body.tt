@@ -74,8 +74,8 @@
             Messages:<br>
             [% FOREACH row IN log.list %]
                 [% IF row.time && row.message %]
-                    [% FOREACH message IN row.message.split("\n") %]
-                        &nbsp;&nbsp;[[% row.time %]] [% message %]<br>
+                    [% FOREACH line IN row.message.split("\n") %]
+                        &nbsp;&nbsp;[[% row.time %]] [% line %]<br>
                     [%  END %]
                 [% END %]
             [% END %]
