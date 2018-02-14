@@ -1,5 +1,7 @@
 Here are all job and jobset properties recognized by anyjob.
 
+creator           - creator name. Default: none.
+author            - author name (name of user who created this job or jobset). Default: none.
 observer          - private observer name. Default: none.
 response_url      - url where slack private events should go. Default: none.
 silent            - 0/1 flag. If set, events related to this job or jobset will not be processed by global observers.

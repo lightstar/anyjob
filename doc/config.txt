@@ -108,11 +108,10 @@ builders_path         - path to builders configuration relative to main configur
                         Default: 'builders'.
 templates_path        - path to observer event templates. Default: '{ANYJOB_PATH}/templates/current' where
                         '{ANYJOB_PATH}' is value of ANYJOB_PATH environment variable or '/opt/anyjob' by default.
-limit                 - default limit for every processing in loop iteration (i.e. maximum messages processed in one
-                        iteration, maximum timeouted jobs cleaned in one iteration, etc). Default: 10.
+limit                 - default limit for every processing in loop iteration (i.e. maximum timeouted jobs cleaned
+                        in one iteration, etc). Default: 10.
 clean_timeout         - default timeout in seconds for each active entity existing in storage. Default: 3600.
 clean_delay           - default delay in seconds between timeouted active entity cleanings. Default: 60.
-observe_delay         - default delay in seconds between global observer queue checkings. Default: none.
 
 5. Daemon configuration section.
 
@@ -169,15 +168,6 @@ create_delay          - delay in seconds between create queue checkings by node 
 create_limit          - maximum create messages processed by node controller in one iteration. By default global
                         'limit' setting is used.
 max_jobs              - maximum number of active jobs allowed on node. Infinite by default.
-global_create_delay   - delay in seconds between create queue checkings by global controller. Default: none.
-global_create_limit   - maximum create messages processed by global controller in one iteration. By default global
-                        'limit' setting is used.
-progress_delay        - delay in seconds between progress queue checkings by node controller. Default: none.
-progress_limit        - maximum progress messages processed by node controller in one iteration. By default global
-                        'limit' setting is used.
-global_progress_delay - delay in seconds between progress queue checkings by global controller. Default: none.
-global_progress_limit - maximum progress messages processed by global controller in one iteration. By default global
-                       'limit' setting is used.
 clean_delay           - delay in seconds between timeouted jobs checkings. By default global 'clean_delay'
                         setting is used.
 clean_limit           - maximum timeouted jobs cleaned in one iteration. By default global 'limit' setting is used.
@@ -264,9 +254,6 @@ nodes                 - list of node names separated by comma whose events will 
 event_filter          - javascript code which will run for every received event. If that code evaluates to true,
                         event will be processed, otherwise - skipped. Object with event data is accessible as variable
                         'event'. Default: none (all events will be processed).
-delay                 - delay in seconds between observer queue checkings. By default global 'observe_delay' setting
-                        is used.
-limit                 - maximum events processed in one iteration. If none specified, global 'limit' setting is used.
 log_clean_timeout     - timeout in seconds for cleaning too long existing collected logs. By default global
                         'clean_timeout' setting is used.
 log_clean_limit       - maximum log lists cleaned in one iteration. If none specified, global 'limit' setting is used.

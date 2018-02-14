@@ -5,7 +5,7 @@ package AnyJob::Constants::Defaults;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  27.12.2017
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -107,7 +107,7 @@ use constant DEFAULT_WORKER_METHOD => 'run';
 ###############################################################################
 # Default list of creator internal properties.
 #
-use constant DEFAULT_INTERNAL_PROPS => 'observer,response_url';
+use constant DEFAULT_INTERNAL_PROPS => 'creator,author,observer,response_url';
 
 ###############################################################################
 # Default slack api url.

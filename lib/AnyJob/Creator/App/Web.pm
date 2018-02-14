@@ -6,7 +6,7 @@ package AnyJob::Creator::App::Web;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  08.02.2018
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -103,7 +103,12 @@ post '/create' => http_basic_auth required => sub {
 
             debug('Create jobs using web app by user \'' . $user . '\': ' . encode_json($jobs));
 
-            if (defined(my $error = creator->createJobs($jobs, { observer => 'u' . $user }))) {
+            my $error = creator->createJobs($jobs, {
+                    creator  => 'web',
+                    author   => $user,
+                    observer => 'u' . $user
+                });
+            if (defined($error)) {
                 debug('Creating failed: ' . $error);
                 return {
                     success => 0,

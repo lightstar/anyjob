@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Dialog;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  08.02.2018
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -24,18 +24,20 @@ use base 'AnyJob::Creator::Builder::Slack::Base';
 #
 # Arguments:
 #     text        - string command text.
-#     user        - string user id.
+#     userId      - string user id.
 #     responseUrl - string response url.
 #     triggerId   - string trigger id.
+#     userName    - string user name.
 # Returns:
 #     string result to show user or undef.
 #
 sub command {
     my $self = shift;
     my $text = shift;
-    my $user = shift;
+    my $userId = shift;
     my $responseUrl = shift;
     my $triggerId = shift;
+    my $userName = shift;
 
     my ($job, $errors);
     ($job, undef, $errors) = $self->parent->parseJob($text);
@@ -43,7 +45,7 @@ sub command {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
 
-    unless ($self->parentAddon->checkJobAccess($user, $job)) {
+    unless ($self->parentAddon->checkJobAccess($userId, $job)) {
         return 'Error: access denied';
     }
 
@@ -56,14 +58,15 @@ sub command {
     $self->redis->zadd('anyjob:builds', time() + $self->getCleanTimeout(), $id);
     $self->redis->set('anyjob:build:' . $id, encode_json({
             type        => 'slack_dialog',
-            user        => $user,
+            userId      => $userId,
+            userName    => $userName,
             job         => $job,
             trigger     => $triggerId,
             responseUrl => $responseUrl
         }));
 
-    $self->debug('Create slack app dialog build \'' . $id . '\' by user \'' . $user . '\' with response url \'' .
-        $responseUrl . '\', trigger \'' . $triggerId . '\' and job: ' . encode_json($job));
+    $self->debug('Create slack app dialog build \'' . $id . '\' by user \'' . $userId . '\' (\'' . $userName .
+        '\') with response url \'' . $responseUrl . '\', trigger \'' . $triggerId . '\' and job: ' . encode_json($job));
 
     my $dialog = $self->getDialog($job, $id);
     unless (defined($self->showDialog($triggerId, $dialog))) {
@@ -92,7 +95,10 @@ sub dialogSubmission {
         return 'Error: no build';
     }
 
-    unless (defined($payload->{user}) and $self->parentAddon->checkJobAccess($payload->{user}->{id}, $build->{job})) {
+    unless (defined($payload->{user}) and
+        $payload->{user}->{id} eq $build->{userId} and
+        $payload->{user}->{name} eq $build->{userName}
+    ) {
         return 'Error: access denied';
     }
 
@@ -108,6 +114,8 @@ sub dialogSubmission {
     $self->debug('Create jobs using slack app dialog build: ' . encode_json($build));
 
     my $error = $self->parent->createJobs([ $build->{job} ], {
+            creator      => 'slack',
+            author       => $build->{userName},
             observer     => 'slack',
             response_url => $build->{responseUrl}
         });

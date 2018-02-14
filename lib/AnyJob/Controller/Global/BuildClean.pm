@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::BuildClean;
 #
 # Author:       LightStar
 # Created:      30.11.2017
-# Last update:  06.12.2017
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -17,18 +17,24 @@ use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT DEFAULT_CLEAN_DELAY);
 use base 'AnyJob::Controller::Global';
 
 ###############################################################################
-# Method called on each iteration of daemon loop.
+# Get delay before next 'process' method invocation.
+#
+# Arguments:
+#     integer delay in seconds or undef if 'process' method should not be called at all.
+#
+sub getProcessDelay {
+    my $self = shift;
+    return $self->calcProcessDelay($self->delay());
+}
+
+###############################################################################
+# Method called by daemon component on basis of provided delay.
 # Its main task is to collect timeouted builds and clean them.
 #
 sub process {
     my $self = shift;
 
     my $nodeConfig = $self->config->getNodeConfig() || {};
-    my $delay = $nodeConfig->{build_clean_delay} || $self->config->clean_delay || DEFAULT_CLEAN_DELAY;
-    if ($self->isProcessDelayed($delay)) {
-        return;
-    }
-
     my $limit = $nodeConfig->{build_clean_limit} || $self->config->limit || DEFAULT_LIMIT;
 
     my %ids = $self->redis->zrangebyscore('anyjob:builds', '-inf', time(), 'WITHSCORES',
@@ -37,6 +43,20 @@ sub process {
     foreach my $id (keys(%ids)) {
         $self->cleanBuild($id);
     }
+
+    return $self->updateProcessDelay($self->delay());
+}
+
+###############################################################################
+# Get delay between 'process' method invocations.
+#
+# Arguments:
+#     integer delay in seconds.
+#
+sub delay {
+    my $self = shift;
+    my $nodeConfig = $self->config->getNodeConfig() || {};
+    return  $nodeConfig->{build_clean_delay} || $self->config->clean_delay || DEFAULT_CLEAN_DELAY;
 }
 
 1;

@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Simple;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  08.02.2018
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -22,18 +22,20 @@ use base 'AnyJob::Creator::Builder::Slack::Base';
 #
 # Arguments:
 #     text        - string command text.
-#     user        - string user id.
+#     userId      - string user id.
 #     responseUrl - string response url.
 #     triggerId   - string trigger id.
+#     userName    - string user name.
 # Returns:
 #     string result to show user.
 #
 sub command {
     my $self = shift;
     my $text = shift;
-    my $user = shift;
+    my $userId = shift;
     my $responseUrl = shift;
     my $triggerId = shift;
+    my $userName = shift;
 
     my ($job, $errors);
     ($job, undef, $errors) = $self->parent->parseJob($text);
@@ -41,7 +43,7 @@ sub command {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
 
-    unless ($self->parentAddon->checkJobAccess($user, $job)) {
+    unless ($self->parentAddon->checkJobAccess($userId, $job)) {
         return 'Error: access denied';
     }
 
@@ -50,9 +52,12 @@ sub command {
         return 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors);
     }
 
-    $self->debug('Create jobs using slack app simple build by user \'' . $user . '\': ' . encode_json($job));
+    $self->debug('Create jobs using slack app simple build by user \'' . $userId . '\' (\'' . $userName .
+        '\'): ' . encode_json($job));
 
     my $error = $self->parent->createJobs([ $job ], {
+            creator      => 'slack',
+            author       => $userName,
             observer     => 'slack',
             response_url => $responseUrl
         });

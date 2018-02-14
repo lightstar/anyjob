@@ -18,6 +18,10 @@
 </h3>
 
 <div>
+    [% IF props && props.author %]
+        Author: <b>[% props.author %][% IF props.creator %] ([% props.creator %])[% END %]</b><br>
+    [% END %]
+
     [% IF jobset %]
         Job Set ID: <b>[% jobset %]</b><br>
     [% END %]
@@ -70,7 +74,9 @@
             Messages:<br>
             [% FOREACH row IN log.list %]
                 [% IF row.time && row.message %]
-                    &nbsp;&nbsp;[[% row.time %]] [% row.message %]<br>
+                    [% FOREACH message IN row.message.split("\n") %]
+                        &nbsp;&nbsp;[[% row.time %]] [% message %]<br>
+                    [%  END %]
                 [% END %]
             [% END %]
             <br>

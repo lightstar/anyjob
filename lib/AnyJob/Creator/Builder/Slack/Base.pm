@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Base;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  09.02.2018
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -186,18 +186,20 @@ sub commandHelp {
 #
 # Arguments:
 #     text        - string command text.
-#     user        - string user id.
+#     userId      - string user id.
 #     responseUrl - string response url.
 #     triggerId   - string trigger id.
+#     userName    - string user name.
 # Returns:
 #     string result to show user or undef.
 #
 sub command {
     my $self = shift;
     my $text = shift;
-    my $user = shift;
+    my $userId = shift;
     my $responseUrl = shift;
     my $triggerId = shift;
+    my $userName = shift;
 
     require Carp;
     Carp::confess('Need to be implemented in descendant');

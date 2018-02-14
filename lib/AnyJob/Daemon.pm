@@ -7,12 +7,14 @@ package AnyJob::Daemon;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  04.12.2017
+# Last update:  14.02.2018
 #
 
 use strict;
 use warnings;
 use utf8;
+
+use JSON::XS;
 
 use AnyJob::Constants::Defaults qw(DEFAULT_DELAY DEFAULT_PIDFILE);
 use AnyJob::Daemon::Base;
@@ -48,6 +50,13 @@ sub new {
 
     $self->{controllers} = AnyJob::Controller::Factory->new(parent => $self)->collect();
 
+    $self->{controllersByEventQueue} = {};
+    foreach my $controller (@{$self->{controllers}}) {
+        foreach my $eventQueue (@{$controller->getEventQueues()}) {
+            $self->{controllersByEventQueue}->{$eventQueue} = $controller;
+        }
+    }
+
     return $self;
 }
 
@@ -61,12 +70,43 @@ sub run {
 
 ###############################################################################
 # Process all daemon controllers.
+# Controllers 'process' method is called here on basis of delay specified by controllers themselves.
+# Queues are queried and controllers 'processEvent' method is called for each event.
 #
 sub process {
     my $self = shift;
 
+    my @queues;
+    my $minDelay;
     foreach my $controller (@{$self->{controllers}}) {
-        $controller->process();
+        my $delay = $controller->getProcessDelay();
+
+        if (defined($delay) and $delay == 0) {
+            $delay = $controller->process();
+            if (defined($delay) and $delay == 0) {
+                $delay = DEFAULT_DELAY;
+            }
+        }
+
+        if (defined($delay) and (not defined($minDelay) or $delay < $minDelay)) {
+            $minDelay = $delay;
+        }
+
+        push @queues, @{$controller->getActiveEventQueues()};
+    }
+
+    if (scalar(@queues) > 0) {
+        my ($queue, $event) = $self->redis->blpop(@queues, $minDelay || 0);
+        if (defined($event)) {
+            eval {
+                $event = decode_json($event);
+            };
+            if ($@) {
+                $self->error('Can\'t decode event from queue \'' . $queue . '\': ' . $event);
+            } else {
+                $self->{controllersByEventQueue}->{$queue}->processEvent($event);
+            }
+        }
     }
 }
 

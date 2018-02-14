@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  12.02.2018
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -32,10 +32,37 @@ our @MODULES = qw(
     );
 
 ###############################################################################
-# Method called on each iteration of daemon loop.
-# Its main task is to receive messages from new (or redirected) jobs queue and to process them.
-# There can be three types of messages.
-# 1. 'Create job' message. Sent by creator component or by global controller as part of creating jobset.
+# Get array of all possible event queues.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getEventQueues {
+    my $self = shift;
+    return [ 'anyjob:queue:' . $self->node ];
+}
+
+###############################################################################
+# Get array of event queues which needs to be listened right now.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getActiveEventQueues {
+    my $self = shift;
+
+    my $nodeConfig = $self->config->getNodeConfig() || {};
+    if (defined($nodeConfig->{max_jobs}) and $self->parent->getActiveJobCount() >= $nodeConfig->{max_jobs}) {
+        return [];
+    }
+
+    return $self->getEventQueues();
+}
+
+###############################################################################
+# Method called for each received event from new (or redirected) jobs queue.
+# There can be three types of events.
+# 1. 'Create job' event. Sent by creator component or by global controller as part of creating jobset.
 # Integer 'jobset' field is optional here. If provided, this job is part of jobset.
 # {
 #     type => '...',
@@ -43,49 +70,28 @@ our @MODULES = qw(
 #     params => { param1 => '...', param2 => '...', ... },
 #     props => { prop1 => '...', prop2 => '...', ... }
 # }
-# 2. 'Finish redirect job' message. Sent by controller of other node.
+# 2. 'Finish redirect job' event. Sent by controller of other node.
 # Here 'id' is integer job id (as job is already created), and 'from' is the name of source node.
 # {
 #     id => ...,
 #     from => '...'
 # }
-# 3. 'Finish redo job' message. Sent by progress controller of this node. Here 'redo' field contains
+# 3. 'Finish redo job' event. Sent by progress controller of this node. Here 'redo' field contains
 # integer job id.
 # {
 #     redo => ...
 # }
 #
-sub process {
+sub processEvent {
     my $self = shift;
+    my $event = shift;
 
-    my $nodeConfig = $self->config->getNodeConfig() || {};
-    if ($self->isProcessDelayed($nodeConfig->{create_delay})) {
-        return;
-    }
-
-    if (defined($nodeConfig->{max_jobs}) and $self->parent->getActiveJobCount() >= $nodeConfig->{max_jobs}) {
-        return;
-    }
-
-    my $limit = $nodeConfig->{create_limit} || $self->config->limit || DEFAULT_LIMIT;
-    my $count = 0;
-
-    while (my $job = $self->redis->lpop('anyjob:queue:' . $self->node)) {
-        eval {
-            $job = decode_json($job);
-        };
-        if ($@) {
-            $self->error('Can\'t decode job: ' . $job);
-        } elsif (exists($job->{from})) {
-            $self->finishRedirectJob($job);
-        } elsif (exists($job->{redo})) {
-            $self->finishRedoJob($job);
-        } else {
-            $self->createJob($job);
-        }
-
-        $count++;
-        last if $count >= $limit;
+    if (exists($event->{from})) {
+        $self->finishRedirectJob($event);
+    } elsif (exists($event->{redo})) {
+        $self->finishRedoJob($event);
+    } else {
+        $self->createJob($event);
     }
 }
 
@@ -93,16 +99,26 @@ sub process {
 # Create and run new job.
 #
 # Arguments:
-#     job - hash with job data.
+#     event - hash with create data.
+#             (see 'Create job' event in 'processEvent' method description about fields it can contain).
 #
 sub createJob {
     my $self = shift;
-    my $job = shift;
+    my $event = shift;
 
-    unless ($self->config->isJobSupported($job->{type})) {
-        $self->error('Job with type \'' . $job->{type} . '\' is not supported on this node');
+    unless ($self->config->isJobSupported($event->{type})) {
+        $self->error('Job with type \'' . $event->{type} . '\' is not supported on this node');
         return;
     }
+
+    my $job = {
+        type   => $event->{type},
+        (exists($event->{jobset}) ? (jobset => $event->{jobset}) : ()),
+        state  => STATE_BEGIN,
+        time   => time(),
+        params => $event->{params},
+        props  => $event->{props}
+    };
 
     $job->{state} = STATE_BEGIN;
     $job->{time} = time();
@@ -143,14 +159,14 @@ sub createJob {
 # and appropriate notification message is sent to it.
 #
 # Arguments:
-#     redirect - hash with redirect data. It contains integer 'id' field with job id
-#                and string 'from' field with name of source node.
+#     event - hash with redirect data. It contains integer 'id' field with job id
+#             and string 'from' field with name of source node.
 #
 sub finishRedirectJob {
     my $self = shift;
-    my $redirect = shift;
+    my $event = shift;
 
-    my $id = delete $redirect->{id};
+    my $id = delete $event->{id};
 
     my $job = $self->getJob($id);
     unless (defined($job)) {
@@ -162,11 +178,11 @@ sub finishRedirectJob {
         return;
     }
 
-    $self->redis->zrem('anyjob:jobs:' . $redirect->{from}, $id);
+    $self->redis->zrem('anyjob:jobs:' . $event->{from}, $id);
     $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
     $self->parent->incActiveJobCount();
 
-    $self->redis->rpush('anyjob:progressq:' . $redirect->{from}, encode_json({
+    $self->redis->rpush('anyjob:progressq:' . $event->{from}, encode_json({
             redirected => $id
         }));
 
@@ -181,13 +197,13 @@ sub finishRedirectJob {
 # Finish redo job operation.
 #
 # Arguments:
-#     redo - hash with redo data. It contains integer 'redo' field with job id.
+#     event - hash with redo data. It contains integer 'redo' field with job id.
 #
 sub finishRedoJob {
     my $self = shift;
-    my $redo = shift;
+    my $event = shift;
 
-    my $id = $redo->{redo};
+    my $id = $event->{redo};
     my $job = $self->getJob($id);
     unless (defined($job)) {
         return;

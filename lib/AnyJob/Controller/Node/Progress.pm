@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  28.12.2017
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -20,31 +20,57 @@ use AnyJob::Constants::Events qw(EVENT_PROGRESS EVENT_REDIRECT EVENT_FINISH);
 use base 'AnyJob::Controller::Node';
 
 ###############################################################################
-# Method called on each iteration of daemon loop.
-# Its main task is to receive messages from job progress queue and to process them.
-# There can be five types of messages.
-# 1. 'Finish job' message. Sent by worker component.
+# Get array of all possible event queues.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getEventQueues {
+    my $self = shift;
+    return [ 'anyjob:progressq:' . $self->node ];
+}
+
+###############################################################################
+# Get array of event queues which needs to be listened right now.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getActiveEventQueues {
+    my $self = shift;
+
+    if ($self->parent->getActiveJobCount() == 0) {
+        return [];
+    }
+
+    return $self->getEventQueues();
+}
+
+###############################################################################
+# Method called for each received event from job progress queue.
+# There can be five types of events.
+# 1. 'Finish job' event. Sent by worker component.
 # {
 #     id => ...,
 #     success => 0/1,
 #     message => '...'
 # }
-# 2. 'Redirect job' message. Sent by worker component. Field 'redirect' here contains name of destination node.
+# 2. 'Redirect job' event. Sent by worker component. Field 'redirect' here contains name of destination node.
 # {
 #     id => ...,
 #     redirect => '...'
 # }
-# 3. 'Job is redirected' message. Sent by destination node controller after job finished redirecting.
+# 3. 'Job is redirected' event. Sent by destination node controller after job finished redirecting.
 # Field 'redirected' here contains id of redirected job.
 # {
 #     redirected => ...
 # }
-# 4. 'Redo job' message. Sent by worker component.
+# 4. 'Redo job' event. Sent by worker component.
 # {
 #     id => ...,
 #     redo => 1
 # }
-# 5. 'Progress job' message. Sent by worker component.
+# 5. 'Progress job' event. Sent by worker component.
 # At least one of fields 'state', 'progress' or 'log' required here.
 # Field 'time' is log message time in integer unix timestamp format.
 # {
@@ -54,41 +80,20 @@ use base 'AnyJob::Controller::Node';
 #     log => { time => ..., message => '...' }
 # }
 #
-sub process {
+sub processEvent {
     my $self = shift;
+    my $event = shift;
 
-    if ($self->parent->getActiveJobCount() == 0) {
-        return;
-    }
-
-    my $nodeConfig = $self->config->getNodeConfig() || {};
-    if ($self->isProcessDelayed($nodeConfig->{progress_delay})) {
-        return;
-    }
-
-    my $limit = $nodeConfig->{progress_limit} || $self->config->limit || DEFAULT_LIMIT;
-    my $count = 0;
-
-    while (my $progress = $self->redis->lpop('anyjob:progressq:' . $self->node)) {
-        eval {
-            $progress = decode_json($progress);
-        };
-        if ($@) {
-            $self->error('Can\'t decode progress: ' . $progress);
-        } elsif (exists($progress->{success})) {
-            $self->finishJob($progress);
-        } elsif (exists($progress->{redirect})) {
-            $self->redirectJob($progress);
-        } elsif (exists($progress->{redirected})) {
-            $self->parent->updateActiveJobCount();
-        } elsif (exists($progress->{redo})) {
-            $self->redoJob($progress);
-        } else {
-            $self->progressJob($progress);
-        }
-
-        $count++;
-        last if $count >= $limit;
+    if (exists($event->{success})) {
+        $self->finishJob($event);
+    } elsif (exists($event->{redirect})) {
+        $self->redirectJob($event);
+    } elsif (exists($event->{redirected})) {
+        $self->parent->updateActiveJobCount();
+    } elsif (exists($event->{redo})) {
+        $self->redoJob($event);
+    } else {
+        $self->progressJob($event);
     }
 }
 
@@ -96,14 +101,14 @@ sub process {
 # Progress job.
 #
 # Arguments:
-#     progress - hash with progress data
-#               (see 'Progress job' message in 'process' method description about fields it can contain).
+#     event - hash with progress data
+#             (see 'Progress job' event in 'processEvent' method description about fields it can contain).
 #
 sub progressJob {
     my $self = shift;
-    my $progress = shift;
+    my $event = shift;
 
-    my $id = delete $progress->{id};
+    my $id = delete $event->{id};
 
     my $job = $self->getJob($id);
     unless (defined($job)) {
@@ -112,17 +117,17 @@ sub progressJob {
 
     $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
 
-    $self->debug('Progress job \'' . $id . '\': ' . encode_json($progress));
+    $self->debug('Progress job \'' . $id . '\': ' . encode_json($event));
 
     my $jobChanged = 0;
 
-    if (exists($progress->{state})) {
-        $job->{state} = $progress->{state};
+    if (exists($event->{state})) {
+        $job->{state} = $event->{state};
         $jobChanged = 1;
     }
 
-    if (exists($progress->{progress})) {
-        $job->{progress} = $progress->{progress};
+    if (exists($event->{progress})) {
+        $job->{progress} = $event->{progress};
         $jobChanged = 1;
     }
 
@@ -131,7 +136,7 @@ sub progressJob {
     }
 
     if (exists($job->{jobset})) {
-        $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
+        $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
     }
 
     $self->sendEvent(EVENT_PROGRESS, {
@@ -140,7 +145,7 @@ sub progressJob {
             type     => $job->{type},
             params   => $job->{params},
             props    => $job->{props},
-            progress => $progress
+            progress => $event
         });
 }
 
@@ -148,36 +153,36 @@ sub progressJob {
 # Redirect job.
 #
 # Arguments:
-#     progress - hash with progress data
-#               (see 'Redirect job' message in 'process' method description about fields it can contain).
+#     event - hash with progress data
+#             (see 'Redirect job' event in 'processEvent' method description about fields it can contain).
 #
 sub redirectJob {
     my $self = shift;
-    my $progress = shift;
+    my $event = shift;
 
-    unless (defined($progress->{redirect})) {
+    unless (defined($event->{redirect})) {
         return;
     }
 
-    my $id = delete $progress->{id};
+    my $id = delete $event->{id};
 
     my $job = $self->getJob($id);
     unless (defined($job)) {
         return;
     }
 
-    unless ($self->config->isJobSupported($job->{type}, $progress->{redirect})) {
+    unless ($self->config->isJobSupported($job->{type}, $event->{redirect})) {
         $self->error('Job with type \'' . $job->{type} . '\' is not supported on node \'' .
-            $progress->{redirect} . '\'');
+            $event->{redirect} . '\'');
         return;
     }
 
     $self->redis->zadd('anyjob:jobs:' . $self->node, time() + $self->getJobCleanTimeout($job), $id);
 
-    $self->debug('Redirect job \'' . $id . '\': ' . encode_json($progress));
+    $self->debug('Redirect job \'' . $id . '\': ' . encode_json($event));
 
     if (exists($job->{jobset})) {
-        $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
+        $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
     }
 
     $self->sendEvent(EVENT_REDIRECT, {
@@ -186,28 +191,28 @@ sub redirectJob {
             type     => $job->{type},
             params   => $job->{params},
             props    => $job->{props},
-            progress => $progress
+            progress => $event
         });
 
     my $redirect = {
         id   => $id,
         from => $self->node
     };
-    $self->redis->rpush('anyjob:queue:' . $progress->{redirect}, encode_json($redirect));
+    $self->redis->rpush('anyjob:queue:' . $event->{redirect}, encode_json($redirect));
 }
 
 ###############################################################################
 # Redo job.
 #
 # Arguments:
-#     progress - hash with redo data
-#               (see 'Redo job' message in 'process' method description about fields it can contain).
+#     event - hash with redo data
+#             (see 'Redo job' event in 'processEvent' method description about fields it can contain).
 #
 sub redoJob {
     my $self = shift;
-    my $progress = shift;
+    my $event = shift;
 
-    my $id = $progress->{id};
+    my $id = $event->{id};
     $self->debug('Redo job \'' . $id . '\'');
 
     my $redo = {
@@ -220,27 +225,27 @@ sub redoJob {
 # Finish job.
 #
 # Arguments:
-#     progress - hash with progress data
-#               (see 'Finish job' message in 'process' method description about fields it can contain).
+#     event - hash with progress data
+#             (see 'Finish job' event in 'processEvent' method description about fields it can contain).
 #
 sub finishJob {
     my $self = shift;
-    my $progress = shift;
+    my $event = shift;
 
-    my $id = delete $progress->{id};
+    my $id = delete $event->{id};
 
     my $job = $self->getJob($id);
     unless (defined($job)) {
         return;
     }
 
-    $self->debug('Job \'' . $id . '\' ' . ($progress->{success} ? 'successfully finished' : 'finished with error') .
-        ': \'' . $progress->{message} . '\'');
+    $self->debug('Job \'' . $id . '\' ' . ($event->{success} ? 'successfully finished' : 'finished with error') .
+        ': \'' . $event->{message} . '\'');
 
     $self->cleanJob($id);
 
     if ($job->{jobset}) {
-        $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
+        $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
     }
 
     $self->sendEvent(EVENT_FINISH, {
@@ -249,8 +254,8 @@ sub finishJob {
             type    => $job->{type},
             params  => $job->{params},
             props   => $job->{props},
-            success => $progress->{success},
-            message => $progress->{message}
+            success => $event->{success},
+            message => $event->{message}
         });
 }
 

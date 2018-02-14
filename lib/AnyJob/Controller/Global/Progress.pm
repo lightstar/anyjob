@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  06.12.2017
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -21,17 +21,43 @@ use AnyJob::Constants::States qw(STATE_BEGIN STATE_FINISHED);
 use base 'AnyJob::Controller::Global';
 
 ###############################################################################
-# Method called on each iteration of daemon loop.
-# Its main task is to receive messages from jobset progress queue and to process them.
-# There can be two types of messages.
-# 1. 'Progress jobset' message. Sent by worker component.
+# Get array of all possible event queues.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getEventQueues {
+    my $self = shift;
+    return [ 'anyjob:progressq' ];
+}
+
+###############################################################################
+# Get array of event queues which needs to be listened right now.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getActiveEventQueues {
+    my $self = shift;
+
+    if ($self->parent->getActiveJobSetCount() == 0) {
+        return [];
+    }
+
+    return $self->getEventQueues();
+}
+
+###############################################################################
+# Method called for each received event from jobset progress queue.
+# There can be two types of events.
+# 1. 'Progress jobset' event. Sent by worker component.
 # At least one of fields 'state' or 'progress' required here.
 # {
 #     id => ...,
 #     state => '...',
 #     progress => '...',
 # }
-# 2. 'Progress job in jobset' message. Sent by node-binded controller which creates and progresses jobs.
+# 2. 'Progress job in jobset' event. Sent by node-binded controller which creates and progresses jobs.
 # Here 'id' field is integer jobset id, and 'job' field - integer job id.
 # At least one of fields 'state', 'progress', 'log', 'redirect' or 'success' should be in 'jobProgress' hash.
 # Field 'message' should be here only along with 'success' field.
@@ -54,35 +80,14 @@ use base 'AnyJob::Controller::Global';
 #     }
 # }
 #
-sub process {
+sub processEvent {
     my $self = shift;
+    my $event = shift;
 
-    if ($self->parent->getActiveJobSetCount() == 0) {
-        return;
-    }
-
-    my $nodeConfig = $self->config->getNodeConfig() || {};
-    if ($self->isProcessDelayed($nodeConfig->{global_progress_delay})) {
-        return;
-    }
-
-    my $limit = $nodeConfig->{global_progress_limit} || $self->config->limit || DEFAULT_LIMIT;
-    my $count = 0;
-
-    while (my $progress = $self->redis->lpop('anyjob:progressq')) {
-        eval {
-            $progress = decode_json($progress);
-        };
-        if ($@) {
-            $self->error('Can\'t decode progress: ' . $progress);
-        } elsif (exists($progress->{job})) {
-            $self->progressJobInJobSet($progress);
-        } else {
-            $self->progressJobSet($progress);
-        }
-
-        $count++;
-        last if $count >= $limit;
+    if (exists($event->{job})) {
+        $self->progressJobInJobSet($event);
+    } else {
+        $self->progressJobSet($event);
     }
 }
 
@@ -90,33 +95,33 @@ sub process {
 # Progress job inside jobset. Finish and clean jobset if all jobs in it are finished.
 #
 # Arguments:
-#     progress - hash with progress data.
-#                (see 'Progress job in jobset' message in 'process' method description about fields it can contain).
+#     event - hash with progress data.
+#             (see 'Progress job in jobset' event in 'processEvent' method description about fields it can contain).
 #
 sub progressJobInJobSet {
     my $self = shift;
-    my $progress = shift;
+    my $event = shift;
 
-    my $id = delete $progress->{id};
+    my $id = delete $event->{id};
 
     my $jobSet = $self->getJobSet($id);
     unless (defined($jobSet)) {
         return;
     }
 
-    my $jobProgress = $progress->{jobProgress};
-    my $job = $self->findJobInJobSet($progress->{job}, $jobSet, $jobProgress);
+    my $jobProgress = $event->{jobProgress};
+    my $job = $self->findJobInJobSet($event->{job}, $jobSet, $jobProgress);
     unless (defined($job)) {
         return;
     }
 
     $self->redis->zadd('anyjob:jobsets', time() + $self->getJobSetCleanTimeout($jobSet), $id);
 
-    $self->debug('Progress jobset \'' . $id . '\', job\'s \'' . $progress->{job} . '\' progress: ' .
+    $self->debug('Progress jobset \'' . $id . '\', job\'s \'' . $event->{job} . '\' progress: ' .
         encode_json($jobProgress));
 
     unless (exists($job->{id})) {
-        $job->{id} = $progress->{job};
+        $job->{id} = $event->{job};
     }
 
     if (exists($jobProgress->{success})) {
@@ -161,7 +166,8 @@ sub progressJobInJobSet {
 #     jobId       - integer job id.
 #     jobSet      - hash with jobset data.
 #     jobProgress - hash with job progress data.
-#                   (see 'Progress job in jobset' message in 'process' method description about fields it can contain).
+#                   (see 'Progress job in jobset' event in 'processEvent' method description about fields it can
+#                   contain).
 # Returns:
 #     hash with job data or undef if job not found.
 #
@@ -188,14 +194,14 @@ sub findJobInJobSet {
 # Progress jobset.
 #
 # Arguments:
-#     progress - hash with progress data.
-#                (see 'Progress jobset' message in 'process' method description about fields it can contain).
+#     event - hash with progress data.
+#             (see 'Progress jobset' event in 'processEvent' method description about fields it can contain).
 #
 sub progressJobSet {
     my $self = shift;
-    my $progress = shift;
+    my $event = shift;
 
-    my $id = delete $progress->{id};
+    my $id = delete $event->{id};
 
     my $jobSet = $self->getJobSet($id);
     unless (defined($jobSet)) {
@@ -204,14 +210,14 @@ sub progressJobSet {
 
     $self->redis->zadd('anyjob:jobsets', time() + $self->getJobSetCleanTimeout($jobSet), $id);
 
-    $self->debug('Progress jobset \'' . $id . '\': ' . encode_json($progress));
+    $self->debug('Progress jobset \'' . $id . '\': ' . encode_json($event));
 
-    if (exists($progress->{state})) {
-        $jobSet->{state} = $progress->{state};
+    if (exists($event->{state})) {
+        $jobSet->{state} = $event->{state};
     }
 
-    if (exists($progress->{progress})) {
-        $jobSet->{progress} = $progress->{progress};
+    if (exists($event->{progress})) {
+        $jobSet->{progress} = $event->{progress};
     }
 
     $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
@@ -219,7 +225,7 @@ sub progressJobSet {
     $self->sendEvent(EVENT_PROGRESS_JOBSET, {
             id       => $id,
             props    => $jobSet->{props},
-            progress => $progress
+            progress => $event
         });
 }
 

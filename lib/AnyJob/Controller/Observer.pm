@@ -4,11 +4,11 @@ package AnyJob::Controller::Observer;
 # Controller which manages observing and processing events in one specific queue.
 # Only one controller in whole system must run for each such queue.
 # It is abstract class as there may be may ways to deal with that events and such details must be handled by
-# descendants.
+# descendants in 'processEvent' method.
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  05.12.2017
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -44,6 +44,8 @@ sub new {
     my $config = $self->getObserverConfig() || {};
     $self->{eventFilter} = AnyJob::EventFilter->new(filter => $config->{event_filter});
 
+    $self->updateNextCleanTime();
+
     return $self;
 }
 
@@ -68,10 +70,18 @@ sub getObserverConfig {
 }
 
 ###############################################################################
-# Method called on each iteration of daemon loop.
-# Its main task is to receive events from this observer queue and to process them using abstract method 'processEvent'
-# which must be implemented in descendants.
-# Also it calls 'cleanLogs' to clean too long stayed collected logs (see below).
+# Get array of all possible event queues.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getEventQueues {
+    my $self = shift;
+    return [ 'anyjob:observerq:' . $self->name ];
+}
+
+###############################################################################
+# Abstract method called for each received event from this observer queue.
 # There are two types of events: job-related and jobset-related.
 # 1. Job-related events have this structure (many fields are optional here, related to specific event types
 # or even conflicting with each other):
@@ -108,47 +118,46 @@ sub getObserverConfig {
 #     progress => { state => '...', progress => '...' }
 # }
 #
-sub process {
-    my $self = shift;
-
-    my $observerConfig = $self->getObserverConfig() || {};
-
-    if ($self->isProcessDelayed($observerConfig->{delay} || $self->config->observe_delay)) {
-        return;
-    }
-
-    my $limit = $observerConfig->{limit} || $self->config->limit || DEFAULT_LIMIT;
-    my $count = 0;
-
-    while (my $event = $self->redis->lpop('anyjob:observerq:' . $self->name)) {
-        eval {
-            $event = decode_json($event);
-        };
-        if ($@) {
-            $self->error('Can\'t decode event: ' . $event);
-        } else {
-            $self->processEvent($event);
-        }
-
-        $count++;
-        last if $count >= $limit;
-    }
-
-    $self->cleanLogs();
-}
-
-###############################################################################
-# Abstract method which will be called to process specific event.
-#
-# Arguments:
-#     event - hash with event data.
-#
 sub processEvent {
     my $self = shift;
     my $event = shift;
 
     require Carp;
     Carp::confess('Need to be implemented in descendant');
+}
+
+###############################################################################
+# Get delay before next 'process' method invocation.
+#
+# Arguments:
+#     integer delay in seconds or undef if 'process' method should not be called at all.
+#
+sub getProcessDelay {
+    my $self = shift;
+
+    unless (defined($self->{nextCleanTime})) {
+        return undef;
+    }
+
+    my $delay = $self->{nextCleanTime} - time();
+    if ($delay < 0) {
+        $delay = 0;
+    }
+
+    return $delay;
+}
+
+###############################################################################
+# Method called by daemon component on basis of provided delay.
+# Its main task is to clean too long stayed collected logs.
+#
+# Returns:
+#     integer delay in seconds before the next 'process' method invocation.
+#
+sub process {
+    my $self = shift;
+    $self->cleanLogs();
+    return $self->getProcessDelay();
 }
 
 ###############################################################################
@@ -205,12 +214,17 @@ sub saveLog {
     }
 
     my $observerConfig = $self->getObserverConfig() || {};
-    my $clean_timeout = $event->{props}->{log_clean_timeout} || $observerConfig->{log_clean_timeout} ||
+    my $cleanTimeout = $event->{props}->{log_clean_timeout} || $observerConfig->{log_clean_timeout} ||
         $self->config->clean_timeout || DEFAULT_CLEAN_TIMEOUT;
 
-    $self->redis->zadd('anyjob:observer:' . $self->name . ':log', time() + $clean_timeout, $event->{id});
+    my $cleanTime = time() + $cleanTimeout;
+    $self->redis->zadd('anyjob:observer:' . $self->name . ':log', time() + $cleanTime, $event->{id});
     $self->redis->rpush('anyjob:observer:' . $self->name . ':log:' . $event->{id},
         encode_json($event->{progress}->{log}));
+
+    unless (defined($self->{nextCleanTime}) and $self->{nextCleanTime} < $cleanTime) {
+        $self->{nextCleanTime} = $cleanTime;
+    }
 }
 
 ###############################################################################
@@ -252,6 +266,7 @@ sub collectLogs {
     }
 
     $self->cleanLog($event->{id});
+    $self->updateNextCleanTime();
 
     return \@logs;
 }
@@ -268,9 +283,15 @@ sub cleanLogs {
     my %ids = $self->redis->zrangebyscore('anyjob:observer:' . $self->name . ':log', '-inf', time(),
         'WITHSCORES', 'LIMIT', '0', $limit);
 
+    unless (scalar(keys(%ids))) {
+        return;
+    }
+
     foreach my $id (keys(%ids)) {
         $self->cleanLog($id);
     }
+
+    $self->updateNextCleanTime();
 }
 
 ###############################################################################
@@ -287,6 +308,16 @@ sub cleanLog {
 
     $self->redis->zrem('anyjob:observer:' . $self->name . ':log', $id);
     $self->redis->del('anyjob:observer:' . $self->name . ':log:' . $id);
+}
+
+###############################################################################
+# Retrieve and save internally time until next timeouted logs clean.
+#
+sub updateNextCleanTime {
+    my $self = shift;
+    my $time;
+    (undef, $time) = $self->redis->zrangebyscore('anyjob:observer:' . $self->name . ':log', '0', '0', 'WITHSCORES');
+    $self->{nextCleanTime} = $time;
 }
 
 ###############################################################################

@@ -2,11 +2,11 @@ package AnyJob::Controller::Base;
 
 ###############################################################################
 # Abstract base class for any controller that run inside daemon component.
-# Each controller performs its own specific task in 'run' method constantly called in daemon loop.
+# Each controller performs its own specific task in 'processEvent' and 'process' methods.
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  05.12.2017
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -227,31 +227,102 @@ sub getJobSetCleanTimeout {
 }
 
 ###############################################################################
-# Check if current execution of 'process' method should be delayed depending on provided delay value,
-# which is actually minimal interval between executions.
+# Get array of all possible event queues which may be listened by this controller. None is returned here
+# so this method should be overriden if controller wants to listen some.
 #
-# Arguments:
-#     delay - integer delay in seconds.
 # Returns:
-#     0/1 flag determining if execution should be delayed.
+#     array of string queue names.
 #
-sub isProcessDelayed {
+sub getEventQueues {
     my $self = shift;
-    my $delay = shift;
-
-    if (defined($delay)) {
-        my $time = time();
-        if ($time - ($self->{lastTime} || 0) < $delay) {
-            return 1;
-        }
-        $self->{lastTime} = $time;
-    }
-
-    return 0;
+    return [];
 }
 
 ###############################################################################
-# Abstract method which will be called on each iteration of daemon loop.
+# Get array of event queues which needs to be listened by this controller right now.
+# This array must contain subset of array returned by getEventQueues method.
+# By default all event queues are returned.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getActiveEventQueues {
+    my $self = shift;
+    return $self->getEventQueues();
+}
+
+###############################################################################
+# Abstract method which will be called by daemon component to process one specific event.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub processEvent {
+    my $self = shift;
+    my $event = shift;
+
+    require Carp;
+    Carp::confess('Need to be implemented in descendant');
+}
+
+###############################################################################
+# Get delay before next 'process' method invocation. None (undef) by default.
+# Should be fast as it will be called very often.
+#
+# Returns:
+#     integer delay in seconds or undef if 'process' method should not be called at all.
+#
+sub getProcessDelay {
+    my $self = shift;
+    return undef;
+}
+
+###############################################################################
+# Calculate the actual delay before next 'process' method invocation based on provided delay from configuration and
+# time of the last such invocation.
+#
+# Arguments:
+#     delay - integer delay in seconds between 'process' method invocations.
+# Returns:
+#     integer delay in seconds before the next 'process' method invocation.
+#
+sub calcProcessDelay {
+    my $self = shift;
+    my $delay = shift;
+
+    unless (defined($delay) and defined($self->{lastTime})) {
+        return 0;
+    }
+
+    $delay -= time() - $self->{lastTime};
+    if ($delay < 0) {
+        $delay = 0;
+    }
+
+    return $delay;
+}
+
+###############################################################################
+# Update time of the 'process' method invocation. Should be called in every 'process' method if calcProcessDelay
+# method is used.
+#
+# Arguments:
+#     delay - integer delay in seconds between 'process' method invocations.
+# Returns:
+#     integer delay in seconds before the next 'process' method invocation.
+#
+sub updateProcessDelay {
+    my $self = shift;
+    my $delay = shift;
+    $self->{lastTime} = time();
+    return $delay;
+}
+
+###############################################################################
+# Abstract method which will be called by daemon component on basis of provided delay.
+#
+# Returns:
+#     integer delay in seconds before the next 'process' method invocation.
 #
 sub process {
     my $self = shift;

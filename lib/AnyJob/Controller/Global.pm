@@ -6,7 +6,7 @@ package AnyJob::Controller::Global;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  28.12.2017
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -31,12 +31,22 @@ our @MODULES = qw(
     );
 
 ###############################################################################
-# Method called on each iteration of daemon loop.
-# Its main task is to receive messages from new jobsets queue and to process them.
-# It also can receive messages with only one job inside redirecting it to queue of the right node (for that
+# Get array of all possible event queues.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getEventQueues {
+    my $self = shift;
+    return [ 'anyjob:queue' ];
+}
+
+###############################################################################
+# Method called for each received event from new jobsets queue.
+# It also can process events with only one job inside redirecting it to queue of the right node (for that
 # it must contain string 'node' field).
-# There can be two types of messages.
-# 1. 'Create jobset' message. Sent by creator component.
+# There can be two types of events.
+# 1. 'Create jobset' event. Sent by creator component.
 # {
 #     jobs => [ {
 #         type => '...',
@@ -46,7 +56,7 @@ our @MODULES = qw(
 #     }, ... ]
 #     props => { prop1 => '...', prop2 => '...', ... }
 # }
-# 2. 'Create job' message. Sent by creator component. Obviously provided 'node' field is required here.
+# 2. 'Create job' event. Sent by creator component. Obviously provided 'node' field is required here.
 # {
 #     type => '...',
 #     node => '...',
@@ -54,36 +64,19 @@ our @MODULES = qw(
 #     props => { prop1 => '...', prop2 => '...', ... }
 # }
 #
-sub process {
+sub processEvent {
     my $self = shift;
+    my $event = shift;
 
-    my $nodeConfig = $self->config->getNodeConfig() || {};
-    if ($self->isProcessDelayed($nodeConfig->{global_create_delay})) {
-        return;
-    }
-
-    my $limit = $nodeConfig->{global_create_limit} || $self->config->limit || DEFAULT_LIMIT;
-    my $count = 0;
-
-    while (my $job = $self->redis->lpop('anyjob:queue')) {
-        eval {
-            $job = decode_json($job);
-        };
-        if ($@) {
-            $self->error('Can\'t decode job: ' . $job);
-        } elsif (exists($job->{node})) {
-            my $node = delete $job->{node};
-            if (defined($node) and $node ne '') {
-                $self->redis->rpush('anyjob:queue:' . $node, encode_json($job));
-            } else {
-                $self->error('No node for job: ' . encode_json($job));
-            }
-        } elsif (exists($job->{jobset})) {
-            $self->createJobSet($job);
+    if (exists($event->{node})) {
+        my $node = delete $event->{node};
+        if (defined($node) and $node ne '') {
+            $self->redis->rpush('anyjob:queue:' . $node, encode_json($event));
+        } else {
+            $self->error('No node in event: ' . encode_json($event));
         }
-
-        $count++;
-        last if $count >= $limit;
+    } elsif (exists($event->{jobset})) {
+        $self->createJobSet($event);
     }
 }
 
@@ -91,22 +84,27 @@ sub process {
 # Register new jobset and create all jobs contained inside.
 #
 # Arguments:
-#     jobSet - hash with jobset data.
+#     event - hash with create data.
 #
 sub createJobSet {
     my $self = shift;
-    my $jobSet = shift;
+    my $event = shift;
 
-    foreach my $job (@{$jobSet->{jobs}}) {
+    foreach my $job (@{$event->{jobs}}) {
         unless ($self->config->isJobSupported($job->{type}, $job->{node})) {
             $self->error('Job with type \'' . $job->{type} . '\' is not supported on node \'' . $job->{node} .
-                '\'. Entire jobset discarded: ' . encode_json($jobSet));
+                '\'. Entire jobset discarded: ' . encode_json($event));
             return;
         }
     }
 
-    $jobSet->{state} = STATE_BEGIN;
-    $jobSet->{time} = time();
+    my $jobSet = {
+        jobs  => $event->{jobs},
+        props => $event->{props},
+        state => STATE_BEGIN,
+        time  => time()
+    };
+
     foreach my $job (@{$jobSet->{jobs}}) {
         $job->{state} = STATE_BEGIN;
     }

@@ -16,6 +16,9 @@
         [% ELSIF (event == 'finish' && !success) || event == 'clean' || event == 'cleanJobSet' %]
             "color": "danger",
         [% END %]
+        [% IF props && props.author %]
+            "author_name": "[% props.author %][% IF props.creator && props.creator != 'slack' %] ([% props.creator %])[% END %]",
+        [%  END %]
         "fields": [
             [% IF job && node %]
                 {

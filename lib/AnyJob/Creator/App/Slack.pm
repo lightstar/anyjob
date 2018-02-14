@@ -5,7 +5,7 @@ package AnyJob::Creator::App::Slack;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  09.02.2018
+# Last update:  14.02.2018
 #
 
 use strict;
@@ -93,8 +93,8 @@ post '/cmd' => sub {
             send_as html => 'Error: wrong token';
         }
 
-        my $user = $params->get('user_id');
-        unless ($slack->isUserAllowed($user)) {
+        my $userId = $params->get('user_id');
+        unless ($slack->isUserAllowed($userId)) {
             return {
                 text => 'Error: access denied'
             };
@@ -111,7 +111,8 @@ post '/cmd' => sub {
             return $builder->commandHelp();
         }
 
-        my $response = $builder->command($text, $user, $params->get('response_url'), $params->get('trigger_id'));
+        my $response = $builder->command($text, $userId, $params->get('response_url'), $params->get('trigger_id'),
+            $params->get('user_name'));
         if (defined($response)) {
             return ref($response) eq '' ? { text => $response } : $response;
         }
