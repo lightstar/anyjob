@@ -112,6 +112,12 @@ sub process {
                 $self->{controllersByEventQueue}->{$queue}->processEvent($event);
             }
         }
+    } else {
+        eval {
+            $self->{daemon}->stopAndDieOnSignal();
+            sleep($minDelay || DEFAULT_DELAY);
+        };
+        $self->{daemon}->stopOnSignal();
     }
 }
 

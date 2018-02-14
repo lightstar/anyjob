@@ -28,6 +28,17 @@ sub getEventQueues {
 }
 
 ###############################################################################
+# Get array of event queues which needs to be listened right now.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getActiveEventQueues {
+    my $self = shift;
+    return [];
+}
+
+###############################################################################
 # Get delay before next 'process' method invocation.
 #
 # Arguments:
