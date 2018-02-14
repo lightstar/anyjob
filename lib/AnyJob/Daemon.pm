@@ -43,7 +43,7 @@ sub new {
     $self->{daemon} = AnyJob::Daemon::Base->new(
         detached  => defined($config->{detached}) ? ($config->{detached} ? 1 : 0) : 1,
         pidfile   => $config->{pidfile} || DEFAULT_PIDFILE,
-        delay     => $config->{delay} || DEFAULT_DELAY,
+        delay     => 0,
         logger    => $self->logger,
         processor => $self
     );
