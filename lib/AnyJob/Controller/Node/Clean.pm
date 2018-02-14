@@ -20,6 +20,17 @@ use AnyJob::Constants::Events qw(EVENT_CLEAN);
 use base 'AnyJob::Controller::Node';
 
 ###############################################################################
+# Get array of all possible event queues.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getEventQueues {
+    my $self = shift;
+    return [];
+}
+
+###############################################################################
 # Get delay before next 'process' method invocation.
 #
 # Arguments:
