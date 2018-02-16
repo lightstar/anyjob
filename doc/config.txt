@@ -119,6 +119,8 @@ Daemon configuration section is named 'daemon'. Below are all recognizible keys.
 
 detached              - 0/1 flag. If set, daemon will detach at start, i.e. fork, unbind from console, etc. Default: 1.
 pidfile               - path to file where daemon process pid is stored. Default: '/var/run/anyjobd.pid'.
+max_delay             - maximum delay in seconds between daemon loops. You can set this higher for more performance
+                        but daemon stopping and restarting might require more time. Default: 1.
 
 6. Worker configuration section.
 

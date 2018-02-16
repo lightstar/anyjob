@@ -149,14 +149,6 @@ sub stop {
     $self->{running} = 0;
 }
 
-###############################################################################
-# Set daemon's stop flag so its loop will break on next iteration and call 'die' to interrupt any running process.
-#
-sub stopAndDie {
-    my $self = shift;
-    $self->stop();
-    die "Stop";
-}
 
 ###############################################################################
 # Set handler for all known interruption signals to set daemon's stop flag so its loop will break on next iteration.
@@ -164,15 +156,6 @@ sub stopAndDie {
 sub stopOnSignal {
     my $self = shift;
     $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {$self->stop()};
-}
-
-###############################################################################
-# Set handler for all known interruption signals to set daemon's stop flag so its loop will break on next iteration
-# and call 'die' to interrupt any running process.
-#
-sub stopAndDieOnSignal {
-    my $self = shift;
-    $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {$self->stopAndDie()};
 }
 
 ###############################################################################

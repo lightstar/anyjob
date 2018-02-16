@@ -57,6 +57,8 @@ sub new {
         }
     }
 
+    $self->{maxDelay} = $config->{max_delay} || DEFAULT_DELAY;
+
     return $self;
 }
 
@@ -77,7 +79,7 @@ sub process {
     my $self = shift;
 
     my @queues;
-    my $minDelay;
+    my $minDelay = $self->{maxDelay};
     foreach my $controller (@{$self->{controllers}}) {
         my $delay = $controller->getProcessDelay();
 
@@ -96,12 +98,7 @@ sub process {
     }
 
     if (scalar(@queues) > 0) {
-        my ($queue, $event);
-        eval {
-            $self->{daemon}->stopAndDieOnSignal();
-            ($queue, $event) = $self->redis->blpop(@queues, $minDelay || 0);
-        };
-        $self->{daemon}->stopOnSignal();
+        my ($queue, $event) = $self->redis->blpop(@queues, $minDelay);
         if (defined($queue) and defined($event)) {
             eval {
                 $event = decode_json($event);
@@ -113,11 +110,7 @@ sub process {
             }
         }
     } else {
-        eval {
-            $self->{daemon}->stopAndDieOnSignal();
-            sleep($minDelay || DEFAULT_DELAY);
-        };
-        $self->{daemon}->stopOnSignal();
+        sleep($minDelay);
     }
 }
 
