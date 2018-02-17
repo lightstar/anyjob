@@ -5,14 +5,14 @@ package AnyJob::Controller::Global::Clean;
 #
 # Author:       LightStar
 # Created:      23.10.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
 use warnings;
 use utf8;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT DEFAULT_CLEAN_DELAY);
+use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_LIMIT DEFAULT_CLEAN_DELAY);
 use AnyJob::Constants::Events qw(EVENT_CLEAN_JOBSET);
 
 use base 'AnyJob::Controller::Global';
@@ -63,7 +63,7 @@ sub process {
     my $self = shift;
 
     my $nodeConfig = $self->config->getNodeConfig() || {};
-    my $limit = $nodeConfig->{global_clean_limit} || $self->config->limit || DEFAULT_LIMIT;
+    my $limit = $nodeConfig->{global_clean_limit} || $self->config->clean_limit || DEFAULT_CLEAN_LIMIT;
 
     my %ids = $self->redis->zrangebyscore('anyjob:jobsets', '-inf', time(), 'WITHSCORES',
         'LIMIT', '0', $limit);

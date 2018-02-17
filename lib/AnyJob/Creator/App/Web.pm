@@ -6,7 +6,7 @@ package AnyJob::Creator::App::Web;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -103,10 +103,11 @@ post '/create' => http_basic_auth required => sub {
 
             debug('Create jobs using web app by user \'' . $user . '\': ' . encode_json($jobs));
 
+            my $observer = $web->hasIndividualObserver($user) ? 'u' . $user : 'web';
             my $error = creator->createJobs($jobs, {
                     creator  => 'web',
                     author   => $user,
-                    observer => 'u' . $user
+                    observer => $observer
                 });
             if (defined($error)) {
                 debug('Creating failed: ' . $error);
@@ -145,5 +146,10 @@ websocket_on_open sub {
 
         creator->setBusy(0);
     };
+
+###############################################################################
+# Initialize creator component before any request.
+#
+creator;
 
 1;

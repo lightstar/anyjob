@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  09.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -266,6 +266,20 @@ sub checkJobAccess {
     }
 
     return 1;
+}
+
+###############################################################################
+# Abstract method which will be called by AnyJob::Creator::Observer when new private event arrives.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub receivePrivateEvent {
+    my $self = shift;
+    my $event = shift;
+
+    require Carp;
+    Carp::confess('Need to be implemented in descendant');
 }
 
 1;

@@ -7,7 +7,7 @@ package AnyJob::Daemon;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -16,7 +16,7 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_DELAY DEFAULT_PIDFILE);
+use AnyJob::Constants::Defaults qw(DEFAULT_MIN_DELAY DEFAULT_MAX_DELAY DEFAULT_PIDFILE);
 use AnyJob::Daemon::Base;
 use AnyJob::Controller::Factory;
 
@@ -57,7 +57,8 @@ sub new {
         }
     }
 
-    $self->{maxDelay} = $config->{max_delay} || DEFAULT_DELAY;
+    $self->{minDelay} = $config->{min_delay} || DEFAULT_MIN_DELAY;
+    $self->{maxDelay} = $config->{max_delay} || DEFAULT_MAX_DELAY;
 
     return $self;
 }
@@ -80,18 +81,21 @@ sub process {
 
     my @queues;
     my $minDelay = $self->{maxDelay};
+
     foreach my $controller (@{$self->{controllers}}) {
         my $delay = $controller->getProcessDelay();
 
         if (defined($delay) and $delay == 0) {
             $delay = $controller->process();
-            if (defined($delay) and $delay == 0) {
-                $delay = DEFAULT_DELAY;
-            }
         }
 
-        if (defined($delay) and (not defined($minDelay) or $delay < $minDelay)) {
-            $minDelay = $delay;
+        if (defined($delay)) {
+            if ($delay < $self->{minDelay}) {
+                $delay = $self->{minDelay};
+            }
+            if ($delay < $minDelay) {
+                $minDelay = $delay;
+            }
         }
 
         push @queues, @{$controller->getActiveEventQueues()};

@@ -5,14 +5,14 @@ package AnyJob::Controller::Global::BuildClean;
 #
 # Author:       LightStar
 # Created:      30.11.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
 use warnings;
 use utf8;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT DEFAULT_CLEAN_DELAY);
+use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_LIMIT DEFAULT_CLEAN_DELAY);
 
 use base 'AnyJob::Controller::Global';
 
@@ -57,7 +57,7 @@ sub process {
     my $self = shift;
 
     my $nodeConfig = $self->config->getNodeConfig() || {};
-    my $limit = $nodeConfig->{build_clean_limit} || $self->config->limit || DEFAULT_LIMIT;
+    my $limit = $nodeConfig->{build_clean_limit} || $self->config->clean_limit || DEFAULT_CLEAN_LIMIT;
 
     my %ids = $self->redis->zrangebyscore('anyjob:builds', '-inf', time(), 'WITHSCORES',
         'LIMIT', '0', $limit);

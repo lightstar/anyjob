@@ -3,17 +3,25 @@ package AnyJob::Creator::App;
 ###############################################################################
 # Version of creator component designed to use inside dancer2 web application.
 # Its main purpose is to catch interruption signals and shutdown application only when it is safe to do it.
+# Also it launches observing private events for all known addons running inside web app.
 #
 # Author:       LightStar
 # Created:      30.10.2017
-# Last update:  07.12.2017
+# Last update:  16.02.2018
 #
 
 use strict;
 use warnings;
 use utf8;
 
+use AnyJob::Creator::Observer;
+
 use base 'AnyJob::Creator';
+
+###############################################################################
+# Names of all creator addons running inside dancer2 web application.
+#
+use constant ADDONS => [ 'web', 'slack' ];
 
 ###############################################################################
 # Construct new AnyJob::Creator::App object.
@@ -30,6 +38,18 @@ sub new {
 
     $self->debug('Started');
     $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {$self->stop()};
+
+    my $addonsByNames = {};
+    foreach my $name (@{ADDONS()}) {
+        $addonsByNames->{$name} = $self->addon($name);
+    }
+
+    $self->{observer} = AnyJob::Creator::Observer->new(
+        parent        => $self,
+        names         => [ keys(%{$addonsByNames}) ],
+        addonsByNames => $addonsByNames
+    );
+    $self->{observer}->observe();
 
     return $self;
 }

@@ -5,7 +5,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  13.12.2017
+ * Last update:  16.02.2018
  */
 
 app.controller('creatorController', function ($scope, $http, $compile, creatorService) {
@@ -61,16 +61,14 @@ app.controller('creatorController', function ($scope, $http, $compile, creatorSe
     /**
      * Observing begins only after config is loaded and observer panel initialized.
      */
-    $scope.$watchGroup(['config.auth','control.event'], function () {
+    $scope.$watchGroup(['config.auth', 'control.event'], function () {
         if ($scope.config.auth.user === '' || $scope.control.event === null) {
             return;
         }
 
-        creatorService.observe($scope.config.auth, function (events) {
-            $scope.$apply(function() {
-                angular.forEach(events, function (event) {
-                    $scope.control.event(event);
-                });
+        creatorService.observe($scope.config.auth, function (event) {
+            $scope.$apply(function () {
+                $scope.control.event(event);
             });
         });
     });

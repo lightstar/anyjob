@@ -5,7 +5,7 @@ package AnyJob::Creator::App::Slack;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -121,8 +121,8 @@ post '/cmd' => sub {
     };
 
 ###############################################################################
-# Observe slack private events.
+# Initialize creator component before any request.
 #
-creator->addon('slack')->observePrivateEvents();
+creator;
 
 1;

@@ -5,7 +5,7 @@ package AnyJob::Constants::Defaults;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -15,14 +15,19 @@ use utf8;
 use base 'Exporter';
 
 ###############################################################################
-# Default limit when retrieving data.
+# Default minimum delay in seconds between daemon loop processing.
 #
-use constant DEFAULT_LIMIT => 10;
+use constant DEFAULT_MIN_DELAY => 1;
 
 ###############################################################################
-# Default delay in seconds between processing.
+# Default maximum delay in seconds between daemon loop processing.
 #
-use constant DEFAULT_DELAY => 1;
+use constant DEFAULT_MAX_DELAY => 1;
+
+###############################################################################
+# Default limit of cleaned timeouted objects in one iteration.
+#
+use constant DEFAULT_CLEAN_LIMIT => 10;
 
 ###############################################################################
 # Default timeout in seconds before some object will be expired and cleaned out.
@@ -115,8 +120,9 @@ use constant DEFAULT_INTERNAL_PROPS => 'creator,author,observer,response_url';
 use constant DEFAULT_SLACK_API => 'https://slack.com/api/';
 
 our @EXPORT = qw(
-    DEFAULT_LIMIT
-    DEFAULT_DELAY
+    DEFAULT_MIN_DELAY
+    DEFAULT_MAX_DELAY
+    DEFAULT_CLEAN_LIMIT
     DEFAULT_CLEAN_TIMEOUT
     DEFAULT_CLEAN_DELAY
     DEFAULT_PIDFILE

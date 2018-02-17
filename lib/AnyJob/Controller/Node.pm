@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -16,7 +16,6 @@ use English;
 use JSON::XS;
 use File::Basename;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 use AnyJob::Constants::Events qw(EVENT_CREATE);
 use AnyJob::Constants::States qw(STATE_BEGIN);
 

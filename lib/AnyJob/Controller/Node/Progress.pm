@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -14,7 +14,6 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 use AnyJob::Constants::Events qw(EVENT_PROGRESS EVENT_REDIRECT EVENT_FINISH);
 
 use base 'AnyJob::Controller::Node';

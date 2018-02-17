@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  09.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -16,9 +16,7 @@ use File::Spec;
 use LWP::UserAgent;
 use HTTP::Request::Common qw(POST);
 use Template;
-use AnyEvent;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_DELAY);
 use AnyJob::Utils qw(getModuleName requireModule);
 
 use base 'AnyJob::Creator::Addon::Base';
@@ -211,46 +209,30 @@ sub generateBuildersByCommand {
 }
 
 ###############################################################################
-# Execute observing of private events using 'slack' as queue name.
-# Observing is done via AnyEvent's timer run with configured interval.
-#
-sub observePrivateEvents {
-    my $self = shift;
-
-    my $config = $self->config->getCreatorConfig('slack') || {};
-    my $delay = $config->{observe_delay} || DEFAULT_DELAY;
-    $self->{observer_timer} = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
-            $self->parent->setBusy(1);
-            $self->sendPrivateEvents($self->parent->receivePrivateEvents('slack'));
-            $self->parent->setBusy(0);
-        });
-}
-
-###############################################################################
-# Send messages with private events data to slack users who created corresponding jobs or jobsets.
-# Destination address is resolved using special property 'response_url' which should be set for every job and jobset
-# created in one of slack builders.
+# Method which will be called by AnyJob::Creator::Observer when new private event arrives.
 #
 # Arguments:
-#     events - array of hashes with event data.
+#     event - hash with event data.
 #
-sub sendPrivateEvents {
+sub receivePrivateEvent {
     my $self = shift;
-    my $events = shift;
+    my $event = shift;
 
-    foreach my $event (@$events) {
-        if ($self->eventFilter($event) and defined(my $url = $event->{props}->{response_url})) {
-            my $request = POST($url,
-                Content_Type => 'application/json; charset=utf-8',
-                Content      => $self->getEventPayload($event)
-            );
+    $self->parent->setBusy(1);
+    if ($self->eventFilter($event) and defined(my $url = $event->{props}->{response_url})) {
+        $self->parent->stripInternalPropsFromEvent($event);
 
-            my $result = $self->{ua}->request($request);
-            unless ($result->is_success) {
-                $self->error('Error sending event to ' . $url . ', response: ' . $result->content);
-            }
+        my $request = POST($url,
+            Content_Type => 'application/json; charset=utf-8',
+            Content      => $self->getEventPayload($event)
+        );
+
+        my $result = $self->{ua}->request($request);
+        unless ($result->is_success) {
+            $self->error('Error sending event to ' . $url . ', response: ' . $result->content);
         }
     }
+    $self->parent->setBusy(0);
 }
 
 ###############################################################################

@@ -17,7 +17,6 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 use AnyJob::Utils qw(getModuleName requireModule);
 use AnyJob::Creator::Parser;
 
@@ -422,51 +421,6 @@ sub createJobSet {
             props  => $props,
             jobs   => $jobs
         }));
-}
-
-###############################################################################
-# Receive private events dedicated to specific creator addon or even some client who used that addon.
-#
-# Arguments:
-#     name                - some string name uniquely signifying event target (it could be addon name,
-#                           addon client name or anything that is meaningfull for that addon).
-#     stripInternalProps  - 0/1 flag. If set, all configured internal properties will be stripped from all events.
-# Returns:
-#     array of hashes with event data. Details about what event data can contain see in documentation.
-#
-sub receivePrivateEvents {
-    my $self = shift;
-    my $name = shift;
-    my $stripInternalProps = shift;
-
-    unless (defined($name) and $name ne '') {
-        $self->error('Called receivePrivateEvents with empty name');
-        return [];
-    }
-
-    my $config = $self->config->section('creator') || {};
-    my $limit = $config->{observe_limit} || $self->config->limit || DEFAULT_LIMIT;
-    my $count = 0;
-    my @events;
-
-    while (my $event = $self->redis->lpop('anyjob:observerq:private:' . $name)) {
-        eval {
-            $event = decode_json($event);
-        };
-        if ($@) {
-            $self->error('Can\'t decode event: ' . $event);
-        } else {
-            if ($stripInternalProps) {
-                $self->stripInternalPropsFromEvent($event);
-            }
-            push @events, $event;
-        }
-
-        $count++;
-        last if $count >= $limit;
-    }
-
-    return \@events;
 }
 
 ###############################################################################

@@ -21,6 +21,7 @@ RUN cpanm Dancer2::Plugin::WebSocket
 RUN cpanm Twiggy
 RUN cpanm CGI::Deurl::XS
 RUN cpanm JavaScript::Duktape
+RUN cpanm AnyEvent::RipeRedis
 
 RUN mkdir -p /opt/anyjob
 COPY . /opt/anyjob/

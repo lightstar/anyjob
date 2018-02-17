@@ -6,7 +6,7 @@ package AnyJob::Controller::Global;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -15,7 +15,6 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT);
 use AnyJob::Constants::Events qw(EVENT_CREATE_JOBSET);
 use AnyJob::Constants::States qw(STATE_BEGIN);
 

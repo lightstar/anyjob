@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Web;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  08.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -13,11 +13,10 @@ use warnings;
 use utf8;
 
 use File::Spec;
-use Scalar::Util qw(reftype);
-use AnyEvent;
+use Scalar::Util qw(reftype refaddr weaken);
 
-use AnyJob::Constants::Defaults qw(DEFAULT_DELAY);
 use AnyJob::Utils qw(getFileContent);
+use AnyJob::Creator::Observer;
 
 use base 'AnyJob::Creator::Addon::Base';
 
@@ -34,6 +33,10 @@ sub new {
     my %args = @_;
     $args{type} = 'web';
     my $self = $class->SUPER::new(%args);
+
+    $self->{connsByUser} = {};
+    $self->{observersByUser} = {};
+
     return $self;
 }
 
@@ -76,6 +79,20 @@ sub checkJobsAccess {
     }
 
     return 1;
+}
+
+###############################################################################
+# Check if given user is allowed to have individual private observer.
+#
+# Arguments:
+#     user - string user login.
+# Returns:
+#     0/1 flag. If set, individual observer is provided.
+#
+sub hasIndividualObserver {
+    my $self = shift;
+    my $user = shift;
+    return $self->getUserAccess($user)->hasAccess('iobserver');
 }
 
 ###############################################################################
@@ -142,37 +159,82 @@ sub preprocessJobParams {
 }
 
 ###############################################################################
-# Execute observing of private events for provided user connected to application via websocket connection.
-# Observing is done via AnyEvent's timer run with configured interval.
+# Start observing private events for provided user connected to application via websocket connection.
 #
 # Arguments:
-#     conn - websocket connection object. Only its method 'send' with array of event data hashes is used.
-#            It is assumed that this connection will serialize this array by itself.
-#     user - string user name which is used for observer queue name generation.
+#     conn - websocket connection object which is capable to send data to client via 'send' method with automatic
+#            serializing to JSON.
+#     user - string user name.
 #
 sub observePrivateEvents {
     my $self = shift;
     my $conn = shift;
     my $user = shift;
 
-    my $config = $self->config->getCreatorConfig('web') || {};
-    my $delay = $config->{observe_delay} || DEFAULT_DELAY;
-    my $timer = AnyEvent->timer(after => $delay, interval => $delay, cb => sub {
-            $self->parent->setBusy(1);
+    $self->stopObservePrivateEvents($user);
+    $self->{connsByUser}->{$user} = $conn;
 
-            my $events = $self->filterEvents(
-                $self->parent->receivePrivateEvents('u' . $user, 'stripInternalProps')
-            );
+    if ($self->hasIndividualObserver($user)) {
+        my $name = 'u' . $user;
+        $self->{observersByUser}->{$user} = AnyJob::Creator::Observer->new(
+            parent        => $self->parent,
+            names         => [ $name ],
+            addonsByNames => { $name => $self }
+        );
+        $self->{observersByUser}->{$user}->observe();
+    }
 
-            if (scalar(@$events) > 0) {
-                $conn->send($events);
-            }
-
-            $self->parent->setBusy(0);
-        });
+    weaken($self);
     $conn->on(close => sub {
-            undef $timer;
+            if (defined($self) and exists($self->{connsByUser}->{$user}) and
+                refaddr($conn) == refaddr($self->{connsByUser}->{$user})
+            ) {
+                $self->parent->setBusy(1);
+                $self->stopObservePrivateEvents($user);
+                $self->parent->setBusy(0);
+            }
         });
+}
+
+###############################################################################
+# Stop observing private events for provided user and remove all information about him from internal structures.
+#
+# Arguments:
+#     user - string user name.
+#
+sub stopObservePrivateEvents {
+    my $self = shift;
+    my $user = shift;
+
+    if (exists($self->{connsByUser}->{$user})) {
+        $self->{connsByUser}->{$user}->close();
+        delete $self->{connsByUser}->{$user};
+    }
+
+    if (exists($self->{observersByUser}->{$user})) {
+        $self->{observersByUser}->{$user}->stop();
+        delete $self->{observersByUser}->{$user};
+    }
+}
+
+###############################################################################
+# Method which will be called by AnyJob::Creator::Observer when new private event arrives.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub receivePrivateEvent {
+    my $self = shift;
+    my $event = shift;
+
+    $self->parent->setBusy(1);
+    if ($self->eventFilter($event) and defined(my $user = $event->{props}->{author})) {
+        if (exists($self->{connsByUser}->{$user})) {
+            $self->parent->stripInternalPropsFromEvent($event);
+            $self->{connsByUser}->{$user}->send($event);
+        }
+    }
+    $self->parent->setBusy(0);
 }
 
 1;

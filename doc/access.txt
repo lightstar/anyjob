@@ -39,3 +39,8 @@ Example:
 
 That means that to access the resource user must have access 'access1' or 'access2', access 'access3' and must
 not have access 'access4'.
+
+There are some accesses that have special meaning inside creator:
+
+iobserver - user with that access will have individual private observer inside web application which results in
+            more robust private events delivery.

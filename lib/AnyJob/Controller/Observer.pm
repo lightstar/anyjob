@@ -8,7 +8,7 @@ package AnyJob::Controller::Observer;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  14.02.2018
+# Last update:  16.02.2018
 #
 
 use strict;
@@ -17,7 +17,7 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_LIMIT DEFAULT_CLEAN_TIMEOUT);
+use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_LIMIT DEFAULT_CLEAN_TIMEOUT);
 use AnyJob::DateTime qw(formatDateTime);
 use AnyJob::EventFilter;
 
@@ -278,7 +278,7 @@ sub cleanLogs {
     my $self = shift;
 
     my $observerConfig = $self->getObserverConfig() || {};
-    my $limit = $observerConfig->{log_clean_limit} || $self->config->limit || DEFAULT_LIMIT;
+    my $limit = $observerConfig->{log_clean_limit} || $self->config->clean_limit || DEFAULT_CLEAN_LIMIT;
 
     my %ids = $self->redis->zrangebyscore('anyjob:observer:' . $self->name . ':log', '-inf', time(),
         'WITHSCORES', 'LIMIT', '0', $limit);
