@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Base;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  14.02.2018
+# Last update:  19.02.2018
 #
 
 use strict;
@@ -13,8 +13,8 @@ use warnings;
 use utf8;
 
 use JSON::XS;
-use LWP::UserAgent;
-use HTTP::Request::Common qw(POST);
+use AnyEvent::HTTP;
+use Scalar::Util qw(weaken);
 
 use AnyJob::Constants::Defaults qw(DEFAULT_SLACK_API);
 
@@ -33,10 +33,6 @@ sub new {
     my $class = shift;
     my %args = @_;
     my $self = $class->SUPER::new(%args);
-
-    $self->{ua} = LWP::UserAgent->new();
-    $self->{ua}->timeout(15);
-
     return $self;
 }
 
@@ -67,41 +63,39 @@ sub getBuilderConfig {
 #     response - hash with message payload. Content can be anything supported by slack.
 #                See https://api.slack.com/docs/messages for details.
 #     url      - string response url.
-# Returns:
-#     1/undef on success/error accordingly.
 #
 sub sendResponse {
     my $self = shift;
     my $response = shift;
     my $url = shift;
 
-    my $request = POST($url,
-        Content_Type => 'application/json; charset=utf-8',
-        Content      => encode_json($response)
-    );
-
-    my $result = $self->{ua}->request($request);
-    unless ($result->is_success) {
-        $self->error('Slack request failed, url: ' . $url . ', response: ' . $result->content);
-        return undef;
-    }
-
-    return 1;
+    weaken($self);
+    http_post($url, encode_json($response), headers => {
+            Content_Type => 'application/json; charset=utf-8'
+        }, sub {
+            my ($body, $headers) = @_;
+            if (defined($self) and $headers->{Status} !~ /^2/) {
+                $self->parent->setBusy(1);
+                $self->error('Slack request failed, url: ' . $url . ', response: ' . $body);
+                $self->parent->setBusy(0);
+            }
+        });
 }
 
 ###############################################################################
 # Call slack Web API method. See https://api.slack.com/web for details.
 #
 # Arguments:
-#     method - string method name.
-#     data   - hash with body data.
-# Returns:
-#     hash with response data or undef on error.
+#     method   - string method name.
+#     data     - hash with body data.
+#     callback - optional callback function which will be called when result is ready.
+#                It will receive hash with response data as first argument or undef in case of error.
 #
 sub callApiMethod {
     my $self = shift;
     my $method = shift;
     my $data = shift;
+    my $callback = shift;
 
     unless (defined($method) and defined($data)) {
         require Carp;
@@ -116,28 +110,35 @@ sub callApiMethod {
 
     my $api = $config->{api} || DEFAULT_SLACK_API;
     my $url = $api . $method;
-    my $request = POST($url,
-        Content_Type  => 'application/json; charset=utf-8',
-        Authorization => 'Bearer ' . $config->{api_token},
-        Content       => encode_json($data)
-    );
 
-    my $result = $self->{ua}->request($request);
-    my $response;
-    unless ($result->is_success) {
-        $self->error('Slack method failed, url: ' . $url . ', response: ' . $result->content);
-        return undef;
-    } else {
-        eval {
-            $response = decode_json($result->content);
-        };
-        if ($@ or not $response->{ok}) {
-            $self->error('Slack method failed, url: ' . $url . ', response: ' . $result->content);
-            return undef;
-        }
-    }
-
-    return $response;
+    weaken($self);
+    http_post($url, encode_json($data), headers => {
+            Content_Type  => 'application/json; charset=utf-8',
+            Authorization => 'Bearer ' . $config->{api_token}
+        }, sub {
+            my ($body, $headers) = @_;
+            if (defined($self)) {
+                my $result;
+                $self->parent->setBusy(1);
+                if ($headers->{Status} !~ /^2/) {
+                    $self->error('Slack method failed, url: ' . $url . ', response: ' . $body);
+                } else {
+                    my $response;
+                    eval {
+                        $response = decode_json($body);
+                    };
+                    if ($@ or not $response->{ok}) {
+                        $self->error('Slack method failed, url: ' . $url . ', response: ' . $body);
+                    } else {
+                        $result = $response;
+                    }
+                }
+                if (defined($callback)) {
+                    $callback->($result);
+                }
+                $self->parent->setBusy(0);
+            }
+        });
 }
 
 ###############################################################################
@@ -146,23 +147,19 @@ sub callApiMethod {
 # Arguments:
 #     triggerId - string trigger id.
 #     dialog    - hash with dialog data.
-# Returns:
-#     1/undef on success/error accordingly.
+#     callback - optional callback function which will be called when result is ready.
+#                It will receive hash with response data as first argument or undef in case of error.
 #
 sub showDialog {
     my $self = shift;
     my $triggerId = shift;
     my $dialog = shift;
+    my $callback = shift;
 
-    unless (defined($self->callApiMethod('dialog.open', {
+    $self->callApiMethod('dialog.open', {
             trigger_id => $triggerId,
             dialog     => $dialog
-        })
-    )) {
-        return undef;
-    }
-
-    return 1;
+        }, $callback);
 }
 
 ###############################################################################

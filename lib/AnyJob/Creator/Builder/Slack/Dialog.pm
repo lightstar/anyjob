@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Dialog;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  14.02.2018
+# Last update:  19.02.2018
 #
 
 use strict;
@@ -68,11 +68,7 @@ sub command {
     $self->debug('Create slack app dialog build \'' . $id . '\' by user \'' . $userId . '\' (\'' . $userName .
         '\') with response url \'' . $responseUrl . '\', trigger \'' . $triggerId . '\' and job: ' . encode_json($job));
 
-    my $dialog = $self->getDialog($job, $id);
-    unless (defined($self->showDialog($triggerId, $dialog))) {
-        $self->cleanBuild($id);
-        return 'Error: failed to show dialog';
-    }
+    $self->showDialog($triggerId, $self->getDialog($job, $id));
 
     return undef;
 }

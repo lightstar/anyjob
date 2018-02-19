@@ -22,6 +22,7 @@ RUN cpanm Twiggy
 RUN cpanm CGI::Deurl::XS
 RUN cpanm JavaScript::Duktape
 RUN cpanm AnyEvent::RipeRedis
+RUN cpanm AnyEvent::HTTP
 
 RUN mkdir -p /opt/anyjob
 COPY . /opt/anyjob/

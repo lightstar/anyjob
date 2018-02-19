@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  16.02.2018
+# Last update:  19.02.2018
 #
 
 use strict;
@@ -13,9 +13,9 @@ use warnings;
 use utf8;
 
 use File::Spec;
-use LWP::UserAgent;
-use HTTP::Request::Common qw(POST);
+use AnyEvent::HTTP;
 use Template;
+use Scalar::Util qw(weaken);
 
 use AnyJob::Utils qw(getModuleName requireModule);
 
@@ -42,9 +42,6 @@ sub new {
         POST_CHOMP   => 1,
         TRIM         => 1
     });
-
-    $self->{ua} = LWP::UserAgent->new();
-    $self->{ua}->timeout(15);
 
     return $self;
 }
@@ -221,16 +218,19 @@ sub receivePrivateEvent {
     $self->parent->setBusy(1);
     if ($self->eventFilter($event) and defined(my $url = $event->{props}->{response_url})) {
         $self->parent->stripInternalPropsFromEvent($event);
+        my $payload = $self->getEventPayload($event);
 
-        my $request = POST($url,
-            Content_Type => 'application/json; charset=utf-8',
-            Content      => $self->getEventPayload($event)
-        );
-
-        my $result = $self->{ua}->request($request);
-        unless ($result->is_success) {
-            $self->error('Error sending event to ' . $url . ', response: ' . $result->content);
-        }
+        weaken($self);
+        http_post($url, $payload, headers => {
+                Content_Type => 'application/json; charset=utf-8'
+            }, sub {
+                my ($body, $headers) = @_;
+                if (defined($self) and $headers->{Status} !~ /^2/) {
+                    $self->parent->setBusy(1);
+                    $self->error('Error sending event to ' . $url . ', response: ' . $body);
+                    $self->parent->setBusy(0);
+                }
+            });
     }
     $self->parent->setBusy(0);
 }

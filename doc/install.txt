@@ -28,6 +28,7 @@ Twiggy (on node running creator web application)
 CGI::Deurl::XS (on node running creator web application)
 JavaScript::Duktape (on node running global observers and creator web application)
 AnyEvent::RipeRedis (on node running creator web application)
+AnyEvent::HTTP (on node running creator web application)
 
 If something don't work, check that all these modules are upgraded to their latest versions because
 old versions are not tested.
