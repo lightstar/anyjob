@@ -8,7 +8,7 @@ package AnyJob::Worker::Example;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  04.12.2017
+# Last update:  20.02.2018
 #
 
 use strict;
@@ -34,7 +34,7 @@ sub run {
 
     sleep(10);
 
-    $self->sendSuccess('done');
+    $self->sendSuccess('done', { text => 'Result' });
 }
 
 1;

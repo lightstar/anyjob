@@ -133,7 +133,11 @@ sub sendSuccess {
     my $message = shift;
     my $data = shift;
 
-    $self->sendProgress($id, { success => 1, message => $message, (defined($data) ? (data => $data) : ()) });
+    $self->sendProgress($id, {
+            success => 1,
+            message => $message,
+            (defined($data) ? (data => $data) : ())
+        });
 }
 
 ###############################################################################
@@ -150,7 +154,11 @@ sub sendFailure {
     my $message = shift;
     my $data = shift;
 
-    $self->sendProgress($id, { success => 0, message => $message, (defined($data) ? (data => $data) : ()) });
+    $self->sendProgress($id, {
+            success => 0,
+            message => $message,
+            (defined($data) ? (data => $data) : ())
+        });
 }
 
 ###############################################################################

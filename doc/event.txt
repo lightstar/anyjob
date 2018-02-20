@@ -92,7 +92,10 @@ Every field inside "progress" is optional but at least one (and usually its only
         ...
     },
     "success": "<string '0' or '1'>",
-    "message": "<string result message>"
+    "message": "<string result message>",
+    "data": {
+        "text": "<string text data>"
+    }
 }
 
 5. 'Clean' event. It indicates that job is executing too long and was cleaned on timeout.

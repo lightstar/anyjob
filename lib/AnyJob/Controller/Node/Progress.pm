@@ -48,12 +48,15 @@ sub getActiveEventQueues {
 ###############################################################################
 # Method called for each received event from job progress queue.
 # There can be five types of events.
-# 1. 'Finish job' event. Sent by worker component. Field 'data' is optional and contain arbitrary hash with result data.
+# 1. 'Finish job' event. Sent by worker component. Field 'data' is optional and contain arbitrary hash with
+# result data. Often it contains 'text' field with some text data (usually long).
 # {
 #     id => ...,
 #     success => 0/1,
 #     message => '...'
-#     data => {...}
+#     data => {
+#         text => '...'
+#     }
 # }
 # 2. 'Redirect job' event. Sent by worker component. Field 'redirect' here contains name of destination node.
 # {
