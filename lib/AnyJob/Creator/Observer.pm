@@ -128,6 +128,7 @@ sub observe {
 
             my ($queue, $event) = @$reply;
             if (defined($queue) and defined($event)) {
+                utf8::encode($event);
                 eval {
                     $event = decode_json($event);
                 };

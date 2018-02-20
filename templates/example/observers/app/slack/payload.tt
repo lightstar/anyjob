@@ -11,9 +11,9 @@
             [% IF event == 'create' || event == 'createJobSet' %]
                 created
             [% ELSIF event == 'progress' || event == 'progressJobSet' %]
-                [% progress.state || progress.progress || progress.log.message %]
+                [% progress.state || progress.progress || progress.log.message | replace( '"', '\"' ) %]
             [% ELSIF event == 'finish' %]
-                [% message %]
+                [% message | replace( '"', '\"' ) %]
             [% ELSIF event == 'finishJobSet' %]
                 finished
             [% ELSIF event == 'clean' || event == 'cleanJobSet' %]
