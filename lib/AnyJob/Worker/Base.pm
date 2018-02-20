@@ -7,7 +7,7 @@ package AnyJob::Worker::Base;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  29.01.2018
+# Last update:  20.02.2018
 #
 
 use strict;
@@ -243,11 +243,13 @@ sub sendRedirect {
 #
 # Arguments:
 #     message - string finish message.
+#     data    - optional hash with result data.
 #
 sub sendSuccess {
     my $self = shift;
     my $message = shift;
-    $self->{parent}->sendSuccess($self->id, $message);
+    my $data = shift;
+    $self->{parent}->sendSuccess($self->id, $message, $data);
 }
 
 ###############################################################################
@@ -255,11 +257,13 @@ sub sendSuccess {
 #
 # Arguments:
 #     message - string finish message.
+#     data    - optional hash with result data.
 #
 sub sendFailure {
     my $self = shift;
     my $message = shift;
-    $self->{parent}->sendFailure($self->id, $message);
+    my $data = shift;
+    $self->{parent}->sendFailure($self->id, $message, $data);
 }
 
 ###############################################################################

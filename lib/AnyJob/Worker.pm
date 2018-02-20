@@ -7,7 +7,7 @@ package AnyJob::Worker;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  28.12.2017
+# Last update:  20.02.2018
 #
 
 use strict;
@@ -125,13 +125,15 @@ sub sendRedirect {
 # Arguments:
 #     id      - integer job id.
 #     message - string finish message.
+#     data    - optional hash with result data.
 #
 sub sendSuccess {
     my $self = shift;
     my $id = shift;
     my $message = shift;
+    my $data = shift;
 
-    $self->sendProgress($id, { success => 1, message => $message });
+    $self->sendProgress($id, { success => 1, message => $message, (defined($data) ? (data => $data) : ()) });
 }
 
 ###############################################################################
@@ -140,13 +142,15 @@ sub sendSuccess {
 # Arguments:
 #     id      - integer job id.
 #     message - string finish message.
+#     data    - optional hash with result data.
 #
 sub sendFailure {
     my $self = shift;
     my $id = shift;
     my $message = shift;
+    my $data = shift;
 
-    $self->sendProgress($id, { success => 0, message => $message });
+    $self->sendProgress($id, { success => 0, message => $message, (defined($data) ? (data => $data) : ()) });
 }
 
 ###############################################################################

@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  16.02.2018
+# Last update:  20.02.2018
 #
 
 use strict;
@@ -48,11 +48,12 @@ sub getActiveEventQueues {
 ###############################################################################
 # Method called for each received event from job progress queue.
 # There can be five types of events.
-# 1. 'Finish job' event. Sent by worker component.
+# 1. 'Finish job' event. Sent by worker component. Field 'data' is optional and contain arbitrary hash with result data.
 # {
 #     id => ...,
 #     success => 0/1,
 #     message => '...'
+#     data => {...}
 # }
 # 2. 'Redirect job' event. Sent by worker component. Field 'redirect' here contains name of destination node.
 # {
@@ -254,7 +255,8 @@ sub finishJob {
             params  => $job->{params},
             props   => $job->{props},
             success => $event->{success},
-            message => $event->{message}
+            message => $event->{message},
+            (exists($event->{data}) ? (data => $event->{data}) : ())
         });
 }
 

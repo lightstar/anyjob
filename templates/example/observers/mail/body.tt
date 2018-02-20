@@ -81,13 +81,14 @@
             [% END %]
             <br>
         [% END %]
-        [% IF message.match("\n") %]
-            Result:<br>
-            [% FOREACH line IN message.split("\n") %]
-                &nbsp;&nbsp;<b><span style="color:[% success ? 'green' : 'red' %]">[% line %]</span></b><br>
+
+        Result: <b><span style="color:[% success ? 'green' : 'red' %]">[% message %]</span></b>
+
+        [% IF data && data.text %]
+            <br><br>
+            [% FOREACH line IN data.text.split("\n") %]
+                [% line %]<br>
             [%  END %]
-        [% ELSE %]
-            Result: <b><span style="color:[% success ? 'green' : 'red' %]">[% message %]</span></b>
         [% END %]
     [% END %]
 </div>

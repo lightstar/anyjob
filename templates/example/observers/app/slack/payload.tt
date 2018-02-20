@@ -25,5 +25,11 @@
         [% ELSIF (event == 'finish' && !success) || event == 'clean' || event == 'cleanJobSet' %]
             "color": "danger"
         [% END %]
-    } ]
+    },
+    [% IF event == 'finish' && data && data.text %]
+        {
+            "text": "[% data.text | replace( '"', '\"' ) %]"
+        }
+    [% END %]
+    ]
 }
