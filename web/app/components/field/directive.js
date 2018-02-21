@@ -1,7 +1,7 @@
 /**
  * Define 'field' directive used to show form element binded to some job parameter or property.
  * Directive has attributes:
- *   type    - string parameter type, one of: 'flag', 'text', 'textarea', 'combo'.
+ *   type    - string parameter type, one of: 'flag', 'text', 'textarea', 'datetime', 'combo'.
  *   label   - string parameter label (i.e. description).
  *   name    - string parameter name used as a key in object with all parameters.
  *   options - array of strings with all available values (only for 'combo' type).
@@ -11,7 +11,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  13.12.2017
+ * Last update:  21.02.2018
  */
 
 app.directive('field', function () {

@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Dialog;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  19.02.2018
+# Last update:  21.02.2018
 #
 
 use strict;
@@ -216,7 +216,7 @@ sub getParamElement {
 
     if ($param->{type} eq 'flag') {
         return $self->getFlagParamElement($param, $values);
-    } elsif ($param->{type} eq 'text') {
+    } elsif ($param->{type} eq 'text' or $param->{type} eq 'datetime') {
         return $self->getTextParamElement($param, $values);
     } elsif ($param->{type} eq 'textarea') {
         return $self->getTextAreaParamElement($param, $values);

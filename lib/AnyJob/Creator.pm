@@ -8,7 +8,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  30.01.2017
+# Last update:  21.02.2017
 #
 
 use strict;
@@ -18,6 +18,7 @@ use utf8;
 use JSON::XS;
 
 use AnyJob::Utils qw(getModuleName requireModule);
+use AnyJob::DateTime qw(parseDateTime);
 use AnyJob::Creator::Parser;
 
 use base 'AnyJob::Base';
@@ -231,6 +232,10 @@ sub checkJobParamType {
     }
 
     if ($type eq 'combo' and ref($options) eq 'ARRAY' and not grep {$_->{value} eq $value} @$options) {
+        return undef;
+    }
+
+    if ($type eq 'datetime' and defined($value) and $value ne '' and not defined(parseDateTime($value))) {
         return undef;
     }
 

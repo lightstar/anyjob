@@ -225,8 +225,8 @@ mail_progress         - 0/1 flag. If set, progress events related to this job wi
 params                - JSON array of objects with job parameters description. That array is used in creators
                         to validate user input or to render some form elements. Default: '[]'.
                         Each object should have following fields:
-                         type     - parameter type. Required field. It must be one of 'flag', 'text', 'textarea'
-                                    or 'combo' strings.
+                         type     - parameter type. Required field. It must be one of 'flag', 'text', 'textarea',
+                                    'datetime' or 'combo' strings.
                          access   - string with accesses needed to set this param.
                          name     - parameter name used as key in actual job parameters data. Required field.
                          label    - parameter label to use in form element. By default it is the same as name.
