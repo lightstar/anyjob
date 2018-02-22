@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  20.02.2018
+# Last update:  21.02.2018
 #
 
 use strict;
@@ -138,10 +138,6 @@ sub progressJob {
         $self->redis->set('anyjob:job:' . $id, encode_json($job));
     }
 
-    if (exists($job->{jobset})) {
-        $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
-    }
-
     $self->sendEvent(EVENT_PROGRESS, {
             id       => $id,
             (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
@@ -150,6 +146,10 @@ sub progressJob {
             props    => $job->{props},
             progress => $event
         });
+
+    if (exists($job->{jobset})) {
+        $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
+    }
 }
 
 ###############################################################################
@@ -184,10 +184,6 @@ sub redirectJob {
 
     $self->debug('Redirect job \'' . $id . '\': ' . encode_json($event));
 
-    if (exists($job->{jobset})) {
-        $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
-    }
-
     $self->sendEvent(EVENT_REDIRECT, {
             id       => $id,
             (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
@@ -196,6 +192,10 @@ sub redirectJob {
             props    => $job->{props},
             progress => $event
         });
+
+    if (exists($job->{jobset})) {
+        $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
+    }
 
     my $redirect = {
         id   => $id,
@@ -247,10 +247,6 @@ sub finishJob {
 
     $self->cleanJob($id);
 
-    if ($job->{jobset}) {
-        $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
-    }
-
     $self->sendEvent(EVENT_FINISH, {
             id      => $id,
             (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
@@ -261,6 +257,10 @@ sub finishJob {
             message => $event->{message},
             (exists($event->{data}) ? (data => $event->{data}) : ())
         });
+
+    if ($job->{jobset}) {
+        $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
+    }
 }
 
 1;

@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  16.02.2018
+# Last update:  21.02.2018
 #
 
 use strict;
@@ -131,6 +131,14 @@ sub createJob {
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
         '\', params ' . encode_json($job->{params}) . ' and props ' . encode_json($job->{props}));
 
+    $self->sendEvent(EVENT_CREATE, {
+            id     => $id,
+            (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
+            type   => $job->{type},
+            params => $job->{params},
+            props  => $job->{props}
+        });
+
     if (exists($job->{jobset})) {
         my $progress = {
             state  => STATE_BEGIN,
@@ -141,14 +149,6 @@ sub createJob {
         };
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
-
-    $self->sendEvent(EVENT_CREATE, {
-            id     => $id,
-            (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
-            type   => $job->{type},
-            params => $job->{params},
-            props  => $job->{props}
-        });
 
     $self->runJob($job, $id);
 }
