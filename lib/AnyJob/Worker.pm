@@ -7,7 +7,7 @@ package AnyJob::Worker;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  20.02.2018
+# Last update:  27.02.2018
 #
 
 use strict;
@@ -88,18 +88,31 @@ sub sendRun {
 # Send message to daemon's progress queue with some log message.
 #
 # Arguments:
-#     id       - integer job id.
-#     message  - string log message.
+#     id      - integer job id.
+#     message - string log message.
+#     level   - optional integer log level (default: 0).
+#     tag     - optional string tag (default: '').
+#     data    - optional hash with log data.
 #
 sub sendLog {
     my $self = shift;
     my $id = shift;
     my $message = shift;
+    my $level = shift;
+    my $tag = shift;
+    my $data = shift;
+
+    if (defined($level) and $level !~ /^\d+$/o) {
+        $level = 0;
+    }
 
     $self->sendProgress($id, {
             log => {
                 time    => time(),
-                message => $message
+                message => $message,
+                (defined($level) ? (level => $level) : ()),
+                (defined($tag) ? (tag => $tag) : ()),
+                (defined($data) ? (data => $data) : ())
             }
         });
 }

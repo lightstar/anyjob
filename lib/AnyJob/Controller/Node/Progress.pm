@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  21.02.2018
+# Last update:  27.02.2018
 #
 
 use strict;
@@ -76,11 +76,22 @@ sub getActiveEventQueues {
 # 5. 'Progress job' event. Sent by worker component.
 # At least one of fields 'state', 'progress' or 'log' required here.
 # Field 'time' is log message time in integer unix timestamp format.
+# Fields 'level' and 'tag' are optional and contain integer log level and string log tag accordingly.
+# Field 'data' is optional too and contain arbitrary hash with log data. Often it contains 'text' field
+# with some text data (usually long).
 # {
 #     id => ...,
 #     state => '...',
 #     progress => '...',
-#     log => { time => ..., message => '...' }
+#     log => {
+#         time => ...,
+#         message => '...',
+#         level => ...,
+#         tag => '...',
+#         data => {
+#             text => '...'
+#         }
+#     }
 # }
 #
 sub processEvent {

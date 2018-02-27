@@ -7,7 +7,7 @@ package AnyJob::Worker::Base;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  20.02.2018
+# Last update:  27.02.2018
 #
 
 use strict;
@@ -218,12 +218,18 @@ sub sendState {
 # Send message to daemon's progress queue with some log message.
 #
 # Arguments:
-#     message  - string log message.
+#     message - string log message.
+#     level   - optional integer log level (default: 0).
+#     tag     - optional string tag (default: '').
+#     data    - optional hash with log data.
 #
 sub sendLog {
     my $self = shift;
     my $message = shift;
-    $self->{parent}->sendLog($self->id, $message);
+    my $level = shift;
+    my $tag = shift;
+    my $data = shift;
+    $self->{parent}->sendLog($self->id, $message, $level, $tag, $data);
 }
 
 ###############################################################################

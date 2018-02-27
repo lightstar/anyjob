@@ -56,7 +56,12 @@ format.
         "progress": "<string job progress>",
         "log": {
             "time": <integer unix timestamp>,
-            "message": "<string log message>"
+            "message": "<string log message>",
+            "level": <integer log level>,
+            "tag": "<string log tag>",
+            "data": {
+                "text": "<string text data>"
+            }
         }
     }
 }
@@ -236,7 +241,12 @@ into strings with formatted datetime, and do log collecting so all logs are inje
     "log": [
         {
             "time": "<string formatted datetime>",
-            "message": "<string log message>"
+            "message": "<string log message>",
+            "level": <integer log level>,
+            "tag": "<string log tag>",
+            "data": {
+                "text": "<string text data>"
+            }
         },
         ...
     ]
