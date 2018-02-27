@@ -13,6 +13,8 @@ package AnyJob::Creator::Parser;
 #   - nodes in form 'nodes=<list of nodes names separated by comma>'.
 #   - implicit nodes in form '<list of nodes names separated by comma>'.
 #   - extra parameters included in 'allowedExtra' in form '<name>=<value>'.
+#   - implicit parameters in form '<value>'. According parameter must be configured as implicit.
+#   - implicit properties in form '<value>'. According property must be configured as implicit.
 # All possibilities are checked by parsing in exactly that order. Unrecognized arguments will produce errors.
 # You are free to use quotes and escapes here like in any shell command-line.
 #
@@ -21,7 +23,7 @@ package AnyJob::Creator::Parser;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  25.01.2018
+# Last update:  27.02.2018
 #
 
 use strict;
@@ -216,6 +218,8 @@ sub parse {
             $self->processNodesArg($name, $value) or
             $self->processImplicitNodesArg($name, $value) or
             $self->processExtraArg($name, $value) or
+            $self->processImplicitParamArg($name, $value) or
+            $self->processImplicitPropArg($name, $value) or
             $self->processUnknownArg($name);
     }
 
@@ -244,7 +248,7 @@ sub processParamArg {
             $value = 1;
         }
 
-        unless ($self->parent->checkJobParamType($param->{type}, $value, $param->{data})) {
+        unless ($self->parent->checkJobParamType($param->{type}, $value, $param->{options})) {
             push @{$self->{errors}}, {
                     type  => 'error',
                     field => 'params',
@@ -282,7 +286,7 @@ sub processPropArg {
             $value = 1;
         }
 
-        unless ($self->parent->checkJobParamType($prop->{type}, $value, $prop->{data})) {
+        unless ($self->parent->checkJobParamType($prop->{type}, $value, $prop->{options})) {
             push @{$self->{errors}}, {
                     type  => 'error',
                     field => 'props',
@@ -397,6 +401,64 @@ sub processExtraArg {
     if (exists($self->{allowedExtra}->{$name})) {
         $self->{extra}->{$name} = $value;
         return 1;
+    }
+
+    return undef;
+}
+
+###############################################################################
+# Check if current argument is implicit parameter and parse it.
+#
+# Arguments:
+#     name  - string parameter name.
+#     value - string parameter value.
+# Returns:
+#     1/undef on success/error accordingly. In case of error current argument is not implicit parameter, and
+#     on success it is.
+#
+sub processImplicitParamArg {
+    my $self = shift;
+    my $name = shift;
+    my $value = shift;
+
+    if (defined($value)) {
+        return undef;
+    }
+
+    foreach my $param (grep {$_->{implicit}} @{$self->config->getJobParams($self->job->{type})}) {
+        if ($self->parent->checkJobParamType($param->{type}, $name, $param->{options})) {
+            $self->job->{params}->{$param->{name}} = $name;
+            return 1;
+        }
+    }
+
+    return undef;
+}
+
+###############################################################################
+# Check if current argument is implicit property and parse it.
+#
+# Arguments:
+#     name  - string parameter name.
+#     value - string parameter value.
+# Returns:
+#     1/undef on success/error accordingly. In case of error current argument is not implicit property, and
+#     on success it is.
+#
+sub processImplicitPropArg {
+    my $self = shift;
+    my $name = shift;
+    my $value = shift;
+
+    if (defined($value)) {
+        return undef;
+    }
+
+    foreach my $prop (grep {$_->{implicit}} @{$self->config->getProps()}) {
+        if ($self->parent->checkJobParamType($prop->{type}, $name, $prop->{options})) {
+            $self->job->{props}->{$prop->{name}} = $name;
+            return 1;
+        }
     }
 
     return undef;

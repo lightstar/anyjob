@@ -232,6 +232,8 @@ params                - JSON array of objects with job parameters description. T
                          label    - parameter label to use in form element. By default it is the same as name.
                          required - boolean flag. If set, this parameter is required. Default: false.
                          default  - default parameter value. Default: none.
+                         implicit - boolean flag. If set, this parameter will be parsed as implicit by parser module
+                                    used by slack and console applications.
                          options  - used only for 'combo' parameter. It describes all possible values and is array
                                     of objects with two fields: 'label' (value label) and 'value' (value itself).
 
