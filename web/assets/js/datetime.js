@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      21.02.2018
- * Last update:  21.02.2018
+ * Last update:  27.02.2018
  */
 
 /**
@@ -41,6 +41,47 @@ var DAYS_IN_MONTH_LEAP = {
     11: 30,
     12: 31
 };
+
+/**
+ * Format provided Date object using standart scheme 'DD-MM-YYYY HH:MM:SS'.
+ *
+ * @param {Date} datetime - input Date object.
+ * @return {string} string with formatted date and time.
+ */
+function formatDateTime(datetime) {
+    if (datetime === undefined || datetime === null) {
+        datetime = new Date();
+    }
+
+    var day = datetime.getDate();
+    if (day < 10) {
+        day = '0' + day;
+    }
+
+    var month = datetime.getMonth() + 1;
+    if (month < 10) {
+        month = '0' + month;
+    }
+
+    var year = datetime.getFullYear();
+
+    var hour = datetime.getHours();
+    if (hour < 10) {
+        hour = '0' + hour;
+    }
+
+    var minute = datetime.getMinutes();
+    if (minute < 10) {
+        minute = '0' + minute;
+    }
+
+    var second = datetime.getSeconds();
+    if (second < 10) {
+        second = '0' + second;
+    }
+
+    return day + '-' + month + '-' + year + ' ' + hour + ':' + minute + ':' + second;
+}
 
 /**
  * Parse date and time in provided string trying several formats:

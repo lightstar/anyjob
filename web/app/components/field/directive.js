@@ -11,7 +11,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  21.02.2018
+ * Last update:  27.02.2018
  */
 
 app.directive('field', function () {
@@ -28,6 +28,29 @@ app.directive('field', function () {
 
         link: function ($scope, element, attrs) {
             $scope.id = guidGenerator();
+
+            if ($scope.type === 'datetime') {
+                $scope.date = {
+                    date: parseDateTime($scope.values[$scope.name]),
+                    opened: false,
+                    options: {
+                        maxDate: new Date(2100, 11, 31),
+                        minDate: new Date(1900, 0, 1)
+                    },
+                    open: function () {
+                        $scope.date.opened = true;
+                    },
+                    change: function () {
+                        if ($scope.date.date instanceof Date) {
+                            $scope.values[$scope.name] = formatDateTime($scope.date.date);
+                        } else {
+                            $scope.values[$scope.name] = $scope.date.date;
+                        }
+                        $scope.change();
+                    }
+                };
+            }
+
             $scope.contentUrl = 'app/components/field/' + attrs.$normalize($scope.type) + '.html';
         },
 
