@@ -5,7 +5,7 @@ package AnyJob::DateTime;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  21.02.2018
+# Last update:  27.02.2018
 #
 
 use strict;
@@ -111,7 +111,7 @@ sub parseDateTime {
     my $dateTime = shift;
 
     unless (defined($dateTime)) {
-        return $dateTime;
+        return undef;
     }
 
     my ($day, $month, $year, $hour, $minute, $second) =

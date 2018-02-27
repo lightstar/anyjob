@@ -236,6 +236,8 @@ params                - JSON array of objects with job parameters description. T
                                     used by slack and console applications.
                          options  - used only for 'combo' parameter. It describes all possible values and is array
                                     of objects with two fields: 'label' (value label) and 'value' (value itself).
+props                 - JSON array of objects with properties description. If exists, that array overrides 'props'
+                        parameter from creator configuration section.
 
 Note that there is only one specific job module included in distribution: 'AnyJob::Worker::Example'. So its prefix is
 'AnyJob::Worker' and name is 'example'. You can use it for reference before writing your own modules which should

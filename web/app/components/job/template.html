@@ -3,7 +3,7 @@ Template for 'job' directive.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  21.02.2018
+Last update:  27.02.2018
 -->
 
 <div class="form-group" data-ng-if="config.groups.length > 0">
@@ -39,7 +39,7 @@ Last update:  21.02.2018
              data-options="param.options" data-values="job.params" data-change="validate()"></div>
         <span class="help-block" data-ng-show="!validParams[param.name]">{{errorParams[param.name]}}</span>
     </div>
-    <div class="form-group" data-ng-repeat="prop in config.props track by prop.name"
+    <div class="form-group" data-ng-repeat="prop in job.proto.props track by prop.name"
          data-ng-class="{'has-error': !validProps[prop.name]}">
         <div data-field data-type="prop.type" data-label="prop.label" data-name="prop.name"
              data-options="prop.options" data-values="job.props" data-change="validate()"></div>

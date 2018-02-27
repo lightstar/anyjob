@@ -8,7 +8,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  21.02.2017
+# Last update:  27.02.2017
 #
 
 use strict;
@@ -101,7 +101,12 @@ sub checkJobs {
             last;
         }
 
-        unless (defined($self->checkJobParams($job->{props}, $self->config->getProps()))) {
+        my $props = $self->config->getJobProps($job->{type});
+        unless (defined($props)) {
+            $props = $self->config->getProps();
+        }
+
+        unless (defined($self->checkJobParams($job->{props}, $props))) {
             $error = 'wrong props of job with type \'' . $job->{type} . '\'';
             last;
         }

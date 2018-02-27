@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  16.02.2018
+# Last update:  27.02.2018
 #
 
 use strict;
@@ -118,7 +118,7 @@ sub filterEvents {
 
 ###############################################################################
 # Retrieve array with detailed information about all jobs accesible by specified user.
-# All jobs nodes and parameters are filtered by user's access too.
+# All jobs nodes, parameters and properties are filtered by user's access too.
 #
 # Arguments:
 #     user - string user name.
@@ -164,6 +164,18 @@ sub getUserJobs {
             my $paramCopy = { %$param };
             delete $paramCopy->{access};
             push @{$jobCopy->{params}}, $paramCopy;
+        }
+
+        if (exists($job->{props})) {
+            $jobCopy->{props} = [];
+            foreach my $prop (@{$job->{props}}) {
+                unless ($prop->{access}->hasAccess($userAccess)) {
+                    next;
+                }
+                my $propCopy = { %$prop };
+                delete $propCopy->{access};
+                push @{$jobCopy->{props}}, $propCopy;
+            }
         }
 
         push @{$self->{userJobs}->{$user}}, $jobCopy;

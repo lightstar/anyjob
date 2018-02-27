@@ -181,8 +181,15 @@ sub prepare {
 
     $self->{extra} = {};
 
-    $self->{params} = { map {$_->{name} => $_} @{$self->config->getJobParams($type)} };
-    $self->{props} = { map {$_->{name} => $_} @{$self->config->getProps()} };
+    $self->{params} = $self->config->getJobParams($type);
+    $self->{paramsHash} = { map {$_->{name} => $_} @{$self->{params}} };
+
+    $self->{props} = $self->config->getJobProps($type);
+    unless (defined($self->{props})) {
+        $self->{props} = $self->config->getProps();
+    }
+    $self->{propsHash} = { map {$_->{name} => $_} @{$self->{props}} };
+
     $self->{nodes} = { map {$_ => 1} @{$self->config->getJobNodes($type)} };
 
     return 1;
@@ -243,7 +250,7 @@ sub processParamArg {
     my $name = shift;
     my $value = shift;
 
-    if (defined(my $param = $self->{params}->{$name})) {
+    if (defined(my $param = $self->{paramsHash}->{$name})) {
         if ($param->{type} eq 'flag' and not defined($value)) {
             $value = 1;
         }
@@ -281,7 +288,7 @@ sub processPropArg {
     my $name = shift;
     my $value = shift;
 
-    if (defined(my $prop = $self->{props}->{$name})) {
+    if (defined(my $prop = $self->{propsHash}->{$name})) {
         if ($prop->{type} eq 'flag' and not defined($value)) {
             $value = 1;
         }
@@ -425,7 +432,7 @@ sub processImplicitParamArg {
         return undef;
     }
 
-    foreach my $param (grep {$_->{implicit}} @{$self->config->getJobParams($self->job->{type})}) {
+    foreach my $param (grep {$_->{implicit}} @{$self->{params}}) {
         if ($self->parent->checkJobParamType($param->{type}, $name, $param->{options})) {
             $self->job->{params}->{$param->{name}} = $name;
             return 1;
@@ -454,7 +461,7 @@ sub processImplicitPropArg {
         return undef;
     }
 
-    foreach my $prop (grep {$_->{implicit}} @{$self->config->getProps()}) {
+    foreach my $prop (grep {$_->{implicit}} @{$self->{props}}) {
         if ($self->parent->checkJobParamType($prop->{type}, $name, $prop->{options})) {
             $self->job->{props}->{$prop->{name}} = $name;
             return 1;
@@ -528,7 +535,7 @@ sub injectDefaultParams {
 
     my $jobParams = $self->job->{params};
 
-    foreach my $param (values(%{$self->{params}})) {
+    foreach my $param (@{$self->{params}}) {
         my $name = $param->{name};
         if (exists($param->{default}) and $param->{default} ne '' and
             (not exists($jobParams->{$name}) or $jobParams->{$name} eq '')
@@ -563,7 +570,7 @@ sub injectDefaultProps {
 
     my $jobProps = $self->job->{props};
 
-    foreach my $prop (values(%{$self->{props}})) {
+    foreach my $prop (@{$self->{props}}) {
         my $name = $prop->{name};
         if (exists($prop->{default}) and $prop->{default} ne '' and
             (not exists($jobProps->{$name}) or $jobProps->{$name} eq '')

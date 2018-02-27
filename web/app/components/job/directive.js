@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  21.02.2018
+ * Last update:  27.02.2018
  */
 
 app.directive('job', function () {
@@ -131,7 +131,7 @@ app.directive('job', function () {
                 if ($scope.job.proto !== null) {
                     setDefaultNodes();
                     setDefaultParams($scope.job.proto.params, $scope.job.params);
-                    setDefaultParams($scope.config.props, $scope.job.props);
+                    setDefaultParams($scope.job.proto.props, $scope.job.props);
                 }
 
                 $scope.validate();
@@ -149,7 +149,7 @@ app.directive('job', function () {
                     var isAnyNode = validateNodes();
                     var isParamsAllValid = validateParams($scope.job.proto.params, $scope.job.params,
                         $scope.validParams, $scope.errorParams);
-                    var isPropsAllValid = validateParams($scope.config.props, $scope.job.props,
+                    var isPropsAllValid = validateParams($scope.job.proto.props, $scope.job.props,
                         $scope.validProps, $scope.errorProps);
                     if (!isAnyNode || !isParamsAllValid || !isPropsAllValid) {
                         isValid = false;

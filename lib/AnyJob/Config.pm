@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  12.02.2018
+# Last update:  27.02.2018
 #
 
 use strict;
@@ -137,6 +137,7 @@ sub getAllNodes {
 # It signifies access needed to create this job.
 # Values of 'nodes.access' field are hashes where keys are node names and values are instances of
 # AnyJob::Access::Resource class too. They signify access needed to create job on corresponding nodes.
+# Field 'props' here is optional and exists only if properties for this job are overriden.
 #
 # Returns:
 #     array of hashes with detailed information about all available jobs:
@@ -151,6 +152,7 @@ sub getAllNodes {
 #         label => '...',
 #         group => '...',
 #         params => [ { name => 'param1', ... }, { name => 'param2', ... }, ... ],
+#         props => [ { name => 'prop1', ... }, { name => 'prop2', ... }, ... ],
 #         sort => ...
 #     },...]
 #
@@ -177,6 +179,7 @@ sub getAllJobs {
             my $defaultNodes = { map {$_ => 1} grep {exists($nodesHash->{$_})}
                 split(/\s*,\s*/, $self->{data}->{$section}->{defaultNodes} || '') };
 
+            my $props = $self->getJobProps($type);
             push @jobs, {
                     type   => $type,
                     nodes  => {
@@ -188,6 +191,7 @@ sub getAllJobs {
                     label  => $self->{data}->{$section}->{label} || $type,
                     group  => $self->{data}->{$section}->{group} || '',
                     params => $self->getJobParams($type),
+                    (defined($props) ? (props => $props) : ()),
                     sort   => $self->{data}->{$section}->{sort} || 0
                 };
         }
@@ -377,27 +381,56 @@ sub getJobParams {
         return [];
     }
 
-    my $params = $config->{params};
-    utf8::encode($params);
-
+    my $params;
     eval {
-        $params = decode_json($params);
+        $params = $self->parseParams($config->{params});
     };
-    if ($@ or ref($params) ne 'ARRAY') {
+    if ($@) {
         require Carp;
         Carp::confess('Wrong params of job \'' . $type . '\': ' . $config->{params});
     }
 
-    foreach my $param (@$params) {
-        if (exists($param->{access}) and $param->{access} ne '') {
-            $param->{access} = AnyJob::Access::Resource->new(input => $param->{access});
-        } else {
-            $param->{access} = $AnyJob::Access::Resource::ACCESS_ANY;
-        }
-    }
-
     $self->{jobParams}->{$type} = $params;
     return $params;
+}
+
+###############################################################################
+# Get array of hashes with detailed information about overriden properties for given job type.
+# All possible fields in that hashes see in documentation.
+# Each hash here has 'access' field which contains instance of AnyJob::Access::Resource class.
+# It signifies access needed to set this parameter.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     array of hashes with detailed properties information or undef if properties are not overriden.
+#
+sub getJobProps {
+    my $self = shift;
+    my $type = shift;
+
+    if (exists($self->{jobProps}->{$type})) {
+        return $self->{jobProps}->{$type};
+    }
+
+    $self->{jobProps}->{$type} = undef;
+
+    my $config = $self->getJobConfig($type);
+    unless (defined($config) and exists($config->{props})) {
+        return undef;
+    }
+
+    my $props;
+    eval {
+        $props = $self->parseParams($config->{props});
+    };
+    if ($@) {
+        require Carp;
+        Carp::confess('Wrong props of job \'' . $type . '\': ' . $config->{props});
+    }
+
+    $self->{jobProps}->{$type} = $props;
+    return $props;
 }
 
 ###############################################################################
@@ -430,7 +463,7 @@ sub getJobNodesAccess {
     };
     if ($@ or ref($nodesAccess) ne 'HASH') {
         require Carp;
-        Carp::confess('Wrong nodes access of job \''. $type .'\': ' . $config->{nodesAccess});
+        Carp::confess('Wrong nodes access of job \'' . $type . '\': ' . $config->{nodesAccess});
     }
 
     foreach my $node (keys(%$nodesAccess)) {
@@ -667,23 +700,13 @@ sub getProps {
         return [];
     }
 
-    my $props = $config->{props};
-    utf8::encode($props);
-
+    my $props;
     eval {
-        $props = decode_json($props);
+        $props = $self->parseParams($config->{props});
     };
-    if ($@ or ref($props) ne 'ARRAY') {
+    if ($@) {
         require Carp;
         Carp::confess('Wrong props: ' . $config->{props});
-    }
-
-    foreach my $prop (@$props) {
-        if (exists($prop->{access}) and $prop->{access} ne '') {
-            $prop->{access} = AnyJob::Access::Resource->new(input => $prop->{access});
-        } else {
-            $prop->{access} = $AnyJob::Access::Resource::ACCESS_ANY;
-        }
     }
 
     $self->{props} = $props;
@@ -763,6 +786,42 @@ sub getAccessGroups {
 sub getTemplatesPath {
     my $self = shift;
     return injectPathIntoConstant($self->templates_path || DEFAULT_TEMPLATES_PATH);
+}
+
+###############################################################################
+# Parse array of hashes with detailed information about parameters.
+# All possible fields in that hashes see in documentation.
+# Each hash here has 'access' field which contains instance of AnyJob::Access::Resource class.
+# It signifies access needed to set this parameter.
+#
+# Arguments:
+#     params - string with parameters array in JSON format.
+# Returns:
+#     array of hashes with detailed parameters information.
+#
+sub parseParams {
+    my $self = shift;
+    my $params = shift;
+
+    utf8::encode($params);
+
+    eval {
+        $params = decode_json($params);
+    };
+    if ($@ or ref($params) ne 'ARRAY') {
+        require Carp;
+        Carp::confess('Wrong params');
+    }
+
+    foreach my $param (@$params) {
+        if (exists($param->{access}) and $param->{access} ne '') {
+            $param->{access} = AnyJob::Access::Resource->new(input => $param->{access});
+        } else {
+            $param->{access} = $AnyJob::Access::Resource::ACCESS_ANY;
+        }
+    }
+
+    return $params;
 }
 
 1;
