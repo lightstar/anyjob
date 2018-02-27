@@ -83,9 +83,9 @@
         {
             "text": "[% data.text | replace( '"', '\"' ) %]"
         }
-    [% ELSIF event == 'progress' && log && log.data && log.data.text %]
+    [% ELSIF event == 'progress' && progress.log && progress.log.data && progress.log.data.text %]
         {
-            "text": "[% log.data.text | replace( '"', '\"' ) %]"
+            "text": "[% progress.log.data.text | replace( '"', '\"' ) %]"
         }
     [% END %]
     ]
