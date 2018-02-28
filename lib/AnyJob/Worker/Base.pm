@@ -7,7 +7,7 @@ package AnyJob::Worker::Base;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  27.02.2018
+# Last update:  28.02.2018
 #
 
 use strict;
@@ -195,11 +195,13 @@ sub error {
 #
 # Arguments:
 #     progress - string progress value or hash with arbitrary message data.
+#     data     - optional hash with progress data.
 #
 sub sendProgress {
     my $self = shift;
     my $progress = shift;
-    $self->{parent}->sendProgress($self->id, $progress);
+    my $data = shift;
+    $self->{parent}->sendProgress($self->id, $progress, $data);
 }
 
 ###############################################################################
@@ -207,11 +209,13 @@ sub sendProgress {
 #
 # Arguments:
 #     state - string state value.
+#     data  - optional hash with progress data.
 #
 sub sendState {
     my $self = shift;
     my $state = shift;
-    $self->{parent}->sendState($self->id, $state)
+    my $data = shift;
+    $self->{parent}->sendState($self->id, $state, $data);
 }
 
 ###############################################################################
@@ -221,7 +225,7 @@ sub sendState {
 #     message - string log message.
 #     level   - optional integer log level (default: 0).
 #     tag     - optional string tag (default: '').
-#     data    - optional hash with log data.
+#     data    - optional hash with progress data.
 #
 sub sendLog {
     my $self = shift;
@@ -278,12 +282,14 @@ sub sendFailure {
 #
 # Arguments:
 #     progress - string progress value or hash with arbitrary message data.
+#     data     - optional hash with progress data.
 #
 sub sendJobSetProgress {
     my $self = shift;
     my $progress = shift;
+    my $data = shift;
     if (defined(my $jobset = $self->jobset)) {
-        $self->{parent}->sendJobSetProgress($jobset, $progress);
+        $self->{parent}->sendJobSetProgress($jobset, $progress, $data);
     }
 }
 
@@ -293,12 +299,14 @@ sub sendJobSetProgress {
 #
 # Arguments:
 #     state - string state value.
+#     data  - optional hash with progress data.
 #
 sub sendJobSetState {
     my $self = shift;
     my $state = shift;
+    my $data = shift;
     if (defined(my $jobset = $self->jobset)) {
-        $self->{parent}->sendJobSetState($jobset, $state);
+        $self->{parent}->sendJobSetState($jobset, $state, $data);
     }
 }
 

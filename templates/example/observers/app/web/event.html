@@ -10,7 +10,7 @@
 
     <span data-ng-if="event.type && event.node">
         {{config.jobsByType[event.type].label || event.type}}
-        ({{event.node}}<span data-ng-if="event.progress && event.progress.redirect"> -> {{event.progress.redirect}}</span>).
+        ({{event.node}}<span data-ng-if="event.redirect"> -> {{event.redirect}}</span>).
     </span>
 
     <span data-ng-if="event.event === 'create'">
@@ -26,9 +26,9 @@
     </span>
 
     <span data-ng-if="event.event === 'progress' || event.event === 'progressJobSet'">
-        <span data-ng-if="event.progress.state">State: {{event.progress.state}}.</span>
-        <span data-ng-if="event.progress.progress">Progress: {{event.progress.progress}}.</span>
-        <span data-ng-if="event.progress.log && event.progress.log.message">{{event.progress.log.message}}.</span>
+        <span data-ng-if="event.state">State: {{event.state}}.</span>
+        <span data-ng-if="event.progress">Progress: {{event.progress}}.</span>
+        <span data-ng-if="event.log && event.log.message">{{event.log.message}}.</span>
     </span>
 
     <span data-ng-if="event.event === 'finish'">

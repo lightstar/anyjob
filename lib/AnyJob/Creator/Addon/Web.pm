@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Web;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  16.02.2018
+# Last update:  28.02.2018
 #
 
 use strict;
@@ -186,14 +186,14 @@ sub observePrivateEvents {
 
     weaken($self);
     $conn->on(close => sub {
-            if (defined($self) and exists($self->{connsByUser}->{$user}) and
-                refaddr($conn) == refaddr($self->{connsByUser}->{$user})
-            ) {
-                $self->parent->setBusy(1);
-                $self->stopObservePrivateEvents($user);
-                $self->parent->setBusy(0);
-            }
-        });
+        if (defined($self) and exists($self->{connsByUser}->{$user}) and
+            refaddr($conn) == refaddr($self->{connsByUser}->{$user})
+        ) {
+            $self->parent->setBusy(1);
+            $self->stopObservePrivateEvents($user);
+            $self->parent->setBusy(0);
+        }
+    });
 }
 
 ###############################################################################

@@ -22,7 +22,7 @@
         "fields": [
             [% IF job && node %]
                 {
-                    "title": "[% job.label || type %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])",
+                    "title": "[% job.label || type %] ([% node %][% redirect ? ' -> ' _ redirect : '' %])",
                     "value": "
                         [% IF params && params.size %]
                             [% FOR param IN params.pairs %]
@@ -49,24 +49,24 @@
             [% END %]
 
             [% IF event == 'progress' || event == 'progressJobSet' %]
-                [% IF progress.state %]
+                [% IF state %]
                     {
                         "title": "State",
-                        "value": "[% progress.state | replace( '"', '\"' ) %]",
+                        "value": "[% state | replace( '"', '\"' ) %]",
                         "short": true
                     },
                 [% END %]
-                [% IF progress.progress %]
+                [% IF progress %]
                     {
                         "title": "Progress",
-                        "value": "[% progress.progress | replace( '"', '\"' ) %]",
+                        "value": "[% progress | replace( '"', '\"' ) %]",
                         "short": true
                     },
                 [% END %]
-                [% IF progress.log && progress.log.message %]
+                [% IF log && log.message %]
                     {
                         "title": "Message",
-                        "value": "[% progress.log.message | replace( '"', '\"' ) %]",
+                        "value": "[% log.message | replace( '"', '\"' ) %]",
                         "short": true
                     },
                 [% END %]
@@ -79,13 +79,9 @@
             [% END %]
         ]
     },
-    [% IF event == 'finish' && data && data.text %]
+    [% IF data && data.text %]
         {
             "text": "[% data.text | replace( '"', '\"' ) %]"
-        }
-    [% ELSIF event == 'progress' && progress.log && progress.log.data && progress.log.data.text %]
-        {
-            "text": "[% progress.log.data.text | replace( '"', '\"' ) %]"
         }
     [% END %]
     ]

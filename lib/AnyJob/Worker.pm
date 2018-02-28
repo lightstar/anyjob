@@ -7,7 +7,7 @@ package AnyJob::Worker;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  27.02.2018
+# Last update:  28.02.2018
 #
 
 use strict;
@@ -42,14 +42,21 @@ sub new {
 # Arguments:
 #     id       - integer job id.
 #     progress - string progress value or hash with arbitrary message data.
+#     data     - optional hash with progress data.
 #
 sub sendProgress {
     my $self = shift;
     my $id = shift;
     my $progress = shift;
+    my $data = shift;
 
     unless (ref($progress) eq 'HASH') {
-        $progress = { progress => $progress };
+        $progress = {
+            progress => $progress,
+            (defined($data) ? (data => $data) : ())
+        };
+    } elsif (defined($data)) {
+        $progress->{data} = $data;
     }
 
     $progress->{id} = $id;
@@ -62,13 +69,18 @@ sub sendProgress {
 # Arguments:
 #     id    - integer job id.
 #     state - string state value.
+#     data  - optional hash with progress data.
 #
 sub sendState {
     my $self = shift;
     my $id = shift;
     my $state = shift;
+    my $data = shift;
 
-    $self->sendProgress($id, { state => $state })
+    $self->sendProgress($id, {
+        state => $state,
+        (defined($data) ? (data => $data) : ())
+    })
 }
 
 ###############################################################################
@@ -92,7 +104,7 @@ sub sendRun {
 #     message - string log message.
 #     level   - optional integer log level (default: 0).
 #     tag     - optional string tag (default: '').
-#     data    - optional hash with log data.
+#     data    - optional hash with progress data.
 #
 sub sendLog {
     my $self = shift;
@@ -111,9 +123,9 @@ sub sendLog {
                 time    => time(),
                 message => $message,
                 (defined($level) ? (level => $level) : ()),
-                (defined($tag) ? (tag => $tag) : ()),
-                (defined($data) ? (data => $data) : ())
-            }
+                (defined($tag) ? (tag => $tag) : ())
+            },
+            (defined($data) ? (data => $data) : ())
         });
 }
 
@@ -180,14 +192,21 @@ sub sendFailure {
 # Arguments:
 #     id       - integer jobset id.
 #     progress - string progress value or hash with arbitrary message data.
+#     data     - optional hash with progress data.
 #
 sub sendJobSetProgress {
     my $self = shift;
     my $id = shift;
     my $progress = shift;
+    my $data = shift;
 
     unless (ref($progress) eq 'HASH') {
-        $progress = { progress => $progress };
+        $progress = {
+            progress => $progress,
+            (defined($data) ? (data => $data) : ())
+        };
+    } elsif (defined($data)) {
+        $progress->{data} = $data;
     }
 
     $progress->{id} = $id;
@@ -200,13 +219,18 @@ sub sendJobSetProgress {
 # Arguments:
 #     id    - integer jobset id.
 #     state - string state value.
+#     data  - optional hash with progress data.
 #
 sub sendJobSetState {
     my $self = shift;
     my $id = shift;
     my $state = shift;
+    my $data = shift;
 
-    $self->sendJobSetProgress($id, { state => $state })
+    $self->sendJobSetProgress($id, {
+        state => $state,
+        (defined($data) ? (data => $data) : ())
+    })
 }
 
 ###############################################################################

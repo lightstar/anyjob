@@ -38,7 +38,7 @@
 
     [% IF job && node %]
         Job: <b>[% job.label || type %]</b><br>
-        Node: <b>[% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %]</b><br>
+        Node: <b>[% node %][% redirect ? ' -> ' _ redirect : '' %]</b><br>
         [% IF params && params.size %]
             Parameters:<br>
             [% FOR param IN params.pairs %]
@@ -63,18 +63,18 @@
     [% END %]
 
     [% IF event == 'progress' || event == 'progressJobSet' %]
-        [% IF progress.state %]
-            State: <b>[% progress.state %]</b><br>
+        [% IF state %]
+            State: <b>[% state %]</b><br>
         [% END %]
-        [% IF progress.progress %]
-            Progress: <b>[% progress.progress %]</b><br>
+        [% IF progress %]
+            Progress: <b>[% progress %]</b><br>
         [% END %]
     [% ELSIF event == 'finish' %]
         [% IF log && log.list.size %]
             Messages:<br>
             [% FOREACH row IN log.list %]
                 [% IF row.time && row.message %]
-                    &nbsp;&nbsp;[[% row.time %]] [% message %]<br>
+                    &nbsp;&nbsp;[[% row.time %]] [% row.message %]<br>
                     [% IF row.data && row.data.text %]
                         [% FOREACH line IN row.data.text.split("\n") %]
                             &nbsp;&nbsp;&nbsp;&nbsp;[% line %]<br>

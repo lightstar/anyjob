@@ -2,7 +2,7 @@
     "attachments": [ {
         "title": "
             [% IF job && node %]
-                [% job.label || type %] ([% node %][% progress && progress.redirect ? ' -> ' _ progress.redirect : '' %])
+                [% job.label || type %] ([% node %][% redirect ? ' -> ' _ redirect : '' %])
             [% ELSE %]
                 Job Set
             [% END %]
@@ -11,7 +11,7 @@
             [% IF event == 'create' || event == 'createJobSet' %]
                 created
             [% ELSIF event == 'progress' || event == 'progressJobSet' %]
-                [% progress.state || progress.progress || progress.log.message | replace( '"', '\"' ) %]
+                [% state || progress || log.message | replace( '"', '\"' ) %]
             [% ELSIF event == 'finish' %]
                 [% message | replace( '"', '\"' ) %]
             [% ELSIF event == 'finishJobSet' %]
@@ -26,13 +26,9 @@
             "color": "danger"
         [% END %]
     },
-    [% IF event == 'finish' && data && data.text %]
+    [% IF data && data.text %]
         {
             "text": "[% data.text | replace( '"', '\"' ) %]"
-        }
-    [% ELSIF event == 'progress' && progress.log && progress.log.data && progress.log.data.text %]
-        {
-            "text": "[% progress.log.data.text | replace( '"', '\"' ) %]"
         }
     [% END %]
     ]

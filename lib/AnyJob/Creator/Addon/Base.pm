@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  27.02.2018
+# Last update:  28.02.2018
 #
 
 use strict;
@@ -100,20 +100,6 @@ sub eventFilter {
     my $self = shift;
     my $event = shift;
     return $self->{eventFilter}->filter($event);
-}
-
-###############################################################################
-# Run configured filter for array of private events.
-#
-# Arguments:
-#     events - array of hashes with event data.
-# Returns:
-#     array of hashes with filtered events that should be processed.
-#
-sub filterEvents {
-    my $self = shift;
-    my $events = shift;
-    return [ grep {$self->{eventFilter}->filter($_)} @$events ];
 }
 
 ###############################################################################

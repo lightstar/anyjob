@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  16.02.2018
+# Last update:  28.02.2018
 #
 
 use strict;
@@ -51,10 +51,15 @@ sub getActiveEventQueues {
 # There can be two types of events.
 # 1. 'Progress jobset' event. Sent by worker component.
 # At least one of fields 'state' or 'progress' required here.
+# Field 'data' is optional and contain arbitrary hash with progress data. Often it contains 'text' field
+# with some text data (usually long).
 # {
 #     id => ...,
 #     state => '...',
 #     progress => '...',
+#     data => {
+#         text => '...'
+#     }
 # }
 # 2. 'Progress job in jobset' event. Sent by node-binded controller which creates and progresses jobs.
 # Here 'id' field is integer jobset id, and 'job' field - integer job id.
@@ -62,6 +67,8 @@ sub getActiveEventQueues {
 # Field 'message' should be here only along with 'success' field.
 # Fields 'type', 'node', 'params' and 'props' should be in 'jobProgress' hash only when job is first created and its
 # id is yet unknown.
+# Field 'data' is optional and contain arbitrary hash with result or progress data. Often it contains 'text' field
+# with some text data (usually long).
 # {
 #     id => ...
 #     job => ...,
@@ -72,10 +79,11 @@ sub getActiveEventQueues {
 #         props => { ... },
 #         state => '...',
 #         progress => '...',
-#         log => { time => ..., message => '...' },
+#         log => { time => ..., message => '...', level => ..., tag => '...' },
 #         redirect => '...',
 #         success => 0/1,
-#         message => '...'
+#         message => '...',
+#         data => { text => '...' }
 #     }
 # }
 #
@@ -151,10 +159,10 @@ sub progressJobInJobSet {
 
     if ($jobSetFinished) {
         $self->sendEvent(EVENT_FINISH_JOBSET, {
-                id    => $id,
-                props => $jobSet->{props},
-                jobs  => $jobSet->{jobs}
-            });
+            id    => $id,
+            props => $jobSet->{props},
+            jobs  => $jobSet->{jobs}
+        });
     }
 }
 
@@ -222,10 +230,12 @@ sub progressJobSet {
     $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
 
     $self->sendEvent(EVENT_PROGRESS_JOBSET, {
-            id       => $id,
-            props    => $jobSet->{props},
-            progress => $event
-        });
+        id    => $id,
+        props => $jobSet->{props},
+        (exists($event->{state}) ? (state => $event->{state}) : ()),
+        (exists($event->{progress}) ? (progress => $event->{progress}) : ()),
+        (exists($event->{data}) ? (data => $event->{data}) : ())
+    });
 }
 
 1;

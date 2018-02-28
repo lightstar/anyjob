@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  27.02.2018
+# Last update:  28.02.2018
 #
 
 use strict;
@@ -77,7 +77,7 @@ sub getActiveEventQueues {
 # At least one of fields 'state', 'progress' or 'log' required here.
 # Field 'time' is log message time in integer unix timestamp format.
 # Fields 'level' and 'tag' are optional and contain integer log level and string log tag accordingly.
-# Field 'data' is optional too and contain arbitrary hash with log data. Often it contains 'text' field
+# Field 'data' is optional too and contain arbitrary hash with progress data. Often it contains 'text' field
 # with some text data (usually long).
 # {
 #     id => ...,
@@ -87,10 +87,10 @@ sub getActiveEventQueues {
 #         time => ...,
 #         message => '...',
 #         level => ...,
-#         tag => '...',
-#         data => {
-#             text => '...'
-#         }
+#         tag => '...'
+#     },
+#     data => {
+#         text => '...'
 #     }
 # }
 #
@@ -150,13 +150,16 @@ sub progressJob {
     }
 
     $self->sendEvent(EVENT_PROGRESS, {
-            id       => $id,
-            (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
-            type     => $job->{type},
-            params   => $job->{params},
-            props    => $job->{props},
-            progress => $event
-        });
+        id     => $id,
+        (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
+        type   => $job->{type},
+        params => $job->{params},
+        props  => $job->{props},
+        (exists($event->{state}) ? (state => $event->{state}) : ()),
+        (exists($event->{progress}) ? (progress => $event->{progress}) : ()),
+        (exists($event->{log}) ? (log => $event->{log}) : ()),
+        (exists($event->{data}) ? (data => $event->{data}) : ())
+    });
 
     if (exists($job->{jobset})) {
         $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
@@ -196,13 +199,13 @@ sub redirectJob {
     $self->debug('Redirect job \'' . $id . '\': ' . encode_json($event));
 
     $self->sendEvent(EVENT_REDIRECT, {
-            id       => $id,
-            (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
-            type     => $job->{type},
-            params   => $job->{params},
-            props    => $job->{props},
-            progress => $event
-        });
+        id       => $id,
+        (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
+        type     => $job->{type},
+        params   => $job->{params},
+        props    => $job->{props},
+        redirect => $event->{redirect}
+    });
 
     if (exists($job->{jobset})) {
         $self->sendJobProgressForJobSet($id, $event, $job->{jobset});
@@ -259,15 +262,15 @@ sub finishJob {
     $self->cleanJob($id);
 
     $self->sendEvent(EVENT_FINISH, {
-            id      => $id,
-            (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
-            type    => $job->{type},
-            params  => $job->{params},
-            props   => $job->{props},
-            success => $event->{success},
-            message => $event->{message},
-            (exists($event->{data}) ? (data => $event->{data}) : ())
-        });
+        id      => $id,
+        (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
+        type    => $job->{type},
+        params  => $job->{params},
+        props   => $job->{props},
+        success => $event->{success},
+        message => $event->{message},
+        (exists($event->{data}) ? (data => $event->{data}) : ())
+    });
 
     if ($job->{jobset}) {
         $self->sendJobProgressForJobSet($id, $event, $job->{jobset});

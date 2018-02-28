@@ -51,22 +51,20 @@ format.
         "<string property name>": "<string property value>",
         ...
     },
-    "progress": {
-        "state": "<string job state>",
-        "progress": "<string job progress>",
-        "log": {
-            "time": <integer unix timestamp>,
-            "message": "<string log message>",
-            "level": <integer log level>,
-            "tag": "<string log tag>",
-            "data": {
-                "text": "<string text data>"
-            }
-        }
+    "state": "<string job state>",
+    "progress": "<string job progress>",
+    "log": {
+        "time": <integer unix timestamp>,
+        "message": "<string log message>",
+        "level": <integer log level>,
+        "tag": "<string log tag>"
+    },
+    "data": {
+        "text": "<string text data>"
     }
 }
 
-Every field inside "progress" is optional but at least one (and usually its only one) should exists.
+Fields "state", "progress" and "log" are optional but at least one (and usually its only one) should exists.
 
 3. 'Redirect' event. It indicates redirect of some job from one node to another.
 {
@@ -75,9 +73,7 @@ Every field inside "progress" is optional but at least one (and usually its only
     "node": "<string node name>",
     "id": <integer job id>,
     "jobset": <integer jobset id (optional, exists only if job is part of jobset)>,
-    "progress": {
-        "redirect": "<string target node name>"
-    }
+    "redirect": "<string target node name>"
 }
 
 4. 'Finish' event. It indicates finish of some job.
@@ -158,13 +154,14 @@ Every field inside "progress" is optional but at least one (and usually its only
         "<string property name>": "<string property value>",
         ...
     },
-    "progress": {
-        "state": "<string jobset new state>",
-        "progress": "<string jobset progress>"
+    "state": "<string jobset new state>",
+    "progress": "<string jobset progress>",
+    "data": {
+        "text": "<string text data>"
     }
 }
 
-Every field inside "progress" is optional but at least one (and usually its only one) should exists.
+Fields "state" and "progress" are optional but at least one (and usually its only one) should exists.
 
 8. 'Finish jobset' event. It indicates finish of some jobset.
 {

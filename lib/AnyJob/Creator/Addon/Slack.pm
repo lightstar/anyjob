@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  19.02.2018
+# Last update:  28.02.2018
 #
 
 use strict;
@@ -222,15 +222,15 @@ sub receivePrivateEvent {
 
         weaken($self);
         http_post($url, $payload, headers => {
-                Content_Type => 'application/json; charset=utf-8'
-            }, sub {
-                my ($body, $headers) = @_;
-                if (defined($self) and $headers->{Status} !~ /^2/) {
-                    $self->parent->setBusy(1);
-                    $self->error('Error sending event to ' . $url . ', response: ' . $body);
-                    $self->parent->setBusy(0);
-                }
-            });
+            Content_Type => 'application/json; charset=utf-8'
+        }, sub {
+            my ($body, $headers) = @_;
+            if (defined($self) and $headers->{Status} !~ /^2/) {
+                $self->parent->setBusy(1);
+                $self->error('Error sending event to ' . $url . ', response: ' . $body);
+                $self->parent->setBusy(0);
+            }
+        });
     }
     $self->parent->setBusy(0);
 }

@@ -8,7 +8,7 @@ package AnyJob::Controller::Observer;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  16.02.2018
+# Last update:  28.02.2018
 #
 
 use strict;
@@ -94,7 +94,10 @@ sub getEventQueues {
 #     type => '...',
 #     params => { param1 => '...', param2 => '...', ... },
 #     props => { prop1 => '...', prop2 => '...', ... },
-#     progress => { state => '...', progress => '...', log => { time => ..., message => '...' } },
+#     state => '...',
+#     progress => '...',
+#     log => { time => ..., message => '...', level => ..., tag => '...' },
+#     data => { text => '...' },
 #     success => ...,
 #     message => '...'
 # }
@@ -115,7 +118,9 @@ sub getEventQueues {
 #         props => { ... },
 #     }, ... ],
 #     props => { prop1 => '...', prop2 => '...', ... },
-#     progress => { state => '...', progress => '...' }
+#     state => '...',
+#     progress => '...',
+#     data => { text => '...' }
 # }
 #
 sub processEvent {
@@ -209,7 +214,7 @@ sub saveLog {
     my $self = shift;
     my $event = shift;
 
-    unless (exists($event->{id}) and exists($event->{progress}) and exists($event->{progress}->{log})) {
+    unless (exists($event->{id}) and exists($event->{log})) {
         return;
     }
 
@@ -219,8 +224,10 @@ sub saveLog {
 
     my $cleanTime = time() + $cleanTimeout;
     $self->redis->zadd('anyjob:observer:' . $self->name . ':log', time() + $cleanTime, $event->{id});
-    $self->redis->rpush('anyjob:observer:' . $self->name . ':log:' . $event->{id},
-        encode_json($event->{progress}->{log}));
+    $self->redis->rpush('anyjob:observer:' . $self->name . ':log:' . $event->{id}, encode_json({
+        %{$event->{log}},
+        (exists($event->{data}) ? (data => $event->{data}) : ())
+    }));
 
     unless (defined($self->{nextCleanTime}) and $self->{nextCleanTime} < $cleanTime) {
         $self->{nextCleanTime} = $cleanTime;
@@ -334,18 +341,5 @@ sub eventFilter {
     return $self->{eventFilter}->filter($event);
 }
 
-###############################################################################
-# Run configured filter for array of events.
-#
-# Arguments:
-#     events - array of hashes with event data.
-# Returns:
-#     array of hashes with filtered events that should be processed.
-#
-sub filterEvents {
-    my $self = shift;
-    my $events = shift;
-    return [ grep {$self->{eventFilter}->filter($_)} @$events ];
-}
 
 1;
