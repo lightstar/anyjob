@@ -7,7 +7,7 @@
 #
 # Author:       LightStar
 # Created:      17.11.2017
-# Last update:  12.12.2017
+# Last update:  01.03.2018
 #
 
 PLACKUP=${ANYJOBC_PLACKUP:-"/usr/bin/plackup"}
@@ -17,6 +17,7 @@ PORT=${ANYJOBC_PORT:-"8080"}
 ANYJOBC=${ANYJOB_PATH:-"/opt/anyjob"}"/bin/anyjobc.psgi"
 MAXTRIES=${ANYJOBC_KILL_MAX_TRIES:-10000}
 SLEEPTIME=${ANYJOBC_KILL_SLEEP_TIME:-10000}
+WEB_LOG=${ANYJOBC_WEB_LOG:-"/var/log/anyjob-web.log"}
 PID=`ps ax | grep $PLACKUP | grep -v grep | sed -r 's/^\s*//' | cut -d ' ' -f1`
 
 if which sleepenh >/dev/null 2>&1; then
@@ -38,7 +39,7 @@ start() {
     else
         ulimit -n 10240
         export PERL_INLINE_DIRECTORY=${ANYJOB_PATH:-"/opt/anyjob"}"/.inline"
-        $PLACKUP --server $SERVER --host $HOST --port $PORT --no-default-middleware $ANYJOBC >/dev/null 2>&1 &
+        $PLACKUP --server $SERVER --host $HOST --port $PORT --no-default-middleware $ANYJOBC >>"$WEB_LOG" 2>&1 &
     fi
 }
 
