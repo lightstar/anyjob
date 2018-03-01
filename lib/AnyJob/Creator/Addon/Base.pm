@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  28.02.2018
+# Last update:  01.03.2018
 #
 
 use strict;
@@ -278,6 +278,14 @@ sub receivePrivateEvent {
 
     require Carp;
     Carp::confess('Need to be implemented in descendant');
+}
+
+###############################################################################
+# Method called before shutdown and can be used to free all resources.
+# If not overriden, does nothing.
+#
+sub stop {
+    my $self = shift;
 }
 
 1;

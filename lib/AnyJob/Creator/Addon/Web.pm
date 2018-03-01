@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Web;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  28.02.2018
+# Last update:  01.03.2018
 #
 
 use strict;
@@ -235,6 +235,17 @@ sub receivePrivateEvent {
         }
     }
     $self->parent->setBusy(0);
+}
+
+###############################################################################
+# Method called before shutdown and used to stop observing private events.
+#
+sub stop {
+    my $self = shift;
+
+    foreach my $user (keys(%{$self->{connsByUser}})) {
+        $self->stopObservePrivateEvents($user);
+    }
 }
 
 1;

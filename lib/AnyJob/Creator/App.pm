@@ -7,7 +7,7 @@ package AnyJob::Creator::App;
 #
 # Author:       LightStar
 # Created:      30.10.2017
-# Last update:  16.02.2018
+# Last update:  01.03.2018
 #
 
 use strict;
@@ -92,7 +92,14 @@ sub setBusy {
 #
 sub shutdown {
     my $self = shift;
+
+    foreach my $name (@{ADDONS()}) {
+        $self->addon($name)->stop();
+    }
+    $self->{observer}->stop();
+
     $self->debug('Stopped');
+
     exit(0);
 }
 

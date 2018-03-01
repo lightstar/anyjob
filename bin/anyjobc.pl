@@ -7,7 +7,7 @@
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  21.12.2017
+# Last update:  01.03.2018
 #
 
 use lib ($ENV{ANYJOB_LIB} || ($ENV{ANYJOB_PATH} || '/opt/anyjob') . '/lib');
@@ -27,6 +27,8 @@ BEGIN {
 
 my $creator = AnyJob::Creator->new();
 
-print $creator->addon('console')->create(\@ARGV) . "\n";
+my $console = $creator->addon('console');
+print $console->create(\@ARGV) . "\n";
+$console->stop();
 
 exit(0);
