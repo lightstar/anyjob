@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  27.02.2018
+# Last update:  02.03.2018
 #
 
 use strict;
@@ -19,7 +19,7 @@ use File::Basename;
 use AnyJob::Constants::Defaults qw(
     DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH
     DEFAULT_INTERNAL_PROPS injectPathIntoConstant
-    );
+);
 use AnyJob::Access::Resource;
 
 use base 'AnyJob::Config::Base';
@@ -118,9 +118,9 @@ sub getAllNodes {
         if (my ($node) = ($section =~ /^node_(.+)$/)) {
             unless ($self->{data}->{$section}->{disabled}) {
                 push @nodes, {
-                        node => $node,
-                        sort => $self->{data}->{$section}->{sort} || 0
-                    };
+                    node => $node,
+                    sort => $self->{data}->{$section}->{sort} || 0
+                };
             }
         }
     }
@@ -181,19 +181,19 @@ sub getAllJobs {
 
             my $props = $self->getJobProps($type);
             push @jobs, {
-                    type   => $type,
-                    nodes  => {
-                        available => $nodes,
-                        default   => $defaultNodes,
-                        access    => $self->getJobNodesAccess($type)
-                    },
-                    access => $self->getJobAccess($type),
-                    label  => $self->{data}->{$section}->{label} || $type,
-                    group  => $self->{data}->{$section}->{group} || '',
-                    params => $self->getJobParams($type),
-                    (defined($props) ? (props => $props) : ()),
-                    sort   => $self->{data}->{$section}->{sort} || 0
-                };
+                type   => $type,
+                nodes  => {
+                    available => $nodes,
+                    default   => $defaultNodes,
+                    access    => $self->getJobNodesAccess($type)
+                },
+                access => $self->getJobAccess($type),
+                label  => $self->{data}->{$section}->{label} || $type,
+                group  => $self->{data}->{$section}->{group} || '',
+                params => $self->getJobParams($type),
+                (defined($props) ? (props => $props) : ()),
+                sort   => $self->{data}->{$section}->{sort} || 0
+            };
         }
     }
 

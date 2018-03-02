@@ -137,22 +137,19 @@ running daemon workers which could perform jobs without starting new processes.
 6. *Redis* is now used both for data storage and for message queuing. It performs good, but it would be better to
 abstract away by using some specific modules to simplify transition to some other mechanisms in future.
 
-7. Http requests and redis queues polling are now performed synchronously, but that potentially could lead to lags
-throughout entire system, so better think about making it asynchronous.
-
-8. It would be nice to limit jobs execution using some configured blocks or semaphores. So one could say that
+7. It would be nice to limit jobs execution using some configured blocks or semaphores. So one could say that
 some job can execute only consequentially or only in limited quantity of simultaneously launched copies. By now
 it is possible to limit active jobs count only globally.
 
-9. It is worth implementing some common use worker modules 'out of the box'. For example such that would execute
+8. It is worth implementing some common use worker modules 'out of the box'. For example such that would execute
 some arbitrary program and intercept its input and output, or run specific method in some perl module with defined
 parameters, etc.
 
-10. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
+9. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
 add translations for all messages and possibility to switch between languages (russian is priority of course).
 
-11. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
+10. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
 adding possibility to specify group, type and nodes using separate dialogs.
 
-12. It is worth to add support for links leading to partially created jobs in the web application to simplify job
+11. It is worth to add support for links leading to partially created jobs in the web application to simplify job
 creation.

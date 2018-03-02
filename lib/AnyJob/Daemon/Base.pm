@@ -5,7 +5,7 @@ package AnyJob::Daemon::Base;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  14.02.2018
+# Last update:  02.03.2018
 #
 
 use strict;
@@ -24,8 +24,10 @@ use Scalar::Util qw(looks_like_number);
 #     processor      - object which must implement 'process' method. It will be called in daemon process loop.
 #     logger         - logger object which must implement 'debug' and 'error' methods.
 #     detached       - 0/1 flag. If set daemon will run in 'detached' mode i.e. will fork, close all input/output, etc.
-#     delay          - delay in seconds between process loop iterations. By default - 1.
+#     delay          - delay in seconds between process loop iterations. By default - 0 (i.e. no delay).
 #     pidfile        - file name to store daemon process pid value. By default - '/var/run/daemon.pid'.
+#     childStopDelay - delay in seconds between tries to stop all childs in the end of all processing. By default - 1.
+#     childStopTries - maximum number of tries to stop all childs in the end of all processing. By default - 10.
 # Returns:
 #     AnyJob::Daemon::Base object.
 #
@@ -49,6 +51,11 @@ sub new {
     $self->{delay} ||= 0;
     $self->{delay} = int($self->{delay} * 1000000);
     $self->{script} = basename($0);
+    $self->{childStopDelay} ||= 1;
+    $self->{childStopDelay} = int($self->{childStopDelay} * 1000000);
+    $self->{childStopTries} ||= 10;
+    $self->{parent} = 1;
+    $self->{childs} = [];
 
     unless ($self->canRun()) {
         require Carp;
@@ -100,9 +107,9 @@ sub daemonize {
 }
 
 ###############################################################################
-# Run daemon loop.
+# Prepare daemon. Must be called before 'run' method.
 #
-sub run {
+sub prepare {
     my $self = shift;
 
     if ($self->{detached}) {
@@ -113,10 +120,52 @@ sub run {
         $self->error('Can\'t write pid');
         exit(1);
     }
+}
+
+###############################################################################
+# Fork daemon. Must be called before 'run' method and after 'prepare' method.
+# Forking can be done only in parent process and as many times as you want.
+# Childs can't have their own childs.
+#
+# Returns:
+#     0/1 flag. If set, this is forked child process, otherwise - parent one.
+#
+sub fork {
+    my $self = shift;
+
+    unless ($self->{parent}) {
+        return 0;
+    }
+
+    my $pid = fork();
+    if ($pid != 0) {
+        push @{$self->{childs}}, $pid;
+        return 0;
+    }
+
+    unless (defined($pid)) {
+        $self->error('Can\'t fork: ' . $!);
+        exit(1);
+    }
+
+    $self->{parent} = 0;
+
+    return 1;
+}
+
+###############################################################################
+# Run daemon loop.
+#
+sub run {
+    my $self = shift;
+
+    $self->debug('Started');
 
     $self->stopOnSignal();
 
-    $self->debug('Started');
+    if ($self->{parent}) {
+        $SIG{CHLD} = sub {$self->childStopped()};
+    }
 
     $self->{running} = 1;
     while ($self->{running}) {
@@ -131,11 +180,14 @@ sub run {
         usleep($self->{delay}) if $self->{running} and $self->{delay};
     }
 
-    $self->debug('Stopped');
-
-    unless ($self->deletePid()) {
-        $self->error('Can\'t delete pid file');
+    if ($self->{parent}) {
+        $self->stopAllChilds();
+        unless ($self->deletePid()) {
+            $self->error('Can\'t delete pid file');
+        }
     }
+
+    $self->debug('Stopped');
 
     delete $self->{processor};
 }
@@ -149,13 +201,43 @@ sub stop {
     $self->{running} = 0;
 }
 
-
 ###############################################################################
 # Set handler for all known interruption signals to set daemon's stop flag so its loop will break on next iteration.
 #
 sub stopOnSignal {
     my $self = shift;
     $SIG{STOP} = $SIG{INT} = $SIG{TERM} = $SIG{QUIT} = sub {$self->stop()};
+}
+
+###############################################################################
+# Called in parent process and used to stop all child processes.
+#
+sub stopAllChilds {
+    my $self = shift;
+
+    my $try = 0;
+    while (scalar(@{$self->{childs}}) > 0) {
+        if ($try >= $self->{childStopTries}) {
+            $self->error('Can\'t stop all childs, remained: ' . join(', ', @{$self->{childs}}));
+            last;
+        }
+        foreach my $child (@{$self->{childs}}) {
+            kill TERM => $child;
+        }
+        usleep($self->{childStopDelay});
+        $try++;
+    }
+}
+
+###############################################################################
+# Called in parent process on signal 'CHLD' which is sent when some child had stopped.
+# Remove here its pid from internal childs array.
+#
+sub childStopped {
+    my $self = shift;
+    while ((my $pid = waitpid(-1, WNOHANG)) > 0) {
+        $self->{childs} = [ grep {$_ != $pid} @{$self->{childs}} ];
+    }
 }
 
 ###############################################################################

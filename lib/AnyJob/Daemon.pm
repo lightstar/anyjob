@@ -7,7 +7,7 @@ package AnyJob::Daemon;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  16.02.2018
+# Last update:  02.03.2018
 #
 
 use strict;
@@ -16,7 +16,9 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_MIN_DELAY DEFAULT_MAX_DELAY DEFAULT_PIDFILE);
+use AnyJob::Constants::Defaults qw(
+    DEFAULT_MIN_DELAY DEFAULT_MAX_DELAY DEFAULT_PIDFILE DEFAULT_CHILD_STOP_DELAY DEFAULT_CHILD_STOP_TRIES
+);
 use AnyJob::Daemon::Base;
 use AnyJob::Controller::Factory;
 
@@ -41,11 +43,13 @@ sub new {
 
     my $config = $self->config->section('daemon') || {};
     $self->{daemon} = AnyJob::Daemon::Base->new(
-        detached  => defined($config->{detached}) ? ($config->{detached} ? 1 : 0) : 1,
-        pidfile   => $config->{pidfile} || DEFAULT_PIDFILE,
-        delay     => 0,
-        logger    => $self->logger,
-        processor => $self
+        detached       => defined($config->{detached}) ? ($config->{detached} ? 1 : 0) : 1,
+        pidfile        => $config->{pidfile} || DEFAULT_PIDFILE,
+        delay          => 0,
+        childStopDelay => $config->{child_stop_delay} || DEFAULT_CHILD_STOP_DELAY,
+        childStopTries => $config->{child_stop_tries} || DEFAULT_CHILD_STOP_TRIES,
+        logger         => $self->logger,
+        processor      => $self
     );
 
     $self->{controllers} = AnyJob::Controller::Factory->new(parent => $self)->collect();
@@ -68,7 +72,30 @@ sub new {
 #
 sub run {
     my $self = shift;
+
+    $self->{daemon}->prepare();
+    $self->isolateControllers();
     $self->{daemon}->run();
+}
+
+###############################################################################
+# Fork for each isolated controller to run it in separate process.
+#
+sub isolateControllers {
+    my $self = shift;
+
+    my $controllers = [];
+    foreach my $controller (@{$self->{controllers}}) {
+        if ($controller->isIsolated()) {
+            if ($self->{daemon}->fork()) {
+                $self->{controllers} = [ $controller ];
+                return;
+            }
+        } else {
+            push @$controllers, $controller;
+        }
+    }
+    $self->{controllers} = $controllers;
 }
 
 ###############################################################################

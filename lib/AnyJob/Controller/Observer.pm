@@ -8,7 +8,7 @@ package AnyJob::Controller::Observer;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  28.02.2018
+# Last update:  02.03.2018
 #
 
 use strict;
@@ -67,6 +67,18 @@ sub name {
 sub getObserverConfig {
     my $self = shift;
     return $self->config->getObserverConfig($self->name);
+}
+
+###############################################################################
+# Check if observer is isolated. Isolated observers run in separate processes.
+#
+# Returns:
+#     0/1 flag. If set, this observer is isolated, otherwise - not.
+#
+sub isIsolated {
+    my $self = shift;
+    my $config = $self->getObserverConfig() || {};
+    return $config->{isolated} ? 1 : 0;
 }
 
 ###############################################################################

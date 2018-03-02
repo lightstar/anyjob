@@ -6,7 +6,7 @@ package AnyJob::Controller::Base;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  14.02.2018
+# Last update:  02.03.2018
 #
 
 use strict;
@@ -125,6 +125,17 @@ sub getJobSet {
     my $self = shift;
     my $id = shift;
     return $self->{parent}->getJobSet($id);
+}
+
+###############################################################################
+# Check if controller is isolated. Isolated controllers run in separate processes.
+#
+# Returns:
+#     0/1 flag. If set, this controller is isolated, otherwise - not.
+#
+sub isIsolated {
+    my $self = shift;
+    return 0;
 }
 
 ###############################################################################

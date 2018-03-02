@@ -121,6 +121,10 @@ pidfile               - path to file where daemon process pid is stored. Default
 min_delay             - minimum delay in seconds between daemon loops. Default: 1.
 max_delay             - maximum delay in seconds between daemon loops. You can set this higher for more performance
                         but daemon stopping and restarting might require more time. Default: 1.
+child_stop_delay      - delay in seconds between tries to stop all childs which is done in the end of all processing.
+                        Default: 1.
+child_stop_tries      - maximum number of tries to stop all childs which is done in the end of all processing.
+                        Default: 10.
 
 6. Worker configuration section.
 
@@ -250,6 +254,8 @@ observer's name. Usually they are located in 'observers/<name>.cfg' files relati
 path. Below are all recognizible keys.
 
 module                - module name. Module should have prefix 'AnyJob::Controller::Observer'.
+disabled              - 0/1 flag. If set, this observer will be unavailable. Default: 0.
+isolated              - 0/1 flag. If set, this observer will run in separate process. Default: 0.
 events                - list of event names separated by comma which will be processed by this observer. If set to
                         'all', this observer will process all events. Default: 'all'.
 nodes                 - list of node names separated by comma whose events will be processed by this observer. If set

@@ -45,6 +45,16 @@ use constant DEFAULT_CLEAN_DELAY => 60;
 use constant DEFAULT_PIDFILE => '/var/run/anyjobd.pid';
 
 ###############################################################################
+# Default delay in seconds between tries to stop all child processes.
+#
+use constant DEFAULT_CHILD_STOP_DELAY => 1;
+
+###############################################################################
+# Default maximum number of tries to stop all child processes.
+#
+use constant DEFAULT_CHILD_STOP_TRIES => 10;
+
+###############################################################################
 # Default anyjob installation path.
 #
 use constant DEFAULT_ANYJOB_PATH => '/opt/anyjob';
@@ -126,6 +136,8 @@ our @EXPORT = qw(
     DEFAULT_CLEAN_TIMEOUT
     DEFAULT_CLEAN_DELAY
     DEFAULT_PIDFILE
+    DEFAULT_CHILD_STOP_DELAY
+    DEFAULT_CHILD_STOP_TRIES
     DEFAULT_ANYJOB_PATH
     DEFAULT_CONFIG_FILE
     DEFAULT_REDIS
