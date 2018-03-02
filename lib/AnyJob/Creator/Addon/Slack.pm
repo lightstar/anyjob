@@ -222,7 +222,7 @@ sub receivePrivateEvent {
 
         weaken($self);
         http_post($url, $payload, headers => {
-            Content_Type => 'application/json; charset=utf-8'
+            'Content-Type' => 'application/json; charset=utf-8'
         }, sub {
             my ($body, $headers) = @_;
             if (defined($self) and $headers->{Status} !~ /^2/) {

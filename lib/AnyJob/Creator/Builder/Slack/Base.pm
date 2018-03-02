@@ -71,7 +71,7 @@ sub sendResponse {
 
     weaken($self);
     http_post($url, encode_json($response), headers => {
-            Content_Type => 'application/json; charset=utf-8'
+            'Content-Type' => 'application/json; charset=utf-8'
         }, sub {
             my ($body, $headers) = @_;
             if (defined($self) and $headers->{Status} !~ /^2/) {
@@ -113,8 +113,8 @@ sub callApiMethod {
 
     weaken($self);
     http_post($url, encode_json($data), headers => {
-            Content_Type  => 'application/json; charset=utf-8',
-            Authorization => 'Bearer ' . $config->{api_token}
+            'Content-Type' => 'application/json; charset=utf-8',
+            Authorization  => 'Bearer ' . $config->{api_token}
         }, sub {
             my ($body, $headers) = @_;
             if (defined($self)) {
