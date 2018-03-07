@@ -5,7 +5,7 @@ package AnyJob::Daemon::Base;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  05.03.2018
+# Last update:  07.03.2018
 #
 
 use strict;
@@ -173,13 +173,13 @@ sub run {
 
     $self->debug('Started');
 
+    $self->{running} = 1;
     $self->stopOnSignal();
 
     if ($self->{parent}) {
         $SIG{CHLD} = sub {$self->childStopped()};
     }
 
-    $self->{running} = 1;
     while ($self->{running}) {
         eval {
             $self->{processor}->process();
@@ -209,8 +209,10 @@ sub run {
 #
 sub stop {
     my $self = shift;
-    $self->debug('Stopping by signal');
-    $self->{running} = 0;
+    if ($self->{running}) {
+        $self->debug('Stopping by signal');
+        $self->{running} = 0;
+    }
 }
 
 ###############################################################################
