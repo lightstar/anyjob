@@ -5,7 +5,7 @@ package AnyJob::Constants::Defaults;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  16.02.2018
+# Last update:  06.03.2018
 #
 
 use strict;
@@ -42,7 +42,7 @@ use constant DEFAULT_CLEAN_DELAY => 60;
 ###############################################################################
 # Default pid file for daemon.
 #
-use constant DEFAULT_PIDFILE => '/var/run/anyjobd.pid';
+use constant DEFAULT_DAEMON_PIDFILE => '/var/run/anyjobd.pid';
 
 ###############################################################################
 # Default delay in seconds between tries to stop all child processes.
@@ -53,6 +53,16 @@ use constant DEFAULT_CHILD_STOP_DELAY => 1;
 # Default maximum number of tries to stop all child processes.
 #
 use constant DEFAULT_CHILD_STOP_TRIES => 10;
+
+###############################################################################
+# Default delay in seconds between tries to stop all worker daemon processes.
+#
+use constant DEFAULT_WORKER_STOP_DELAY => 1;
+
+###############################################################################
+# Default maximum number of tries to stop all worker daemon processes.
+#
+use constant DEFAULT_WORKER_STOP_TRIES => 10;
 
 ###############################################################################
 # Default anyjob installation path.
@@ -95,14 +105,19 @@ use constant DEFAULT_CREATORS_CONFIG_PATH => 'creators';
 use constant DEFAULT_BUILDERS_CONFIG_PATH => 'builders';
 
 ###############################################################################
+# Default path for workers configuration (relative to config file).
+#
+use constant DEFAULT_WORKERS_CONFIG_PATH => 'workers';
+
+###############################################################################
 # Default directory for templates.
 #
 use constant DEFAULT_TEMPLATES_PATH => '{ANYJOB_PATH}/templates/current';
 
 ###############################################################################
-# Default work dir for worker execution.
+# Default worker daemon executable.
 #
-use constant DEFAULT_WORKER_WORK_DIR => '{ANYJOB_PATH}';
+use constant DEFAULT_WORKER_DAEMON_EXEC => '{ANYJOB_PATH}/bin/anyjobwd.pl';
 
 ###############################################################################
 # Default worker executable.
@@ -110,9 +125,24 @@ use constant DEFAULT_WORKER_WORK_DIR => '{ANYJOB_PATH}';
 use constant DEFAULT_WORKER_EXEC => '{ANYJOB_PATH}/bin/anyjobw.pl';
 
 ###############################################################################
+# Default pid file for worker daemon. Substring '{name}' here must be substituted for worker name.
+#
+use constant DEFAULT_WORKER_PIDFILE => '/var/run/anyjobwd-{name}.pid';
+
+###############################################################################
+# Default work dir for worker execution.
+#
+use constant DEFAULT_WORKER_WORK_DIR => '{ANYJOB_PATH}';
+
+###############################################################################
+# Default prefix for worker context modules.
+#
+use constant DEFAULT_WORKER_CONTEXT_PREFIX => 'AnyJob::Worker::Context';
+
+###############################################################################
 # Default prefix for specific job modules.
 #
-use constant DEFAULT_WORKER_PREFIX => 'AnyJob::Worker';
+use constant DEFAULT_WORKER_PREFIX => 'AnyJob::Worker::Job';
 
 ###############################################################################
 # Default method in specific job module to run.
@@ -135,9 +165,11 @@ our @EXPORT = qw(
     DEFAULT_CLEAN_LIMIT
     DEFAULT_CLEAN_TIMEOUT
     DEFAULT_CLEAN_DELAY
-    DEFAULT_PIDFILE
+    DEFAULT_DAEMON_PIDFILE
     DEFAULT_CHILD_STOP_DELAY
     DEFAULT_CHILD_STOP_TRIES
+    DEFAULT_WORKER_STOP_DELAY
+    DEFAULT_WORKER_STOP_TRIES
     DEFAULT_ANYJOB_PATH
     DEFAULT_CONFIG_FILE
     DEFAULT_REDIS
@@ -146,10 +178,14 @@ our @EXPORT = qw(
     DEFAULT_OBSERVERS_CONFIG_PATH
     DEFAULT_CREATORS_CONFIG_PATH
     DEFAULT_BUILDERS_CONFIG_PATH
+    DEFAULT_WORKERS_CONFIG_PATH
     DEFAULT_TEMPLATES_PATH
-    DEFAULT_WORKER_WORK_DIR
+    DEFAULT_WORKER_DAEMON_EXEC
     DEFAULT_WORKER_EXEC
+    DEFAULT_WORKER_PIDFILE
+    DEFAULT_WORKER_WORK_DIR
     DEFAULT_WORKER_PREFIX
+    DEFAULT_WORKER_CONTEXT_PREFIX
     DEFAULT_WORKER_METHOD
     DEFAULT_INTERNAL_PROPS
     DEFAULT_SLACK_API

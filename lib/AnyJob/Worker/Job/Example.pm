@@ -1,21 +1,21 @@
-package AnyJob::Worker::Example;
+package AnyJob::Worker::Job::Example;
 
 ###############################################################################
-# Example subclass of 'AnyJob::Worker::Base' which does nothing useful but should help you get started
+# Example subclass of 'AnyJob::Worker::Job::Base' which does nothing useful but should help you get started
 # with writing your own specific job modules.
-# To specify this module as job module use string 'example' (lower-cased part after 'AnyJob::Worker::')
+# To specify this module as job module use string 'example' (lower-cased part after 'AnyJob::Worker::Job::')
 # as value of job configuration parameter 'module'.
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  20.02.2018
+# Last update:  05.03.2018
 #
 
 use strict;
 use warnings;
 use utf8;
 
-use base 'AnyJob::Worker::Base';
+use base 'AnyJob::Worker::Job::Base';
 
 ###############################################################################
 # Implementation of main job method which is executed when this job is run.

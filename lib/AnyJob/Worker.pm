@@ -3,11 +3,12 @@ package AnyJob::Worker;
 ###############################################################################
 # Worker component subclassed from AnyJob::Base, which primary task is to directly execute jobs.
 # Job logic is implemented by one of specific worker modules
-# (usually under 'Worker' package path but that's not strictly required).
+# (usually with 'AnyJob::Worker::Job' prefix but that's not strictly required).
+# Also long-term context object can be used to share any resources.
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  28.02.2018
+# Last update:  07.03.2018
 #
 
 use strict;
@@ -16,7 +17,9 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Constants::Defaults qw(DEFAULT_WORKER_PREFIX DEFAULT_WORKER_METHOD);
+use AnyJob::Constants::Defaults qw(
+    DEFAULT_WORKER_PREFIX DEFAULT_WORKER_CONTEXT_PREFIX DEFAULT_WORKER_METHOD
+);
 use AnyJob::Constants::States qw(STATE_BEGIN STATE_RUN);
 use AnyJob::Utils qw(getModuleName requireModule);
 
@@ -25,6 +28,8 @@ use base 'AnyJob::Base';
 ###############################################################################
 # Construct new AnyJob::Worker object.
 #
+# Arguments:
+#     name - optional string with worker name.
 # Returns:
 #     AnyJob::Worker object.
 #
@@ -33,7 +38,58 @@ sub new {
     my %args = @_;
     $args{type} = 'worker';
     my $self = $class->SUPER::new(%args);
+    $self->initContext();
     return $self;
+}
+
+###############################################################################
+# Returns:
+#     string worker name or undef if worker hasn't name.
+#
+sub name {
+    my $self = shift;
+    return $self->{name};
+}
+
+###############################################################################
+# Get worker configuration or undef.
+#
+# Returns:
+#     hash with worker configuration or undef if worker hasn't name or there are no such worker in config.
+#
+sub getWorkerConfig {
+    my $self = shift;
+    return defined($self->{name}) ? $self->config->getWorkerConfig($self->{name}) : undef;
+}
+
+###############################################################################
+# Init worker context object if configured to.
+#
+sub initContext {
+    my $self = shift;
+
+    my $config = $self->getWorkerConfig() || {};
+    my $workerSection = $self->config->section('worker') || {};
+    my $module = $config->{context_module} || $workerSection->{context_module};
+    unless (defined($module)) {
+        $self->{context} = undef;
+        return;
+    }
+
+    my $prefix = $config->{context_prefix} || $workerSection->{context_prefix} || DEFAULT_WORKER_CONTEXT_PREFIX;
+    $module = $prefix . '::' . getModuleName($module);
+
+    requireModule($module);
+    $self->{context} = $module->new(parent => $self);
+}
+
+###############################################################################
+# Returns:
+#     context object which is usually subclass of AnyJob::Worker::Context::Base class or undef if no context configured.
+#
+sub context {
+    my $self = shift;
+    return $self->{context};
 }
 
 ###############################################################################
@@ -119,14 +175,14 @@ sub sendLog {
     }
 
     $self->sendProgress($id, {
-            log => {
-                time    => time(),
-                message => $message,
-                (defined($level) ? (level => $level) : ()),
-                (defined($tag) ? (tag => $tag) : ())
-            },
-            (defined($data) ? (data => $data) : ())
-        });
+        log => {
+            time    => time(),
+            message => $message,
+            (defined($level) ? (level => $level) : ()),
+            (defined($tag) ? (tag => $tag) : ())
+        },
+        (defined($data) ? (data => $data) : ())
+    });
 }
 
 ###############################################################################
@@ -159,10 +215,10 @@ sub sendSuccess {
     my $data = shift;
 
     $self->sendProgress($id, {
-            success => 1,
-            message => $message,
-            (defined($data) ? (data => $data) : ())
-        });
+        success => 1,
+        message => $message,
+        (defined($data) ? (data => $data) : ())
+    });
 }
 
 ###############################################################################
@@ -180,10 +236,10 @@ sub sendFailure {
     my $data = shift;
 
     $self->sendProgress($id, {
-            success => 0,
-            message => $message,
-            (defined($data) ? (data => $data) : ())
-        });
+        success => 0,
+        message => $message,
+        (defined($data) ? (data => $data) : ())
+    });
 }
 
 ###############################################################################
@@ -247,6 +303,20 @@ sub sendRedo {
 }
 
 ###############################################################################
+# Execute job with given id and then clean all resources.
+#
+# Arguments:
+#     id - integer job id.
+#
+sub runJobAndStop {
+    my $self = shift;
+    my $id = shift;
+
+    $self->runJob($id);
+    $self->stop();
+}
+
+###############################################################################
 # Execute job with given id calling configured module to do its logic.
 # To simplify job modules developing that call is wrapped around different checks,
 # logging and auto-changing to 'run' state.
@@ -254,7 +324,7 @@ sub sendRedo {
 # Arguments:
 #     id - integer job id.
 #
-sub run {
+sub runJob {
     my $self = shift;
     my $id = shift;
 
@@ -280,13 +350,13 @@ sub run {
         return;
     }
 
-    my $workerConfig = $self->config->section('worker') || {};
+    my $workerConfig = $self->getWorkerConfig() || {};
+    my $workerSection = $self->config->section('worker') || {};
 
-    my $module = getModuleName($jobConfig->{module} || $workerConfig->{module} || $job->{type});
-    my $prefix = $jobConfig->{prefix} || $workerConfig->{prefix} || DEFAULT_WORKER_PREFIX;
-    if (defined($prefix)) {
-        $module = $prefix . '::' . $module;
-    }
+    my $module = getModuleName($jobConfig->{module} || $workerConfig->{module} || $workerSection->{module} ||
+        $job->{type});
+    my $prefix = $jobConfig->{prefix} || $workerConfig->{prefix} || $workerSection->{prefix} || DEFAULT_WORKER_PREFIX;
+    $module = $prefix . '::' . $module;
 
     eval {
         requireModule($module);
@@ -302,7 +372,7 @@ sub run {
         $self->sendRun($id);
     }
 
-    my $method = $jobConfig->{method} || $workerConfig->{method} || DEFAULT_WORKER_METHOD;
+    my $method = $jobConfig->{method} || $workerConfig->{method} || $workerSection->{method} || DEFAULT_WORKER_METHOD;
     eval {
         no strict 'refs';
         $module->new(parent => $self, id => $id, job => $job)->$method();
@@ -313,6 +383,17 @@ sub run {
     }
 
     $self->debug('Finish job \'' . $id . '\'');
+}
+
+###############################################################################
+# Must be called after finishing all processing. Clean all resources here.
+#
+sub stop() {
+    my $self = shift;
+
+    if (defined($self->{context})) {
+        $self->{context}->stop();
+    }
 }
 
 1;

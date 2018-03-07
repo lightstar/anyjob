@@ -3,22 +3,27 @@ package AnyJob::Daemon;
 ###############################################################################
 # Daemon component subclassed from AnyJob::Base, which primary task is to run different configured controllers
 # (under 'Controller' package path), which are depended on current node.
-# This class also manages active job count (for regular nodes) and active jobset count (for global node).
+# This class also manages starting/stopping worker daemons and some shared state variables:
+# active job count (for regular nodes) and active jobset count (for global node).
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  02.03.2018
+# Last update:  07.03.2018
 #
 
 use strict;
 use warnings;
 use utf8;
 
+use English;
+use Time::HiRes qw(usleep);
 use JSON::XS;
 
 use AnyJob::Constants::Defaults qw(
-    DEFAULT_MIN_DELAY DEFAULT_MAX_DELAY DEFAULT_PIDFILE DEFAULT_CHILD_STOP_DELAY DEFAULT_CHILD_STOP_TRIES
+    DEFAULT_MIN_DELAY DEFAULT_MAX_DELAY DEFAULT_DAEMON_PIDFILE DEFAULT_CHILD_STOP_DELAY DEFAULT_CHILD_STOP_TRIES
+    DEFAULT_WORKER_STOP_DELAY DEFAULT_WORKER_STOP_TRIES DEFAULT_WORKER_PIDFILE
 );
+use AnyJob::Utils qw(readInt isProcessRunning);
 use AnyJob::Daemon::Base;
 use AnyJob::Controller::Factory;
 
@@ -44,7 +49,7 @@ sub new {
     my $config = $self->config->section('daemon') || {};
     $self->{daemon} = AnyJob::Daemon::Base->new(
         detached       => defined($config->{detached}) ? ($config->{detached} ? 1 : 0) : 1,
-        pidfile        => $config->{pidfile} || DEFAULT_PIDFILE,
+        pidfile        => $config->{pidfile} || DEFAULT_DAEMON_PIDFILE,
         delay          => 0,
         childStopDelay => $config->{child_stop_delay} || DEFAULT_CHILD_STOP_DELAY,
         childStopTries => $config->{child_stop_tries} || DEFAULT_CHILD_STOP_TRIES,
@@ -68,14 +73,102 @@ sub new {
 }
 
 ###############################################################################
-# Run daemon loop.
+# Prepare and run daemon loop.
 #
 sub run {
     my $self = shift;
 
     $self->{daemon}->prepare();
+    $self->runWorkers();
     $self->isolateControllers();
     $self->{daemon}->run();
+    if ($self->{daemon}->isParent()) {
+        $self->stopWorkers();
+    }
+}
+
+###############################################################################
+# Run all worker daemons as separate processes.
+#
+sub runWorkers {
+    my $self = shift;
+
+    foreach my $worker (@{$self->config->getNodeWorkers()}) {
+        my ($workDir, $exec, $lib, $user, $group) = $self->config->getWorkerDaemonOptions($worker);
+        unless (defined($workDir)) {
+            next;
+        }
+
+        my ($uid, $gid) = (0, 0);
+
+        if (defined($user)) {
+            unless (defined($uid = getpwnam($user))) {
+                $self->error('Wrong user name: \'' . $user . '\'');
+                next;
+            }
+        }
+
+        if (defined($group)) {
+            unless (defined($gid = getgrnam($group))) {
+                $self->error('Wrong group name: \'' . $group . '\'');
+                next;
+            }
+        }
+
+        my $pid = fork();
+        if ($pid != 0) {
+            next;
+        }
+
+        unless (defined($pid)) {
+            $self->error('Can\'t fork to run worker \'' . $worker . '\': ' . $!);
+            next;
+        }
+
+        $EGID = $GID = $gid;
+        $EUID = $UID = $uid;
+
+        $self->debug('Run worker \'' . $worker . '\' in work directory \'' . $workDir . '\'' .
+            ((defined($user) and defined($group)) ? ' under user \'' . $user . '\' and group \'' . $group . '\'' :
+                (defined($user) ? ' under user \'' . $user . '\'' :
+                    (defined($group) ? ' under group \'' . $group . '\'' : ''))) .
+            (defined($lib) ? ' including libs in \'' . $lib . '\'' : ''));
+
+        exec('/bin/sh', '-c',
+            'cd \'' . $workDir . '\'; ' .
+                (defined($lib) ? 'ANYJOB_WORKER_LIB=\'' . $lib . '\' ' : '') .
+                'ANYJOB_WORKER=\'' . $worker . '\' ' . $exec);
+    }
+}
+
+###############################################################################
+# Stop all worker daemon processes.
+#
+sub stopWorkers {
+    my $self = shift;
+
+    my $workerSection = $self->config->section('worker') || {};
+    foreach my $worker (@{$self->config->getNodeWorkers()}) {
+        my $config = $self->config->getWorkerConfig($worker) || {};
+
+        my $delay = $config->{stop_delay} || $workerSection->{stop_delay} || DEFAULT_WORKER_STOP_DELAY;
+        my $maxTries = $config->{stop_tries} || $workerSection->{stop_tries} || DEFAULT_WORKER_STOP_TRIES;
+
+        my $pidfile = $config->{pidfile} || $workerSection->{pidfile} || DEFAULT_WORKER_PIDFILE;
+        $pidfile =~ s/\{name\}/$worker/;
+        if (my $pid = readInt($pidfile)) {
+            my $try = 0;
+            while (isProcessRunning($pid)) {
+                if ($try >= $maxTries) {
+                    $self->error('Can\'t stop worker \'' . $worker . '\'');
+                    last;
+                }
+                kill TERM => $pid;
+                usleep($delay * 1000000);
+                $try++;
+            }
+        }
+    }
 }
 
 ###############################################################################

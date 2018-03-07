@@ -26,6 +26,9 @@ in this files can have no explicit section name, in which case the default secti
       Default section name prefix: 'job_'.
       2 subdirectories are independently searched here: 'work' for daemon and worker components and 'create'
       for creator component.
+- workers path.
+      Default: 'workers' directory in main configuration file base path.
+      Default section name prefix: 'worker_'.
 - observers path.
       Default: 'observers' directory in main configuration file base path.
       Default section name prefix: 'observer_'.
@@ -82,9 +85,9 @@ First letter of that name will capitalize, letters after underscores and slashes
 underscores themselves removed and slashes transformed into double colons. That way every module will need predefined
 or configured prefix which will concatenate with double colon and module name to construct full perl module name.
 
-For example if configured module name is 'my_example' and prefix is 'AnyJob::Worker' then full perl module will be
-'AnyJob::Worker::MyExample'. And for module name 'subdir/my_example' full perl module will be
-'AnyJob::Worker::Subdir::MyExample'.
+For example if configured module name is 'my_example' and prefix is 'AnyJob::Worker::Job' then full perl module will be
+'AnyJob::Worker::Job::MyExample'. And for module name 'subdir/my_example' full perl module will be
+'AnyJob::Worker::Job::Subdir::MyExample'.
 
 4. Global configuration section.
 
@@ -106,6 +109,8 @@ creators_path         - path to creators configuration relative to main configur
                         Default: 'creators'.
 builders_path         - path to builders configuration relative to main configuration file base path.
                         Default: 'builders'.
+workers_path          - path to workers configuration relative to main configuration file base path.
+                        Default: 'workers'.
 templates_path        - path to observer event templates. Default: '{ANYJOB_PATH}/templates/current' where
                         '{ANYJOB_PATH}' is value of ANYJOB_PATH environment variable or '/opt/anyjob' by default.
 clean_limit           - default limit of maximum timeouted objects cleaned in one iteration. Default: 10.
@@ -129,19 +134,39 @@ child_stop_tries      - maximum number of tries to stop all childs which is done
 6. Worker configuration section.
 
 Worker configuration section is named 'worker'. Below are all recognizible keys.
-Note that all this settings can be overriden in specific job configuration.
+Note that all this settings can be overriden in specific worker and job configuration.
 
-work_dir              - work directory for external worker. Default: '{ANYJOB_PATH}', i.e. value of ANYJOB_PATH
+work_dir              - work directory for worker. Default: '{ANYJOB_PATH}', i.e. value of ANYJOB_PATH
                         environment variable or '/opt/anyjob' by default.
 exec                  - path to external worker executable. Default: '{ANYJOB_PATH}/bin/anyjobw.pl' where
                         '{ANYJOB_PATH}' is value of ANYJOB_PATH environment variable or '/opt/anyjob' by default.
+daemon_exec           - path to worker daemon executable. Default: '{ANYJOB_PATH}/bin/anyjobwd.pl' where
+                        '{ANYJOB_PATH}' is value of ANYJOB_PATH environment variable or '/opt/anyjob' by default.
 suser                 - system user name to run jobs under. Default: root.
 sgroup                - system group name to run jobs under. Default: root.
-lib                   - optional additional library path needed by external worker. Set path to your perl modules here
-                        which are required by your specific job modules. Default: none.
+lib                   - optional additional library path needed by workers. Set path to your perl modules here
+                        which are required by your specific job modules or context module. Default: none.
 module                - specific job module name. If none specified, job type will be used.
-prefix                - prefix of specific job modules. Default: 'AnyJob::Worker'.
+prefix                - prefix of specific job modules. Default: 'AnyJob::Worker::Job'.
+context_module        - context module name. If none specified, context will be undefined.
+context_prefix        - prefix of context module. Default: 'AnyJob::Worker::Context'.
 method                - method in specific job module to run. Default: 'run'.
+stop_delay            - delay in seconds between tries to stop worker daemons which is done by main daemon in the end
+                        of all processing. Default: 1.
+stop_tries            - maximum number of tries to stop worker daemons which is done by main daemon in the end of all
+                        processing. Default: 10.
+child_stop_delay      - delay in seconds between tries to stop worker daemon childs which is done in the end of all
+                        processing. Default: 1.
+child_stop_tries      - maximum number of tries to stop worker daemon childs which is done in the end of all
+                        processing. Default: 10.
+delay                 - delay in seconds between worker daemon loops. You can set this higher for more performance
+                        but daemon stopping and restarting might require more time. Default: 1.
+pidfile               - path to file where worker daemon process pid is stored. Default: '/var/run/anyjobwd-{name}.pid'
+                        where '{name}' substitutes for worker name. You can use template '{name}' in your own value of
+                        this option as well.
+count                 - total number of worker daemon processes for each separate worker. Default: 1.
+worker                - default worker name for all jobs if not overriden explicitly. By default no separate worker
+                        is used.
 
 7. Creator configuration section.
 
@@ -167,6 +192,8 @@ global                - 0/1 flag. If set, daemon on this node will run global co
 regular               - 0/1 flag. If set, daemon on this node will run node-specific controller. Default: 0.
 observers             - list of global observer names separated by comma which will run by daemon on this node.
                         Default: none.
+workers               - list of worker names separated by comma which will be launched by as daemons on this node.
+                        Default: none.
 create_delay          - delay in seconds between create queue checkings by node controller. Default: none.
 create_limit          - maximum create messages processed by node controller in one iteration. By default global
                         'limit' setting is used.
@@ -185,11 +212,60 @@ job_clean_timeout     - default timeout in seconds for each active job existing 
 jobset_clean_timeout  - default timeout in seconds for each active jobset existing in storage. By default global
                         'clean_timeout' setting is used.
 
-9. Job configuration sections.
+9. Separate worker configuration sections.
+
+You can define zero or more separate workers and assign jobs to them. By default jobs aren't assigned to any separate
+workers and they will run using external worker executable and configuration from global 'worker' section. Note that
+you must define separate workers to launch worker daemons.
+
+daemon                - 0/1 flag. If set, this worker will be run as daemon. Default: 0.
+pidfile               - path to file where daemon process pid is stored. By default corresponding option in global
+                        'worker' configuration section is used.
+count                 - total number of worker daemon processes. By default corresponding option in global 'worker'
+                        configuration section is used.
+work_dir              - work directory for worker. By default corresponding option in global 'worker' configuration
+                        section is used.
+exec                  - path to external worker executable. By default corresponding option in global 'worker'
+                        configuration section is used.
+daemon_exec           - path to worker daemon executable. By default corresponding option in global 'worker'
+                        configuration section is used.
+suser                 - system user name to run jobs under. By default corresponding option in global 'worker'
+                        configuration section is used.
+sgroup                - system group name to run jobs under. By default corresponding option in global 'worker'
+                        configuration section is used.
+lib                   - optional additional library path needed by worker. Set path to your perl modules here
+                        which are required by your specific job modules or context module. By default corresponding
+                        option in global 'worker' configuration section is used.
+module                - specific job module name. By default corresponding option in global 'worker' configuration
+                        section is used.
+prefix                - prefix of specific job modules. By default corresponding option in global 'worker'
+                        configuration section is used.
+context_module        - context module name. By default corresponding option in global 'worker' configuration
+                        section is used.
+context_prefix        - prefix of context module. By default corresponding option in global 'worker' configuration
+                        section is used.
+method                - method in specific job module to run.  By default corresponding option in global 'worker'
+                        configuration section is used.
+stop_delay            - delay in seconds between tries to stop worker daemons which is done by main daemon in the end
+                        of all processing. By default corresponding option in global 'worker' configuration section
+                        is used.
+stop_tries            - maximum number of tries to stop worker daemons which is done by main daemon in the end of all
+                        processing. By default corresponding option in global 'worker' configuration section is used.
+child_stop_delay      - delay in seconds between tries to stop worker daemon childs which is done in the end
+                        of all processing. By default corresponding option in global 'worker' configuration section
+                        is used.
+child_stop_tries      - maximum number of tries to stop worker daemon childs which is done in the end of all
+                        processing. By default corresponding option in global 'worker' configuration section is used.
+delay                 - delay in seconds between worker daemon loops. You can set this higher for more performance
+                        but daemon stopping and restarting might require more time. By default corresponding option
+                        in global 'worker' configuration section is used.
+
+10. Job configuration sections.
 
 Each job must have its own configuration section which should be named 'job_<type>' where '<type>' is job's type.
-Usually they are located in 'jobs/<type>.cfg' files relative to main configuration file base path. Below are all
-recognizible keys.
+Usually they are located in 'jobs/work/<type>.cfg' and 'jobs/create/<type>.cfg' files relative to main configuration
+file base path. What is more files inside 'work' subdirectory are used inside daemon and workers, and files inside
+'create' subdirectory are used inside creators. Below are all recognizible keys.
 
 disabled              - 0/1 flag. If set, this job will be unavailable. Default: 0.
 nodes                 - list of node names separated by comma on which this job can be executed. If set to 'all', this
@@ -201,21 +277,27 @@ nodesAccess           - JSON hash where keys are node names and values are strin
                         on these nodes. Missing nodes here means no required access.
 label                 - short text description of this job. By default job type itself is used.
 group                 - optional group name for this job. Used to organize jobs and simplify selecting them in creator.
-work_dir              - work directory for external worker. By default corresponding setting in 'worker' section is
+worker                - optional worker name for this job to use configuration from. If this worker run as daemon then
+                        this job will be executed by it, not by external worker executable. What is more in that case
+                        some configuration options can't be overriden here (such as 'work_dir', 'suser', 'sgroup',
+                        'lib') and option 'exec' will be ignored. By default corresponding option in global 'worker'
+                        configuration section is used or no separate worker is used at all.
+work_dir              - work directory for external worker. By default corresponding setting in worker configuration is
                         used.
-exec                  - path to external worker executable. By default corresponding setting in 'worker' section is
+exec                  - path to external worker executable. By default corresponding setting in worker configuration is
                         used.
-suser                 - system user name to run this job under. By default corresponding setting in 'worker' section
+suser                 - system user name to run this job under. By default corresponding setting in worker configration
                         is used.
-sgroup                - system group name to run this job under. Default: By default corresponding setting in 'worker'
-                        section is used.
-lib                   - optional additional library path needed for external worker. By default corresponding setting
-                        in 'worker' section is used.
-module                - specific job module name. By default corresponding setting in 'worker' section or job type
+sgroup                - system group name to run this job under. By default corresponding setting in worker
+                        configuration is used.
+lib                   - optional additional library path needed by worker. By default corresponding setting in worker
+                        configuration is used.
+module                - specific job module name. By default corresponding setting in worker configuration or job type
                         is used.
-prefix                - prefix of specific job modules. By default corresponding setting in 'worker' section is used.
-method                - method in specific job module to run. By default corresponding setting in 'worker' section is
-                        used.
+prefix                - prefix of specific job modules. By default corresponding setting in worker configuration
+                        is used.
+method                - method in specific job module to run. By default corresponding setting in worker configuration
+                        is used.
 clean_timeout         - timeout in seconds for each active job existing in storage. By default node
                        'job_clean_timeout' setting is used.
 silent                - 0/1 flag. If set, events related to this job will not be processed by global observers.
@@ -243,11 +325,11 @@ params                - JSON array of objects with job parameters description. T
 props                 - JSON array of objects with properties description. If exists, that array overrides 'props'
                         parameter from creator configuration section.
 
-Note that there is only one specific job module included in distribution: 'AnyJob::Worker::Example'. So its prefix is
-'AnyJob::Worker' and name is 'example'. You can use it for reference before writing your own modules which should
-extent 'AnyJob::Worker::Base' module.
+Note that there is only one specific job module included in distribution: 'AnyJob::Worker::Job::Example'. So its
+prefix is 'AnyJob::Worker::Job' and name is 'example'. You can use it for reference before writing your own modules
+which should extend 'AnyJob::Worker::Job::Base' module.
 
-10. Observer configuration sections.
+11. Observer configuration sections.
 
 Each global observer must have its own configuration section which should be named 'observer_<name>' where '<name>' is
 observer's name. Usually they are located in 'observers/<name>.cfg' files relative to main configuration file base
@@ -296,7 +378,7 @@ body_template         - base file name with body template used in template toolk
 Your own observer modules should extend 'AnyJob::Controller::Observer::Base' and have prefix
 'AnyJob::Controller::Observer'.
 
-11. Web creator configuration section.
+12. Web creator configuration section.
 
 Web creator configuration section is named 'creator_web'. Usually it is located in 'creators/web.cfg' file
 relative to main configuration file base path. Below are all recognizible keys.
@@ -309,7 +391,7 @@ event_filter          - javascript code which will run for every received privat
                         event will be processed, otherwise - skipped. Object with event data is accessible as variable
                         'event'. Default: none (all events will be processed).
 
-12. Web creator authentication section.
+13. Web creator authentication section.
 
 Web creator authentication section is named 'creator_web_auth' and used for basic authentication in creator web
 application. Every key here is user login and value - its encrypted password. To generate encrypted password in
@@ -319,14 +401,14 @@ algorithms, only crypt and md5 ones.
 
 Usually it is located in 'creators/web/auth.cfg' file relative to main configuration file base path.
 
-13. Web creator access section.
+14. Web creator access section.
 
 Web creator access section is named 'creator_web_access' and used for providing accesses to users in creator web
 application. Every key here is user login and value - provided accesses separated by comma.
 
 Usually it is located in 'creators/web/access.cfg' file relative to main configuration file base path.
 
-14. Slack creator configuration section.
+15. Slack creator configuration section.
 
 Slack creator configuration section is named 'creator_slack'. Usually it is located in 'creators/slack.cfg' file
 relative to main configuration file base path. Below are all recognizible keys.
@@ -351,14 +433,14 @@ event_filter          - javascript code which will run for every received privat
 build_clean_timeout   - timeout in seconds for cleaning too long existing active builds. If none specified,
                         'clean_timeout' setting from global section is used.
 
-15. Slack creator access section.
+16. Slack creator access section.
 
 Slack creator access section is named 'creator_slack_access' and used for providing accesses to users in creator slack
 application. Every key here is slack user id and value - provided accesses separated by comma.
 
 Usually it is located in 'creators/slack/access.cfg' file relative to main configuration file base path.
 
-16. Slack builder configuration sections.
+17. Slack builder configuration sections.
 
 Each slack builder must have its own configuration section which should be named 'builder_slack_<name>' where '<name>'
 is builder's name. Usually they are located in 'builders/slack/<name>.cfg' files relative to main configuration file

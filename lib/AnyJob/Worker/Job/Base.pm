@@ -1,4 +1,4 @@
-package AnyJob::Worker::Base;
+package AnyJob::Worker::Job::Base;
 
 ###############################################################################
 # Convenient abstract base class which all specific worker modules should extend as it contains many helper methods.
@@ -7,7 +7,7 @@ package AnyJob::Worker::Base;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  28.02.2018
+# Last update:  05.03.2018
 #
 
 use strict;
@@ -15,7 +15,7 @@ use warnings;
 use utf8;
 
 ###############################################################################
-# Construct new AnyJob::Worker::Base object.
+# Construct new AnyJob::Worker::Job::Base object.
 #
 # Arguments:
 #     parent - parent component which is usually AnyJob::Worker object.
@@ -24,7 +24,7 @@ use utf8;
 #              'time', hash fields 'params' and 'props'. Also it can contain, if this job is part of jobset,
 #              integer field 'jobset' with jobset id.
 # Returns:
-#     AnyJob::Worker::Base object.
+#     AnyJob::Worker::Job::Base object.
 #
 sub new {
     my $class = shift;

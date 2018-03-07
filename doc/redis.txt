@@ -7,6 +7,7 @@ anyjob:queue:<node>             - queue for create messages processed by node co
 anyjob:queue                    - queue for create messages processed by global controller.
 anyjob:progressq:<node>         - queue for progress messages processed by node controllers.
 anyjob:progressq                - queue for progress messages processed by global controller.
+anyjob:workerq:<node>:<name>    - queue for job messages processed by worker daemons.
 anyjob:observerq:<name>         - queue for events processed by observer with specified name.
 anyjob:observerq:private:<name> - queue for events processed by private observer with specified name.
 

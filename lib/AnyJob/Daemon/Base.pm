@@ -5,7 +5,7 @@ package AnyJob::Daemon::Base;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  02.03.2018
+# Last update:  05.03.2018
 #
 
 use strict;
@@ -15,7 +15,8 @@ use utf8;
 use POSIX qw(setsid dup2 :sys_wait_h);
 use Time::HiRes qw(usleep);
 use File::Basename;
-use Scalar::Util qw(looks_like_number);
+
+use AnyJob::Utils qw(readInt writeInt isProcessRunning);
 
 ###############################################################################
 # Construct new AnyJob::Daemon::Base object.
@@ -151,6 +152,17 @@ sub fork {
     $self->{parent} = 0;
 
     return 1;
+}
+
+###############################################################################
+# Check if this daemon is parent one.
+#
+# Returns:
+#     0/1 flag. If set, this daemon is parent, otherwise - not.
+#
+sub isParent {
+    my $self = shift;
+    return $self->{parent};
 }
 
 ###############################################################################
@@ -327,101 +339,6 @@ sub canRun {
     }
 
     return 1;
-}
-
-###############################################################################
-# Read integer value from given file.
-#
-# Arguments:
-#     fileName - name of file to read from.
-# Returns:
-#     integer value or 0 if file can't be opened or its content is not integer.
-#
-sub readInt {
-    my $fileName = shift;
-
-    my $fh;
-    unless (open($fh, '<', $fileName)) {
-        return 0;
-    }
-    my $value = <$fh>;
-    close($fh);
-
-    if (looks_like_number($value)) {
-        $value = int($value);
-    } else {
-        $value = 0;
-    }
-
-    return $value;
-}
-
-###############################################################################
-# Write integer value to file.
-#
-# Arguments:
-#     fileName - name of file to write to.
-#     value    - integer value to write.
-# Returns:
-#     1/undef on success/error accordingly.
-#
-sub writeInt {
-    my $fileName = shift;
-    my $value = shift;
-
-    my $fh;
-    unless (open($fh, '>', $fileName)) {
-        return undef;
-    }
-    print $fh $value;
-    close($fh);
-
-    return 1;
-}
-
-
-###############################################################################
-# Check if process with given pid and executable file is running now.
-#
-# Arguments:
-#     pid      - pid of checked process.
-#     fileName - name of checked process executable file. If undefined given check will be performed only by pid.
-# Returns:
-#     0/1 flag which will be set if process is currently running.
-#
-sub isProcessRunning {
-    my $pid = shift;
-    my $fileName = shift;
-
-    unless (defined($pid) and $pid != 0) {
-        return undef;
-    }
-
-    my $procFile = '/proc/' . $pid . '/cmdline';
-    unless (-e $procFile) {
-        return undef;
-    }
-
-    unless (defined($fileName)) {
-        return 1;
-    }
-
-    my $fh;
-    unless (open($fh, '<', $procFile)) {
-        return undef;
-    }
-    my $str = <$fh>;
-    close($fh);
-
-    unless (defined($str) and $str ne '') {
-        return undef;
-    }
-
-    if (index($str, $fileName) != -1) {
-        return 1;
-    }
-
-    return undef;
 }
 
 1;

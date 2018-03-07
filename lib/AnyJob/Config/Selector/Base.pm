@@ -6,7 +6,7 @@ package AnyJob::Config::Selector::Base;
 #
 # Author:       LightStar
 # Created:      06.02.2018
-# Last update:  07.02.2018
+# Last update:  05.03.2018
 #
 
 use strict;
@@ -87,6 +87,44 @@ sub addConfigFromDir {
         $self->config->addConfigFromDir($fullDirName, $section);
         return 1;
     }
+    return 0;
+}
+
+###############################################################################
+# Include configuration for specific component with provided type and name.
+#
+# Provided directory name is seached for file with '.cfg' extension such that all its intermediate subdirectories
+# joined together using underscore character with file name will constitute component name. These intermediate
+# subdirectories must not contain underscore character but file itself can.
+#
+# For example if component name is 'builder_slack_simple' then possible file can be 'builder_slack_simple.cfg',
+# 'builder/slack_simple.cfg' or 'builder/slack/simple.cfg'. Searching is stopped after finding first suitable file.
+#
+# If found, configuration is added using default section with name '<type>_<name>'.
+#
+# Arguments:
+#     dirName - string relative directory name. Directory name is relative to main configuration base path.
+#     type    - string component type.
+#     name    - string component name.
+# Returns:
+#     0/1 flag. If set, config was found and added.
+#
+sub addComponentConfig {
+    my $self = shift;
+    my $dirName = shift;
+    my $type = shift;
+    my $name = shift;
+
+    my $configFile = $name . '.cfg';
+    unless ($self->addConfigFromFile(File::Spec->catfile($dirName, $configFile), $type . '_' . $name)) {
+        my $pathSeparator = File::Spec->catfile('', '');
+        while ($configFile =~ s/_/$pathSeparator/) {
+            if ($self->addConfigFromFile(File::Spec->catfile($dirName, $configFile), $type . '_' . $name)) {
+                return 1;
+            }
+        }
+    }
+
     return 0;
 }
 

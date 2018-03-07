@@ -57,16 +57,31 @@ inside. Daemon is started on each node by bash script 'rc.anyjobd'. There should
 choosed node which controls entire system including jobsets, and *regular* controller on every node where jobs are
 supposed to be run. 
 
+Daemon may launch additional processes, in particular worker daemons and copies of itself which are used to serve
+special "isolated" controllers.
+
 *Observer* is a controller subtype which observes events sent directly to it and it runs inside daemon. Each observer
 should exist only in one copy in the whole system. On receiving event observer usually generates some notification
 using provided template and sends it to one or more configured recipients (i.e. by mail, into slack channel or just
 to log file).
 
-*Worker* is a separate component which performs one specific job. Its executable file is 'bin/anyjobw.pl' by
-default, and it is started by daemon automatically. Each job type should have its own module (but that's not required:
-one module could support several similar job types). To perform correctly worker should notify AnyJob about job
-progress, completion and also probably watch for jobset state if it needs coordinated work. Convenient methods for
-every such use case are included in base class 'AnyJob::Worker::Base' which all job modules should extend. 
+Observers can be configured as isolated ones which are launched in separated processes to not disturb other controllers
+operation.
+
+*Worker* is a separate component which performs one specific job. Two types of workers are supported: external
+executable (by default 'bin/anyjobw.pl') and worker daemon (by default 'bin/anyjobwd.pl'). Both of them are launched
+by daemon automatically, but the first one is executed for each job individually and the second is working all
+the time retrieving jobs from special queue. 
+
+Each job type should have its own module (but that's not required: one module could support several similar job
+types). Module class object is created before job execution and destroyed right after that.
+To perform correctly worker should notify AnyJob about job progress, completion and also probably watch for
+jobset state if it needs coordinated work. Convenient methods for every such use case are included in base class
+'AnyJob::Worker::Job::Base' which all job modules should extend. 
+
+Optionally creating of special context object is supported which has meaning when you launch jobs inside worker
+daemons. Context object is created right after daemon start and exists all its working time, so you can use it
+to manage shared long-term resources such as database connections and so on.
 
 ### Before using
 
@@ -78,8 +93,9 @@ for simplicity).
 - install AnyJob on them (read [doc/install.txt](doc/install.txt) for details about prerequisites and installation
 steps).
 
-- determine jobs you want to run and create appropriate *perl* modules for them. You can use other language but for
-now only for *perl* convenient environment and base class (*AnyJob::Worker::Base*) are available.
+- determine jobs you want to run and create appropriate *perl* modules for them. Optionally you can also create
+context module. You are allowed to use other language but for now only for *perl* convenient environment and base
+classes (*AnyJob::Worker::Job::Base* and *AnyJob::Worker::Context::Base*) are available.
 
 - configure AnyJob on each node. Read [doc/config.txt](doc/config.txt) and other documentation files for details.
 
@@ -96,7 +112,8 @@ now only for *perl* convenient environment and base class (*AnyJob::Worker::Base
    - [doc/redis.txt](doc/redis.txt) - keys used in *redis*.
 
 If you plan to extend AnyJob, it is recommended to study code and comments. At least you should examine
-*AnyJob::Worker::Base* and *AnyJob::Worker::Example* to understand how to correctly write new job modules.
+*AnyJob::Worker::Job::Base* and *AnyJob::Worker::Job::Example* to understand how to correctly write new job modules.
+And *AnyJob::Worker::Context::Base* too if you suppose to run jobs inside worker daemons. 
 
 ### Browser web application screenshots
 
@@ -129,27 +146,24 @@ specify some abstract type and parameters which will be transformed by creator i
 For example one could create 'restart_all' job which will transform into 'restart' job on every node, possibly with
 some additional jobs.
 
-4. Jobs are now started in separated processes, brand new for every job. It would be nice to have one or more already
-running daemon workers which could perform jobs without starting new processes.
+4. Jobs are now launched right after creation, but it would be nice to have delayed job starting.
 
-5. Jobs are now launched right after creation, but it would be nice to have delayed job starting.
-
-6. *Redis* is now used both for data storage and for message queuing. It performs good, but it would be better to
+5. *Redis* is now used both for data storage and for message queuing. It performs good, but it would be better to
 abstract away by using some specific modules to simplify transition to some other mechanisms in future.
 
-7. It would be nice to limit jobs execution using some configured blocks or semaphores. So one could say that
+6. It would be nice to limit jobs execution using some configured blocks or semaphores. So one could say that
 some job can execute only consequentially or only in limited quantity of simultaneously launched copies. By now
 it is possible to limit active jobs count only globally.
 
-8. It is worth implementing some common use worker modules 'out of the box'. For example such that would execute
+7. It is worth implementing some common use worker modules 'out of the box'. For example such that would execute
 some arbitrary program and intercept its input and output, or run specific method in some perl module with defined
 parameters, etc.
 
-9. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
+8. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
 add translations for all messages and possibility to switch between languages (russian is priority of course).
 
-10. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
+9. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
 adding possibility to specify group, type and nodes using separate dialogs.
 
-11. It is worth to add support for links leading to partially created jobs in the web application to simplify job
+10. It is worth to add support for links leading to partially created jobs in the web application to simplify job
 creation.

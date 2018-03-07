@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  21.02.2018
+# Last update:  06.03.2018
 #
 
 use strict;
@@ -223,7 +223,8 @@ sub finishRedoJob {
 }
 
 ###############################################################################
-# Execute job using external worker. That execution is asynchronous because system call to 'fork' is used.
+# Execute job using either external worker executable or one of running worker daemons.
+# Execution using worker executable is asynchronous too because system call 'fork' is used.
 #
 # Arguments:
 #     job - hash with job data.
@@ -234,7 +235,22 @@ sub runJob {
     my $job = shift;
     my $id = shift;
 
-    my ($workDir, $exec, $lib, $user, $group) = $self->config->getJobWorker($job->{type});
+    my $worker = $self->config->getJobWorkerName($job->{type});
+    if (defined($worker)) {
+        my $workerConfig = $self->config->getWorkerConfig($worker) || {};
+        if ($workerConfig->{daemon}) {
+            $self->redis->rpush('anyjob:workerq:' . $self->node . ':' . $worker, encode_json({
+                id => $id
+            }));
+            return;
+        }
+    }
+
+    my ($workDir, $exec, $lib, $user, $group) = $self->config->getJobWorkerOptions($job->{type});
+    unless (defined($workDir)) {
+        return;
+    }
+
     my ($uid, $gid) = (0, 0);
 
     if (defined($user)) {
@@ -273,6 +289,7 @@ sub runJob {
     exec('/bin/sh', '-c',
         'cd \'' . $workDir . '\'; ' .
             (defined($lib) ? 'ANYJOB_WORKER_LIB=\'' . $lib . '\' ' : '') .
+            (defined($worker) ? 'ANYJOB_WORKER=\'' . $worker . '\' ' : '') .
             'ANYJOB_ID=\'' . $id . '\' ANYJOB_JOB=\'' . $job->{type} . '\' ' . $exec);
 }
 

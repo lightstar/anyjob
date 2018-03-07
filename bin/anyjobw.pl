@@ -6,7 +6,7 @@
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  06.02.2018
+# Last update:  07.03.2018
 #
 
 use lib ($ENV{ANYJOB_LIB} || ($ENV{ANYJOB_PATH} || '/opt/anyjob') . '/lib');
@@ -29,6 +29,6 @@ unless (defined($ENV{ANYJOB_ID}) and defined($ENV{ANYJOB_JOB})) {
     exit(1);
 }
 
-AnyJob::Worker->new()->run($ENV{ANYJOB_ID});
+AnyJob::Worker->new(name => $ENV{ANYJOB_WORKER})->runJobAndStop($ENV{ANYJOB_ID});
 
 exit(0);

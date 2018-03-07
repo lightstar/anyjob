@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  02.03.2018
+# Last update:  06.03.2018
 #
 
 use strict;
@@ -17,7 +17,7 @@ use File::Spec;
 use File::Basename;
 
 use AnyJob::Constants::Defaults qw(
-    DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_TEMPLATES_PATH
+    DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_WORKER_DAEMON_EXEC DEFAULT_TEMPLATES_PATH
     DEFAULT_INTERNAL_PROPS injectPathIntoConstant
 );
 use AnyJob::Access::Resource;
@@ -334,6 +334,20 @@ sub getBuilderConfig {
 }
 
 ###############################################################################
+# Get worker configuration or undef.
+#
+# Arguments:
+#     name - string worker name.
+# Returns:
+#     hash with worker configuration or undef if there are no such worker.
+#
+sub getWorkerConfig {
+    my $self = shift;
+    my $name = shift;
+    return $self->section('worker_' . $name);
+}
+
+###############################################################################
 # Get array of strings with names of nodes where job with given type can execute.
 #
 # Arguments:
@@ -502,7 +516,27 @@ sub getJobAccess {
 }
 
 ###############################################################################
-# Get job worker configuration data as multiple returned values.
+# Get job worker name.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     string worker name or undef if this job configuration doesn't specify any appointed worker.
+#
+sub getJobWorkerName {
+    my $self = shift;
+    my $type = shift;
+
+    my $config = $self->getJobConfig($type);
+    return undef unless defined($config);
+
+    my $workerSection = $self->section('worker') || {};
+    return $config->{worker} || $workerSection->{worker};
+}
+
+###############################################################################
+# Get job worker options as multiple returned values.
+# Can return undef if job hasn't configuration.
 #
 # Arguments:
 #     type - string job type.
@@ -513,7 +547,7 @@ sub getJobAccess {
 #     optional string user name to run this job under.
 #     optional string group name to run this job under.
 #
-sub getJobWorker {
+sub getJobWorkerOptions {
     my $self = shift;
     my $type = shift;
 
@@ -522,9 +556,45 @@ sub getJobWorker {
 
     my $workerSection = $self->section('worker') || {};
 
+    my $worker = $config->{worker} || $workerSection->{worker};
+    my $workerConfig = defined($worker) ? $self->getWorkerConfig($worker) || {} : {};
+
+    return (
+        injectPathIntoConstant($config->{work_dir} || $workerConfig->{work_dir} || $workerSection->{work_dir} ||
+            DEFAULT_WORKER_WORK_DIR),
+        injectPathIntoConstant($config->{exec} || $workerConfig->{exec} || $workerSection->{exec} ||
+            DEFAULT_WORKER_EXEC),
+        $config->{lib} || $workerConfig->{lib} || $workerSection->{lib},
+        $config->{suser} || $workerConfig->{suser} || $workerSection->{suser},
+        $config->{sgroup} || $workerConfig->{sgroup} || $workerSection->{sgroup}
+    );
+}
+
+###############################################################################
+# Get worker daemon options as multiple returned values.
+# Can return undef if worker hasn't configuration or it is not supposed to be run as daemon.
+#
+# Arguments:
+#     name - string worker name.
+# Returns:
+#     string work directory for daemon.
+#     string daemon executable name.
+#     optional string additional libraries needed by worker daemon (could be undef if there are none).
+#     optional string user name to run this worker daemon under.
+#     optional string group name to run this worker daemon under.
+#
+sub getWorkerDaemonOptions {
+    my $self = shift;
+    my $name = shift;
+
+    my $config = $self->getWorkerConfig($name);
+    return undef unless defined($config) and $config->{daemon};
+
+    my $workerSection = $self->section('worker') || {};
+
     return (
         injectPathIntoConstant($config->{work_dir} || $workerSection->{work_dir} || DEFAULT_WORKER_WORK_DIR),
-        injectPathIntoConstant($config->{exec} || $workerSection->{exec} || DEFAULT_WORKER_EXEC),
+        injectPathIntoConstant($config->{exec} || $workerSection->{daemon_exec} || DEFAULT_WORKER_DAEMON_EXEC),
         $config->{lib} || $workerSection->{lib},
         $config->{suser} || $workerSection->{suser},
         $config->{sgroup} || $workerSection->{sgroup}
@@ -623,7 +693,7 @@ sub isNodeRegular {
 # Get array of strings with names of observers that need to be run on particular node.
 #
 # Arguments:
-#     type - string job type.
+#     node - optional string node name. If undefined, current node will be used.
 # Returns:
 #     array of strings with names of observers.
 #
@@ -675,6 +745,28 @@ sub getObserversForEvent {
 
     $self->{eventObservers}->{$event} = $observers;
     return $observers;
+}
+
+###############################################################################
+# Get array of strings with names of workers that need to be run as daemons on particular node.
+#
+# Arguments:
+#     node - optional string node name. If undefined, current node will be used.
+# Returns:
+#     array of strings with names of workers.
+#
+sub getNodeWorkers {
+    my $self = shift;
+    my $node = shift;
+
+    unless (defined($node)) {
+        $node = $self->node;
+    }
+
+    my $config = $self->getNodeConfig($node);
+    return [] unless defined($config) and not $config->{disabled} and exists($config->{workers});
+
+    return [ grep {$_} split(/\s*,\s*/, $config->{workers}) ];
 }
 
 ###############################################################################
