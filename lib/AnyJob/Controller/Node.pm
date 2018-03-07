@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  06.03.2018
+# Last update:  07.03.2018
 #
 
 use strict;
@@ -286,11 +286,18 @@ sub runJob {
                 (defined($group) ? ' under group \'' . $group . '\'' : ''))) .
         (defined($lib) ? ' including libs in \'' . $lib . '\'' : ''));
 
-    exec('/bin/sh', '-c',
-        'cd \'' . $workDir . '\'; ' .
-            (defined($lib) ? 'ANYJOB_WORKER_LIB=\'' . $lib . '\' ' : '') .
-            (defined($worker) ? 'ANYJOB_WORKER=\'' . $worker . '\' ' : '') .
-            'ANYJOB_ID=\'' . $id . '\' ANYJOB_JOB=\'' . $job->{type} . '\' ' . $exec);
+    chdir($workDir);
+
+    $ENV{ANYJOB_ID} = $id;
+    $ENV{ANYJOB_JOB} = $job->{type};
+    if (defined($worker)) {
+        $ENV{ANYJOB_WORKER} = $worker;
+    }
+    if (defined($lib)) {
+        $ENV{ANYJOB_WORKER_LIB} = $lib;
+    }
+
+    exec($exec);
 }
 
 ###############################################################################

@@ -134,10 +134,14 @@ sub runWorkers {
                     (defined($group) ? ' under group \'' . $group . '\'' : ''))) .
             (defined($lib) ? ' including libs in \'' . $lib . '\'' : ''));
 
-        exec('/bin/sh', '-c',
-            'cd \'' . $workDir . '\'; ' .
-                (defined($lib) ? 'ANYJOB_WORKER_LIB=\'' . $lib . '\' ' : '') .
-                'ANYJOB_WORKER=\'' . $worker . '\' ' . $exec);
+        chdir($workDir);
+
+        $ENV{ANYJOB_WORKER} = $worker;
+        if (defined($lib)) {
+            $ENV{ANYJOB_WORKER_LIB} = $lib;
+        }
+
+        exec($exec);
     }
 }
 
