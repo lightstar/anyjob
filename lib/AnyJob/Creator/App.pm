@@ -7,7 +7,7 @@ package AnyJob::Creator::App;
 #
 # Author:       LightStar
 # Created:      30.10.2017
-# Last update:  01.03.2018
+# Last update:  12.03.2018
 #
 
 use strict;
@@ -61,11 +61,13 @@ sub new {
 sub stop {
     my $self = shift;
 
-    $self->debug('Stopping by signal');
-    $self->{running} = 0;
+    if ($self->{running}) {
+        $self->debug('Stopping now');
+        $self->{running} = 0;
 
-    unless ($self->{busy}) {
-        $self->shutdown();
+        unless ($self->{busy}) {
+            $self->shutdown();
+        }
     }
 }
 

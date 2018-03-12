@@ -221,7 +221,7 @@ sub run {
 sub stop {
     my $self = shift;
     if ($self->{running}) {
-        $self->debug('Stopping by signal');
+        $self->debug('Stopping now');
         $self->{running} = 0;
     }
 }
