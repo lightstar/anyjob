@@ -7,7 +7,7 @@ package AnyJob::Worker::Job::Base;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  05.03.2018
+# Last update:  12.03.2018
 #
 
 use strict;
@@ -56,6 +56,15 @@ sub new {
 sub parent {
     my $self = shift;
     return $self->{parent};
+}
+
+###############################################################################
+# Returns:
+#     context object which is usually subclass of AnyJob::Worker::Context::Base class or undef if no context configured.
+#
+sub context {
+    my $self = shift;
+    return $self->parent->context;
 }
 
 ###############################################################################
