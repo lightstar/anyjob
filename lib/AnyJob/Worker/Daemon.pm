@@ -16,6 +16,7 @@ use JSON::XS;
 
 use AnyJob::Constants::Defaults qw(
     DEFAULT_MAX_DELAY DEFAULT_WORKER_PIDFILE DEFAULT_CHILD_STOP_DELAY DEFAULT_CHILD_STOP_TRIES
+    DEFAULT_WORKER_MAX_RUN_TIME
 );
 use AnyJob::Daemon::Base;
 
@@ -54,6 +55,10 @@ sub new {
     );
 
     $self->{delay} = $config->{delay} || $workerSection->{delay} || DEFAULT_MAX_DELAY;
+    $self->{count} = $config->{count} || $workerSection->{count} || 1;
+
+    $self->{maxRunTime} = $config->{max_run_time} || $workerSection->{max_run_time} || DEFAULT_WORKER_MAX_RUN_TIME;
+    $self->{startTime} = time();
 
     return $self;
 }
@@ -66,10 +71,7 @@ sub run {
 
     $self->{daemon}->prepare();
 
-    my $workerSection = $self->config->section('worker') || {};
-    my $config = $self->getWorkerConfig() || {};
-    my $count = $config->{count} || $workerSection->{count} || 1;
-    for (1 .. $count - 1) {
+    for (1 .. $self->{count} - 1) {
         if ($self->{daemon}->fork()) {
             last;
         }
@@ -100,6 +102,16 @@ sub process {
             $self->error('Can\'t decode event from queue \'' . $queue . '\': ' . $event);
         } else {
             $self->runJob($event->{id});
+        }
+    }
+
+    if ($self->{daemon}->isParent()) {
+        if (time() - $self->{startTime} >= $self->{maxRunTime}) {
+            $self->debug('Worker is running too long, stopping now');
+            $self->{daemon}->stop();
+        } elsif ($self->{daemon}->getChildCount() < $self->{count} - 1) {
+            $self->debug('Some childs were stopped, stopping parent now');
+            $self->{daemon}->stop();
         }
     }
 }

@@ -130,6 +130,7 @@ child_stop_delay      - delay in seconds between tries to stop all childs which 
                         Default: 1.
 child_stop_tries      - maximum number of tries to stop all childs which is done in the end of all processing.
                         Default: 10.
+worker_check_delay    - delay in seconds between checks that worker daemons are running. Default: 10.
 
 6. Worker configuration section.
 
@@ -165,6 +166,7 @@ pidfile               - path to file where worker daemon process pid is stored. 
                         where '{name}' substitutes for worker name. You can use template '{name}' in your own value of
                         this option as well.
 count                 - total number of worker daemon processes for each separate worker. Default: 1.
+max_run_time          - maximum worker daemons run time in seconds before restart. Default: 86400.
 worker                - default worker name for all jobs if not overriden explicitly. By default no separate worker
                         is used.
 
@@ -223,6 +225,8 @@ pidfile               - path to file where daemon process pid is stored. By defa
                         'worker' configuration section is used.
 count                 - total number of worker daemon processes. By default corresponding option in global 'worker'
                         configuration section is used.
+max_run_time          - maximum worker daemon run time in seconds before restart. By default corresponding option
+                        in global 'worker' configuration section is used.
 work_dir              - work directory for worker. By default corresponding option in global 'worker' configuration
                         section is used.
 exec                  - path to external worker executable. By default corresponding option in global 'worker'

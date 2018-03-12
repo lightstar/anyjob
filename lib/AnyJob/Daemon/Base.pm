@@ -5,7 +5,7 @@ package AnyJob::Daemon::Base;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  07.03.2018
+# Last update:  12.03.2018
 #
 
 use strict;
@@ -163,6 +163,17 @@ sub fork {
 sub isParent {
     my $self = shift;
     return $self->{parent};
+}
+
+###############################################################################
+# Get current number of running child processes.
+#
+# Returns:
+#     integer count of running child processes.
+#
+sub getChildCount {
+    my $self = shift;
+    return scalar(@{$self->{childs}});
 }
 
 ###############################################################################

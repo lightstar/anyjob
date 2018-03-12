@@ -5,7 +5,7 @@ package AnyJob::Constants::Defaults;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  06.03.2018
+# Last update:  12.03.2018
 #
 
 use strict;
@@ -58,6 +58,16 @@ use constant DEFAULT_CHILD_STOP_TRIES => 10;
 # Default delay in seconds between tries to stop all worker daemon processes.
 #
 use constant DEFAULT_WORKER_STOP_DELAY => 1;
+
+###############################################################################
+# Default delay in seconds between checks that worker daemons are running.
+#
+use constant DEFAULT_WORKER_CHECK_DELAY => 10;
+
+###############################################################################
+# Default worker max run time in seconds.
+#
+use constant DEFAULT_WORKER_MAX_RUN_TIME => 86400;
 
 ###############################################################################
 # Default maximum number of tries to stop all worker daemon processes.
@@ -170,6 +180,8 @@ our @EXPORT = qw(
     DEFAULT_CHILD_STOP_TRIES
     DEFAULT_WORKER_STOP_DELAY
     DEFAULT_WORKER_STOP_TRIES
+    DEFAULT_WORKER_CHECK_DELAY
+    DEFAULT_WORKER_MAX_RUN_TIME
     DEFAULT_ANYJOB_PATH
     DEFAULT_CONFIG_FILE
     DEFAULT_REDIS

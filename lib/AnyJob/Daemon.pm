@@ -8,7 +8,7 @@ package AnyJob::Daemon;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  07.03.2018
+# Last update:  12.03.2018
 #
 
 use strict;
@@ -21,7 +21,7 @@ use JSON::XS;
 
 use AnyJob::Constants::Defaults qw(
     DEFAULT_MIN_DELAY DEFAULT_MAX_DELAY DEFAULT_DAEMON_PIDFILE DEFAULT_CHILD_STOP_DELAY DEFAULT_CHILD_STOP_TRIES
-    DEFAULT_WORKER_STOP_DELAY DEFAULT_WORKER_STOP_TRIES DEFAULT_WORKER_PIDFILE
+    DEFAULT_WORKER_STOP_DELAY DEFAULT_WORKER_STOP_TRIES DEFAULT_WORKER_PIDFILE DEFAULT_WORKER_CHECK_DELAY
 );
 use AnyJob::Utils qw(readInt isProcessRunning);
 use AnyJob::Daemon::Base;
@@ -69,6 +69,9 @@ sub new {
     $self->{minDelay} = $config->{min_delay} || DEFAULT_MIN_DELAY;
     $self->{maxDelay} = $config->{max_delay} || DEFAULT_MAX_DELAY;
 
+    $self->{workerCheckDelay} = $config->{worker_check_delay} || DEFAULT_WORKER_CHECK_DELAY;
+    $self->{workerCheckLastTime} = time();
+
     return $self;
 }
 
@@ -94,54 +97,86 @@ sub runWorkers {
     my $self = shift;
 
     foreach my $worker (@{$self->config->getNodeWorkers()}) {
-        my ($workDir, $exec, $lib, $user, $group) = $self->config->getWorkerDaemonOptions($worker);
-        unless (defined($workDir)) {
-            next;
+        $self->runWorker($worker);
+    }
+}
+
+###############################################################################
+# Run specified worker daemon as separate process.
+#
+# Arguments:
+#     worker - string worker name.
+#
+sub runWorker {
+    my $self = shift;
+    my $worker = shift;
+
+    my ($workDir, $exec, $lib, $user, $group) = $self->config->getWorkerDaemonOptions($worker);
+    unless (defined($workDir)) {
+        return;
+    }
+
+    my ($uid, $gid) = (0, 0);
+
+    if (defined($user)) {
+        unless (defined($uid = getpwnam($user))) {
+            $self->error('Wrong user name: \'' . $user . '\'');
+            return;
         }
+    }
 
-        my ($uid, $gid) = (0, 0);
-
-        if (defined($user)) {
-            unless (defined($uid = getpwnam($user))) {
-                $self->error('Wrong user name: \'' . $user . '\'');
-                next;
-            }
+    if (defined($group)) {
+        unless (defined($gid = getgrnam($group))) {
+            $self->error('Wrong group name: \'' . $group . '\'');
+            return;
         }
+    }
 
-        if (defined($group)) {
-            unless (defined($gid = getgrnam($group))) {
-                $self->error('Wrong group name: \'' . $group . '\'');
-                next;
-            }
+    my $pid = fork();
+    if ($pid != 0) {
+        return;
+    }
+
+    unless (defined($pid)) {
+        $self->error('Can\'t fork to run worker \'' . $worker . '\': ' . $!);
+        return;
+    }
+
+    $EGID = $GID = $gid;
+    $EUID = $UID = $uid;
+
+    $self->debug('Run worker \'' . $worker . '\' in work directory \'' . $workDir . '\'' .
+        ((defined($user) and defined($group)) ? ' under user \'' . $user . '\' and group \'' . $group . '\'' :
+            (defined($user) ? ' under user \'' . $user . '\'' :
+                (defined($group) ? ' under group \'' . $group . '\'' : ''))) .
+        (defined($lib) ? ' including libs in \'' . $lib . '\'' : ''));
+
+    chdir($workDir);
+
+    $ENV{ANYJOB_WORKER} = $worker;
+    if (defined($lib)) {
+        $ENV{ANYJOB_WORKER_LIB} = $lib;
+    }
+
+    exec($exec);
+}
+
+###############################################################################
+# Check running worker daemon processes. If some of them are not running then rerun them.
+#
+sub checkWorkers {
+    my $self = shift;
+
+    my $workerSection = $self->config->section('worker') || {};
+    foreach my $worker (@{$self->config->getNodeWorkers()}) {
+        my $config = $self->config->getWorkerConfig($worker) || {};
+
+        my $pidfile = $config->{pidfile} || $workerSection->{pidfile} || DEFAULT_WORKER_PIDFILE;
+        $pidfile =~ s/\{name\}/$worker/;
+        my $pid = readInt($pidfile);
+        unless ($pid and isProcessRunning($pid)) {
+            $self->runWorker($worker);
         }
-
-        my $pid = fork();
-        if ($pid != 0) {
-            next;
-        }
-
-        unless (defined($pid)) {
-            $self->error('Can\'t fork to run worker \'' . $worker . '\': ' . $!);
-            next;
-        }
-
-        $EGID = $GID = $gid;
-        $EUID = $UID = $uid;
-
-        $self->debug('Run worker \'' . $worker . '\' in work directory \'' . $workDir . '\'' .
-            ((defined($user) and defined($group)) ? ' under user \'' . $user . '\' and group \'' . $group . '\'' :
-                (defined($user) ? ' under user \'' . $user . '\'' :
-                    (defined($group) ? ' under group \'' . $group . '\'' : ''))) .
-            (defined($lib) ? ' including libs in \'' . $lib . '\'' : ''));
-
-        chdir($workDir);
-
-        $ENV{ANYJOB_WORKER} = $worker;
-        if (defined($lib)) {
-            $ENV{ANYJOB_WORKER_LIB} = $lib;
-        }
-
-        exec($exec);
     }
 }
 
@@ -239,6 +274,11 @@ sub process {
         }
     } else {
         sleep($minDelay);
+    }
+
+    if (time() - $self->{workerCheckLastTime} >= $self->{workerCheckDelay}) {
+        $self->checkWorkers();
+        $self->{workerCheckLastTime} = time();
     }
 }
 
