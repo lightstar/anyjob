@@ -276,7 +276,7 @@ sub process {
         sleep($minDelay);
     }
 
-    if (time() - $self->{workerCheckLastTime} >= $self->{workerCheckDelay}) {
+    if ($self->{daemon}->isParent() and time() - $self->{workerCheckLastTime} >= $self->{workerCheckDelay}) {
         $self->checkWorkers();
         $self->{workerCheckLastTime} = time();
     }
