@@ -1,3 +1,16 @@
+14.03.2018
+  Add configuration selectors to optimize configuration load.
+  Separate job configuration to 'work' and 'create' parts used in different components.
+  Add access system to creators used to limit user access to jobs, parameters and properties.
+  Add ability to run jobs under unprivileged system user and group.
+  Refactor and optimize daemon and creator to use asynchronous processing and blocking versions of redis commands.
+  Allow isolated observers which will run in separate processes.
+  Add 'datetime' type for parameters and properties. Add appropriate support to UI.
+  Add 'data' field to all progress events.
+  Add support for worker daemons and support for context object in workers.
+  Various other fixes and refactoring.
+  Bump version to 0.0.5 Alpha.
+
 05.02.2018
   Modify creator's 'createJobs' method to inject jobs properties into jobset if they all are identical.
   API change: method 'jobset' in AnyJob::Worker::Base module now returns jobset id again.
