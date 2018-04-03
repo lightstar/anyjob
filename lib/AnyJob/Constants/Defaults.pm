@@ -5,7 +5,7 @@ package AnyJob::Constants::Defaults;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  12.03.2018
+# Last update:  03.04.2018
 #
 
 use strict;
@@ -115,6 +115,11 @@ use constant DEFAULT_CREATORS_CONFIG_PATH => 'creators';
 use constant DEFAULT_BUILDERS_CONFIG_PATH => 'builders';
 
 ###############################################################################
+# Default path for semaphores configuration (relative to config file).
+#
+use constant DEFAULT_SEMAPHORES_CONFIG_PATH => 'semaphores';
+
+###############################################################################
 # Default path for workers configuration (relative to config file).
 #
 use constant DEFAULT_WORKERS_CONFIG_PATH => 'workers';
@@ -191,6 +196,7 @@ our @EXPORT = qw(
     DEFAULT_CREATORS_CONFIG_PATH
     DEFAULT_BUILDERS_CONFIG_PATH
     DEFAULT_WORKERS_CONFIG_PATH
+    DEFAULT_SEMAPHORES_CONFIG_PATH
     DEFAULT_TEMPLATES_PATH
     DEFAULT_WORKER_DAEMON_EXEC
     DEFAULT_WORKER_EXEC

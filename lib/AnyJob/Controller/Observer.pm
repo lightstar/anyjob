@@ -8,7 +8,7 @@ package AnyJob::Controller::Observer;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  02.03.2018
+# Last update:  03.04.2018
 #
 
 use strict;
@@ -299,14 +299,14 @@ sub cleanLogs {
     my $observerConfig = $self->getObserverConfig() || {};
     my $limit = $observerConfig->{log_clean_limit} || $self->config->clean_limit || DEFAULT_CLEAN_LIMIT;
 
-    my %ids = $self->redis->zrangebyscore('anyjob:observer:' . $self->name . ':log', '-inf', time(),
-        'WITHSCORES', 'LIMIT', '0', $limit);
+    my @ids = $self->redis->zrangebyscore('anyjob:observer:' . $self->name . ':log', '-inf', time(),
+        'LIMIT', '0', $limit);
 
-    unless (scalar(keys(%ids))) {
+    unless (scalar(@ids)) {
         return;
     }
 
-    foreach my $id (keys(%ids)) {
+    foreach my $id (@ids) {
         $self->cleanLog($id);
     }
 

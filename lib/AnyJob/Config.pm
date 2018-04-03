@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  06.03.2018
+# Last update:  03.04.2018
 #
 
 use strict;
@@ -345,6 +345,20 @@ sub getWorkerConfig {
     my $self = shift;
     my $name = shift;
     return $self->section('worker_' . $name);
+}
+
+###############################################################################
+# Get semaphore configuration or undef.
+#
+# Arguments:
+#     name - string semaphore name.
+# Returns:
+#     hash with semaphore configuration or undef if there are no such semaphore.
+#
+sub getSemaphoreConfig {
+    my $self = shift;
+    my $name = shift;
+    return $self->section('semaphore_' . $name);
 }
 
 ###############################################################################

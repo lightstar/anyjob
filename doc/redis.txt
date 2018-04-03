@@ -1,5 +1,6 @@
-All keys created in redis are described here. They have prefix 'anyjob:' and are divided into 3 different groups:
-queues, data storage and id generators. Details about stored data and sent messages are in comments throughout code.
+All keys created in redis are described here. They have prefix 'anyjob:' and are divided into 4 different groups:
+queues, data storage, id generators and semaphores. Details about stored data and sent messages are in comments
+throughout code.
 
 1. Queues.
 
@@ -27,3 +28,13 @@ anyjob:build:<id>               - build data in JSON format for specified build 
 anyjob:job:id                   - last job id.
 anyjob:jobset:id                - last jobset id.
 anyjob:build:id                 - last build id.
+
+4. Semaphores
+
+anyjob:sem:<key>                - integer semaphore value.
+anyjob:semr:<key>               - integer reading semaphore value.
+anyjob:sem:<key>:clients        - sorted set with names of all active (entered into semaphore) clients.
+anyjob:sem:<key>:wait           - set with names of all clients waiting for semaphore.
+anyjob:semq:<key>:<client>      - queue for signals sent by semaphore to waiting clients when it will become available.
+
+All reading clients here will have ':r' suffix automatically appended to their names.

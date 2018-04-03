@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::Clean;
 #
 # Author:       LightStar
 # Created:      23.10.2017
-# Last update:  16.02.2018
+# Last update:  03.04.2018
 #
 
 use strict;
@@ -65,10 +65,8 @@ sub process {
     my $nodeConfig = $self->config->getNodeConfig() || {};
     my $limit = $nodeConfig->{global_clean_limit} || $self->config->clean_limit || DEFAULT_CLEAN_LIMIT;
 
-    my %ids = $self->redis->zrangebyscore('anyjob:jobsets', '-inf', time(), 'WITHSCORES',
-        'LIMIT', '0', $limit);
-
-    foreach my $id (keys(%ids)) {
+    my @ids = $self->redis->zrangebyscore('anyjob:jobsets', '-inf', time(), 'LIMIT', '0', $limit);
+    foreach my $id (@ids) {
         if (defined(my $jobSet = $self->getJobSet($id))) {
             $self->sendEvent(EVENT_CLEAN_JOBSET, {
                     id    => $id,

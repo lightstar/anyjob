@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::BuildClean;
 #
 # Author:       LightStar
 # Created:      30.11.2017
-# Last update:  16.02.2018
+# Last update:  03.04.2018
 #
 
 use strict;
@@ -59,10 +59,8 @@ sub process {
     my $nodeConfig = $self->config->getNodeConfig() || {};
     my $limit = $nodeConfig->{build_clean_limit} || $self->config->clean_limit || DEFAULT_CLEAN_LIMIT;
 
-    my %ids = $self->redis->zrangebyscore('anyjob:builds', '-inf', time(), 'WITHSCORES',
-        'LIMIT', '0', $limit);
-
-    foreach my $id (keys(%ids)) {
+    my @ids = $self->redis->zrangebyscore('anyjob:builds', '-inf', time(), 'LIMIT', '0', $limit);
+    foreach my $id (@ids) {
         $self->cleanBuild($id);
     }
 
