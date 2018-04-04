@@ -388,11 +388,23 @@ sub decActiveJobSetCount {
     $self->{activeJobSetCount}--;
 }
 
+###############################################################################
+# Returns:
+#     Semaphores engine which is usually AnyJob::Semaphore::Engine object.
+#
 sub getSemaphoreEngine {
     my $self = shift;
     return $self->{semaphoreEngine};
 }
 
+###############################################################################
+# Get semaphore object instance with specified name.
+#
+# Arguments:
+#     name - string semaphore name.
+# Returns:
+#     AnyJob::Semaphore::Instance object.
+#
 sub getSemaphore {
     my $self = shift;
     my $name = shift;
