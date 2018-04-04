@@ -8,7 +8,7 @@ package AnyJob::Daemon;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  12.03.2018
+# Last update:  04.04.2018
 #
 
 use strict;
@@ -26,6 +26,7 @@ use AnyJob::Constants::Defaults qw(
 use AnyJob::Utils qw(readInt isProcessRunning);
 use AnyJob::Daemon::Base;
 use AnyJob::Controller::Factory;
+use AnyJob::Semaphore::Engine;
 
 use base 'AnyJob::Base';
 
@@ -71,6 +72,8 @@ sub new {
 
     $self->{workerCheckDelay} = $config->{worker_check_delay} || DEFAULT_WORKER_CHECK_DELAY;
     $self->{workerCheckLastTime} = time();
+
+    $self->{semaphoreEngine} = AnyJob::Semaphore::Engine->new(parent => $self);
 
     return $self;
 }
@@ -233,7 +236,7 @@ sub isolateControllers {
 ###############################################################################
 # Process all daemon controllers.
 # Controllers 'process' method is called here on basis of delay specified by controllers themselves.
-# Queues are queried and controllers 'processEvent' method is called for each event.
+# Queues are queried and controllers 'processEvent' or 'processSignal' methods are called for each received message.
 #
 sub process {
     my $self = shift;
@@ -261,15 +264,20 @@ sub process {
     }
 
     if (scalar(@queues) > 0) {
-        my ($queue, $event) = $self->redis->blpop(@queues, $minDelay);
-        if (defined($queue) and defined($event)) {
-            eval {
-                $event = decode_json($event);
-            };
-            if ($@) {
-                $self->error('Can\'t decode event from queue \'' . $queue . '\': ' . $event);
+        my ($queue, $message) = $self->redis->blpop(@queues, $minDelay);
+        if (defined($queue) and defined($message)) {
+            if ($message eq '') {
+                $self->{controllersByEventQueue}->{$queue}->processSignal($queue);
             } else {
-                $self->{controllersByEventQueue}->{$queue}->processEvent($event);
+                my $event;
+                eval {
+                    $event = decode_json($message);
+                };
+                if ($@) {
+                    $self->error('Can\'t decode event from queue \'' . $queue . '\': ' . $message);
+                } else {
+                    $self->{controllersByEventQueue}->{$queue}->processEvent($event);
+                }
             }
         }
     } else {
@@ -378,6 +386,17 @@ sub decActiveJobSetCount {
     my $self = shift;
     $self->initActiveJobSetCount();
     $self->{activeJobSetCount}--;
+}
+
+sub getSemaphoreEngine {
+    my $self = shift;
+    return $self->{semaphoreEngine};
+}
+
+sub getSemaphore {
+    my $self = shift;
+    my $name = shift;
+    return $self->{semaphoreEngine}->getSemaphore($name);
 }
 
 1;

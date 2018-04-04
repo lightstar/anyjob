@@ -33,8 +33,8 @@ anyjob:build:id                 - last build id.
 
 anyjob:sem:<key>                - integer semaphore value.
 anyjob:semr:<key>               - integer reading semaphore value.
-anyjob:sem:<key>:clients        - sorted set with names of all active (entered into semaphore) clients.
-anyjob:sem:<key>:wait           - set with names of all clients waiting for semaphore.
+anyjob:sem:clients              - sorted set with names of all active clients (concatenated with keys).
+anyjob:sem:<key>:wait           - set with names of all clients waiting for semaphore (concatenated with keys).
 anyjob:semq:<key>:<client>      - queue for signals sent by semaphore to waiting clients when it will become available.
 
 All reading clients here will have ':r' suffix automatically appended to their names.

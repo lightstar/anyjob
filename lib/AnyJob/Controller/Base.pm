@@ -2,11 +2,11 @@ package AnyJob::Controller::Base;
 
 ###############################################################################
 # Abstract base class for any controller that run inside daemon component.
-# Each controller performs its own specific task in 'processEvent' and 'process' methods.
+# Each controller performs its own specific task in 'processEvent', 'processSignal' and 'process' methods.
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  02.03.2018
+# Last update:  04.04.2018
 #
 
 use strict;
@@ -271,6 +271,20 @@ sub getActiveEventQueues {
 sub processEvent {
     my $self = shift;
     my $event = shift;
+
+    require Carp;
+    Carp::confess('Need to be implemented in descendant');
+}
+
+###############################################################################
+# Abstract method which will be called by daemon component to process signal from some queue.
+#
+# Arguments:
+#     queue - string queue name from where signal was received.
+#
+sub processSignal {
+    my $self = shift;
+    my $queue = shift;
 
     require Carp;
     Carp::confess('Need to be implemented in descendant');
