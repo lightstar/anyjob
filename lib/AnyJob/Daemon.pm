@@ -8,7 +8,7 @@ package AnyJob::Daemon;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  04.04.2018
+# Last update:  20.04.2018
 #
 
 use strict;
@@ -234,6 +234,17 @@ sub isolateControllers {
 }
 
 ###############################################################################
+# Initialize all daemon controllers.
+#
+sub init {
+    my $self = shift;
+
+    foreach my $controller (@{$self->{controllers}}) {
+        $controller->init();
+    }
+}
+
+###############################################################################
 # Process all daemon controllers.
 # Controllers 'process' method is called here on basis of delay specified by controllers themselves.
 # Queues are queried and controllers 'processEvent' or 'processSignal' methods are called for each received message.
@@ -244,6 +255,7 @@ sub process {
     my @queues;
     my $minDelay = $self->{maxDelay};
 
+    my %controllersBySignalQueue;
     foreach my $controller (@{$self->{controllers}}) {
         my $delay = $controller->getProcessDelay();
 
@@ -261,13 +273,17 @@ sub process {
         }
 
         push @queues, @{$controller->getActiveEventQueues()};
+        foreach my $signalQueue (@{$controller->getSignalQueues()}) {
+            $controllersBySignalQueue{$signalQueue} = $controller;
+            push @queues, $signalQueue;
+        }
     }
 
     if (scalar(@queues) > 0) {
         my ($queue, $message) = $self->redis->blpop(@queues, $minDelay);
         if (defined($queue) and defined($message)) {
-            if ($message eq '') {
-                $self->{controllersByEventQueue}->{$queue}->processSignal($queue);
+            if (exists($controllersBySignalQueue{$queue})) {
+                $controllersBySignalQueue{$queue}->processSignal($queue);
             } else {
                 my $event;
                 eval {

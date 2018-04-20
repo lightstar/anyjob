@@ -12,7 +12,7 @@ package AnyJob::Semaphore::Instance;
 #
 # Author:       LightStar
 # Created:      27.03.2018
-# Last update:  04.04.2018
+# Last update:  20.04.2018
 #
 
 use strict;
@@ -80,7 +80,6 @@ sub redis {
     return $self->{engine}->redis;
 }
 
-
 ###############################################################################
 # Returns:
 #     String semaphore name.
@@ -146,9 +145,9 @@ sub enterRead {
     my $client = shift;
 
     my $key = $self->key;
-    return $self->redis->evalsha($self->getScriptSha('enterRead'), 4, 'anyjob:sem:' . $key, 'anyjob:semr:' . $key,
-        'anyjob:sem:clients', 'anyjob:sem:' . $key . ':wait', key . ':' . $client . ':r', $self->{count},
-        time() + $self->{timeout});
+    return $self->redis->evalsha($self->getScriptSha('enterRead'), 4, 'anyjob:sem:' . $key,
+        'anyjob:semr:' . $key, 'anyjob:sem:clients', 'anyjob:sem:' . $key . ':wait', $key . ':' . $client . ':r',
+        $self->{count}, time() + $self->{timeout});
 }
 
 ###############################################################################
@@ -183,8 +182,8 @@ sub exitRead {
     my $client = shift;
 
     my $key = $self->key;
-    return $self->redis->evalsha($self->getScriptSha('exitRead'), 4, 'anyjob:sem:' . $key, 'anyjob:semr:' . $key,
-        'anyjob:sem:clients', 'anyjob:sem:' . $key . ':wait', $key . ':' . $client . ':r');
+    return $self->redis->evalsha($self->getScriptSha('exitRead'), 4, 'anyjob:sem:' . $key,
+        'anyjob:semr:' . $key, 'anyjob:sem:clients', 'anyjob:sem:' . $key . ':wait', $key . ':' . $client . ':r');
 }
 
 ###############################################################################

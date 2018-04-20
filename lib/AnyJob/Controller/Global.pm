@@ -6,7 +6,7 @@ package AnyJob::Controller::Global;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  16.02.2018
+# Last update:  05.04.2018
 #
 
 use strict;
@@ -27,6 +27,7 @@ our @MODULES = qw(
     Progress
     Clean
     BuildClean
+    SemaphoreClean
     );
 
 ###############################################################################

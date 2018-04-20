@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  03.04.2018
+# Last update:  20.04.2018
 #
 
 use strict;
@@ -655,6 +655,57 @@ sub isJobSupported {
     $self->{jobSupported}->{$node}->{$type} = $result;
 
     return $result;
+}
+
+###############################################################################
+# Get hash with some job's semaphores configuration. This hash will have next structure:
+# {
+#    '<mode>' => [ { 'name': '<name>', 'client': '<client>', 'global': '1' }, ... ],
+#    ...
+# }
+# '<mode>' here is one of predefined semaphore mode names for job, '<name>' is one of configured semaphore names,
+# '<client>' is arbitrary client name (it is optional, job type will be used by default) and 'global' is optional
+# flag (unset by default). When 'global' flag is set, jobset's id will not be appended to semaphore client name for
+# every non-wrap mode.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     hash with semaphores configuration.
+#
+sub getJobSemaphores {
+    my $self = shift;
+    my $type = shift;
+
+    if (exists($self->{jobSemaphores}->{$type})) {
+        return $self->{jobSemaphores}->{$type};
+    }
+
+    $self->{jobSemaphores}->{$type} = {};
+
+    my $config = $self->getJobConfig($type);
+    unless (defined($config) and exists($config->{semaphores})) {
+        return {};
+    }
+
+    my $semaphores;
+    eval {
+        $semaphores = decode_json($config->{semaphores});
+    };
+    if ($@ or ref($semaphores) ne 'HASH') {
+        require Carp;
+        Carp::confess('Wrong semaphores of job \'' . $type . '\': ' . $config->{semaphores});
+    }
+
+    foreach my $mode (keys(%$semaphores)) {
+        if (ref($semaphores->{$mode}) ne 'ARRAY') {
+            $semaphores->{$mode} = [ $semaphores->{$mode} ];
+        }
+        $semaphores->{$mode} = [ map {ref($_) eq 'HASH' ? $_ : { name => $_ }} @{$semaphores->{$mode}} ];
+    }
+
+    $self->{jobSemaphores}->{$type} = $semaphores;
+    return $semaphores;
 }
 
 ###############################################################################

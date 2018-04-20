@@ -2,11 +2,11 @@ package AnyJob::Controller::Base;
 
 ###############################################################################
 # Abstract base class for any controller that run inside daemon component.
-# Each controller performs its own specific task in 'processEvent', 'processSignal' and 'process' methods.
+# Each controller performs its own specific task in 'init', 'processEvent', 'processSignal' and 'process' methods.
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  04.04.2018
+# Last update:  20.04.2018
 #
 
 use strict;
@@ -85,6 +85,13 @@ sub debug {
     my $self = shift;
     my $message = shift;
     $self->{parent}->debug($message);
+}
+
+###############################################################################
+# Method which will be called one time before beginning of processing. Does nothing by default.
+#
+sub init {
+    my $self = shift;
 }
 
 ###############################################################################
@@ -260,6 +267,17 @@ sub getEventQueues {
 sub getActiveEventQueues {
     my $self = shift;
     return $self->getEventQueues();
+}
+
+###############################################################################
+# Get array of signal queues which needs to be listened by this controller right now.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getSignalQueues {
+    my $self = shift;
+    return [];
 }
 
 ###############################################################################

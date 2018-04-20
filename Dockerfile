@@ -4,7 +4,7 @@
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  14.12.2017
+# Last update:  20.04.2018
 #
 
 FROM perl:5.26
@@ -20,6 +20,7 @@ RUN cpanm Dancer2::Plugin::Auth::HTTP::Basic::DWIW
 RUN cpanm Dancer2::Plugin::WebSocket
 RUN cpanm Twiggy
 RUN cpanm CGI::Deurl::XS
+RUN cpanm File::Copy::Recursive --force
 RUN cpanm JavaScript::Duktape
 RUN cpanm AnyEvent::RipeRedis
 RUN cpanm AnyEvent::HTTP

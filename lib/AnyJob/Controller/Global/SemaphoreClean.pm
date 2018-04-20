@@ -1,10 +1,11 @@
-package AnyJob::Controller::Node::Clean;
+package AnyJob::Controller::Global::SemaphoreClean;
 
 ###############################################################################
-# Controller which manages cleaning timeouted jobs on specific node.
+# Controller which manages cleaning timeouted enterings by semaphore clients.
+# Only one such controller in whole system must run.
 #
 # Author:       LightStar
-# Created:      21.10.2017
+# Created:      05.04.2018
 # Last update:  20.04.2018
 #
 
@@ -13,16 +14,8 @@ use warnings;
 use utf8;
 
 use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_LIMIT DEFAULT_CLEAN_DELAY);
-use AnyJob::Constants::Events qw(EVENT_CLEAN);
 
-use base 'AnyJob::Controller::Node';
-
-###############################################################################
-# Method which will be called one time before beginning of processing.
-#
-sub init {
-    my $self = shift;
-}
+use base 'AnyJob::Controller::Global';
 
 ###############################################################################
 # Get array of all possible event queues.
@@ -54,42 +47,22 @@ sub getActiveEventQueues {
 #
 sub getProcessDelay {
     my $self = shift;
-
-    if ($self->parent->getActiveJobCount() == 0) {
-        return undef;
-    }
-
     return $self->calcProcessDelay($self->delay());
 }
 
 ###############################################################################
 # Method called by daemon component on basis of provided delay.
-# Its main task is to collect timeouted jobs and clean them.
+# Its main task is to clean timeouted enterings by semaphore clients.
 #
 sub process {
     my $self = shift;
 
-    my $nodeConfig = $self->config->getNodeConfig() || {};
-    my $limit = $nodeConfig->{clean_limit} || $self->config->clean_limit || DEFAULT_CLEAN_LIMIT;
-
-    my @ids = $self->redis->zrangebyscore('anyjob:jobs:' . $self->node, '-inf', time(), 'LIMIT', '0', $limit);
-    foreach my $id (@ids) {
-        if (defined(my $job = $self->getJob($id))) {
-            $self->sendEvent(EVENT_CLEAN, {
-                    id     => $id,
-                    (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
-                    type   => $job->{type},
-                    params => $job->{params},
-                    props  => $job->{props},
-                });
-        } else {
-            $self->error('Cleaned job \'' . $id . '\' not found');
-        }
-
-        $self->cleanJob($id);
+    my $count = $self->parent->getSemaphoreEngine()->cleanTimeoutedClients();
+    if ($count > 0) {
+        $self->debug('Cleaned ' . $count . ' semaphore enterings');
     }
 
-    $self->updateProcessDelay($self->delay());
+    return $self->updateProcessDelay($self->delay());
 }
 
 ###############################################################################
@@ -101,7 +74,7 @@ sub process {
 sub delay {
     my $self = shift;
     my $nodeConfig = $self->config->getNodeConfig() || {};
-    return $nodeConfig->{clean_delay} || $self->config->clean_delay || DEFAULT_CLEAN_DELAY;
+    return $nodeConfig->{semaphore_clean_delay} || $self->config->clean_delay || DEFAULT_CLEAN_DELAY;
 }
 
 1;

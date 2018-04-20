@@ -5,7 +5,7 @@ package AnyJob::Worker::Daemon;
 #
 # Author:       LightStar
 # Created:      05.03.2018
-# Last update:  07.03.2018
+# Last update:  20.04.2018
 #
 
 use strict;
@@ -80,6 +80,13 @@ sub run {
     $self->{daemon}->run();
 
     $self->stop();
+}
+
+###############################################################################
+# Called by AnyJob::Daemon::Base object before processing.
+#
+sub init {
+    my $self = shift;
 }
 
 ###############################################################################

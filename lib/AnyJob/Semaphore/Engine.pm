@@ -6,7 +6,7 @@ package AnyJob::Semaphore::Engine;
 #
 # Author:       LightStar
 # Created:      04.04.2018
-# Last update:  04.04.2018
+# Last update:  20.04.2018
 #
 
 use strict;
@@ -29,11 +29,11 @@ use AnyJob::Semaphore::Instance;
 use constant ENTER_SCRIPT => <<'EOF';
     if tonumber(redis.call('get',KEYS[1]) or '0') + (tonumber(redis.call('get',KEYS[2]) or '0') > 0 and 1 or 0) >= tonumber(ARGV[2]) then
         redis.call('sadd', KEYS[4], ARGV[1])
+        return 0
     elseif tonumber(redis.call('zadd', KEYS[3], ARGV[3], ARGV[1])) > 0 then
         redis.call('incr', KEYS[1])
-        return 1
     end
-    return 0
+    return 1
 EOF
 
 ###############################################################################
@@ -50,11 +50,11 @@ EOF
 use constant ENTER_READ_SCRIPT => <<'EOF';
     if tonumber(redis.call('get',KEYS[1]) or '0') >= tonumber(ARGV[2]) then
         redis.call('sadd', KEYS[4], ARGV[1])
+        return 0
     elseif tonumber(redis.call('zadd', KEYS[3], ARGV[3], ARGV[1])) > 0 then
         redis.call('incr', KEYS[2])
-        return 1
     end
-    return 0
+    return 1
 EOF
 
 ###############################################################################
@@ -69,17 +69,16 @@ use constant EXIT_SCRIPT => <<'EOF';
     if tonumber(redis.call('zrem', KEYS[3], ARGV[1])) == 0 then
         return 0
     end
-    local count = tonumber(redis.call('decr', KEYS[1]))
-    if count < 0 then
+    if tonumber(redis.call('decr', KEYS[1])) < 0 then
         redis.call('set', KEYS[1], '0')
-        return 0
-    end
-    local clients = redis.call('smembers', KEYS[4])
-    if table.getn(clients) > 0 then
-        for i, client in ipairs(clients) do
-            redis.call('rpush', 'anyjob:semq:' .. client, '')
+    else
+        local clients = redis.call('smembers', KEYS[4])
+        if table.getn(clients) > 0 then
+            for i, client in ipairs(clients) do
+                redis.call('rpush', 'anyjob:semq:' .. client, '')
+            end
+            redis.call('del', KEYS[4])
         end
-        redis.call('del', KEYS[4])
     end
     return 1
 EOF
@@ -100,7 +99,6 @@ use constant EXIT_READ_SCRIPT => <<'EOF';
     local count = tonumber(redis.call('decr', KEYS[2]))
     if count < 0 then
         redis.call('set', KEYS[2], '0')
-        return 0
     elseif count == 0 then
         local clients = redis.call('smembers', KEYS[4])
         if table.getn(clients) > 0 then
@@ -176,15 +174,16 @@ sub new {
     }
 
     $self->{scripts} = {};
-    $self->{scripts}->{enter} = $self->{redis}->script('load', ENTER_SCRIPT);
-    $self->{scripts}->{enterRead} = $self->{redis}->script('load', ENTER_READ_SCRIPT);
-    $self->{scripts}->{exit} = $self->{redis}->script('load', EXIT_SCRIPT);
-    $self->{scripts}->{exitRead} = $self->{redis}->script('load', EXIT_READ_SCRIPT);
-    $self->{scripts}->{clean} = $self->{redis}->script('load', CLEAN_SCRIPT);
+    $self->{scripts}->{enter} = $self->redis->script('load', ENTER_SCRIPT);
+    $self->{scripts}->{enterRead} = $self->redis->script('load', ENTER_READ_SCRIPT);
+    $self->{scripts}->{exit} = $self->redis->script('load', EXIT_SCRIPT);
+    $self->{scripts}->{exitRead} = $self->redis->script('load', EXIT_READ_SCRIPT);
+    $self->{scripts}->{clean} = $self->redis->script('load', CLEAN_SCRIPT);
 
     $self->{semaphores} = {};
 
-    $self->{clean_limit} = $self->config->clean_limit || DEFAULT_CLEAN_LIMIT;
+    my $nodeConfig = $self->config->getNodeConfig() || {};
+    $self->{clean_limit} = $nodeConfig->{semaphore_clean_limit} || $self->config->clean_limit || DEFAULT_CLEAN_LIMIT;
 
     return $self;
 }

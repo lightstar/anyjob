@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  07.03.2018
+# Last update:  20.04.2018
 #
 
 use strict;
@@ -18,6 +18,7 @@ use File::Basename;
 
 use AnyJob::Constants::Events qw(EVENT_CREATE);
 use AnyJob::Constants::States qw(STATE_BEGIN);
+use AnyJob::Constants::Semaphore;
 
 use base 'AnyJob::Controller::Base';
 
@@ -28,7 +29,35 @@ use base 'AnyJob::Controller::Base';
 our @MODULES = qw(
     Progress
     Clean
-    );
+);
+
+###############################################################################
+# Construct new AnyJob::Controller::Node object.
+#
+# Arguments:
+#     parent - parent component which is usually AnyJob::Daemon object.
+# Returns:
+#     AnyJob::Controller::Node object.
+#
+sub new {
+    my $class = shift;
+    my %args = @_;
+    my $self = $class->SUPER::new(%args);
+    $self->{waitingJobs} = {};
+    return $self;
+}
+
+###############################################################################
+# Method which will be called one time before beginning of processing.
+# Used to try to run all jobs waiting for semaphores.
+#
+sub init {
+    my $self = shift;
+    my @ids = $self->redis->smembers('anyjob:jobs:' . $self->node . ':wait');
+    foreach my $id (@ids) {
+        $self->tryRunWaitingJob($id);
+    }
+}
 
 ###############################################################################
 # Get array of all possible event queues.
@@ -56,6 +85,17 @@ sub getActiveEventQueues {
     }
 
     return $self->getEventQueues();
+}
+
+###############################################################################
+# Get array of semaphore signal queues which needs to be listened by this controller right now.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getSignalQueues {
+    my $self = shift;
+    return [ map {'anyjob:semq:' . $_} keys(%{$self->{waitingJobs}}) ];
 }
 
 ###############################################################################
@@ -95,6 +135,28 @@ sub processEvent {
 }
 
 ###############################################################################
+# Method which will be called by daemon component to process signal from one of semaphore queues.
+# Used to try to run all jobs waiting for corresponding semaphore.
+#
+# Arguments:
+#     queue - string queue name from where signal was received.
+#
+sub processSignal {
+    my $self = shift;
+    my $queue = shift;
+
+    $self->debug('Received signal from queue \'' . $queue . '\'');
+
+    my ($key) = ($queue =~ /^anyjob:semq:(.*)$/o);
+    if (defined($key) and exists($self->{waitingJobs}->{$key})) {
+        my $ids = delete $self->{waitingJobs}->{$key};
+        foreach my $id (@$ids) {
+            $self->tryRunWaitingJob($id);
+        }
+    }
+}
+
+###############################################################################
 # Create and run new job.
 #
 # Arguments:
@@ -124,20 +186,26 @@ sub createJob {
 
     my $id = $self->getNextJobId();
     $self->redis->zadd('anyjob:jobs:' . $self->node, $job->{time} + $self->getJobCleanTimeout($job), $id);
-    $self->redis->set('anyjob:job:' . $id, encode_json($job));
     $self->parent->incActiveJobCount();
 
     $self->debug('Create job \'' . $id . '\' ' .
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
         '\', params ' . encode_json($job->{params}) . ' and props ' . encode_json($job->{props}));
 
+    my $isJobNotBlocked = $self->processSemaphores(SEMAPHORE_RUN_SEQUENCE, $id, $job);
+    $self->redis->set('anyjob:job:' . $id, encode_json($job));
+
+    unless ($isJobNotBlocked) {
+        $self->redis->sadd('anyjob:jobs:' . $self->node . ':wait', $id);
+    }
+
     $self->sendEvent(EVENT_CREATE, {
-            id     => $id,
-            (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
-            type   => $job->{type},
-            params => $job->{params},
-            props  => $job->{props}
-        });
+        id     => $id,
+        (exists($job->{jobset}) ? (jobset => $job->{jobset}) : ()),
+        type   => $job->{type},
+        params => $job->{params},
+        props  => $job->{props}
+    });
 
     if (exists($job->{jobset})) {
         my $progress = {
@@ -150,7 +218,9 @@ sub createJob {
         $self->sendJobProgressForJobSet($id, $progress, $job->{jobset});
     }
 
-    $self->runJob($job, $id);
+    if ($isJobNotBlocked) {
+        $self->runJob($id, $job);
+    }
 }
 
 ###############################################################################
@@ -182,14 +252,14 @@ sub finishRedirectJob {
     $self->parent->incActiveJobCount();
 
     $self->redis->rpush('anyjob:progressq:' . $event->{from}, encode_json({
-            redirected => $id
-        }));
+        redirected => $id
+    }));
 
     $self->debug('Run redirected job \'' . $id . '\' ' .
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
         '\', params ' . encode_json($job->{params}) . ' and props ' . encode_json($job->{props}));
 
-    $self->runJob($job, $id);
+    $self->runJob($id, $job);
 }
 
 ###############################################################################
@@ -219,7 +289,237 @@ sub finishRedoJob {
         (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
         '\', params ' . encode_json($job->{params}) . ' and props ' . encode_json($job->{props}));
 
-    $self->runJob($job, $id);
+    $self->runJob($id, $job);
+}
+
+###############################################################################
+# Try to run job waiting for some semaphore.
+#
+# Arguments:
+#     id - integer job's id.
+#
+sub tryRunWaitingJob {
+    my $self = shift;
+    my $id = shift;
+
+    my $job = $self->getJob($id);
+    unless (defined($job)) {
+        return;
+    }
+
+    $self->debug('Try run waiting job \'' . $id . '\' ' .
+        (exists($job->{jobset}) ? '(jobset \'' . $job->{jobset} . '\') ' : '') . 'with type \'' . $job->{type} .
+        '\', params ' . encode_json($job->{params}) . ' and props ' . encode_json($job->{props}));
+
+    my $isJobNotBlocked = $self->processSemaphores(SEMAPHORE_RUN_SEQUENCE, $id, $job);
+    $self->redis->set('anyjob:job:' . $id, encode_json($job));
+
+    if ($isJobNotBlocked) {
+        $self->redis->srem('anyjob:jobs:' . $self->node . ':wait', $id);
+        $self->runJob($id, $job);
+    }
+}
+
+###############################################################################
+# Execute semaphore sequence for provided job. Semaphores are entered and exited according to job
+# configuration during process. Only not already entered or exited semaphores are processed.
+#
+# Arguments:
+#     sequence - array of hashes with sequence configuration. Each hash must have 'mode' key with one of
+#                predefined semaphore modes for job and 'action' key with one of predefined semaphore actions for job.
+#                See AnyJob::Constants::Semaphore for a full list.
+#     id       - integer job's id.
+#     job      - hash with job data.
+# Returns:
+#     0/1 flag. If set, all semaphores are successfully entered or exited, otherwise some are blocked and job must
+#               wait.
+#
+sub processSemaphores {
+    my $self = shift;
+    my $sequence = shift;
+    my $id = shift;
+    my $job = shift;
+
+    my $semaphores = $self->config->getJobSemaphores($job->{type});
+    foreach my $step (grep {exists($semaphores->{$_->{mode}})} @$sequence) {
+        foreach my $semaphore (@{$semaphores->{$step->{mode}}}) {
+            my ($name, $client, $key) = $self->prepareSemaphore($id, $job, $semaphore, $step->{mode});
+            unless (defined($name)) {
+                next;
+            }
+
+            {
+                no strict 'refs';
+                my $method = $step->{action} . 'Semaphore';
+                unless ($self->$method($id, $job, $name, $client)) {
+                    return 0;
+                }
+            }
+
+            $job->{semaphores} ||= {};
+            $job->{semaphores}->{$key} = 1;
+        }
+    }
+
+    return 1;
+}
+
+###############################################################################
+# Prepare specific semaphore for given job.
+#
+# Arguments:
+#     id        - integer job's id.
+#     job       - hash with job data.
+#     semaphore - hash with semaphore data from job configuration.
+#     mode      - string mode which is one of predefined semaphore modes for job.
+# Returns:
+#     string semaphore name.
+#     string semaphore client name.
+#     string key identifying this semaphore entering by job.
+#
+sub prepareSemaphore {
+    my $self = shift;
+    my $id = shift;
+    my $job = shift;
+    my $semaphore = shift;
+    my $mode = shift;
+
+    my $name = $semaphore->{name};
+    my $client = $job->{type};
+    my $key = $name;
+    if (exists($semaphore->{client}) and $semaphore->{client} ne $client) {
+        $client = $semaphore->{client};
+        $key .= ':' . $client;
+    }
+
+    if (exists($job->{semaphores}) and $job->{semaphores}->{$key}) {
+        return undef;
+    }
+
+    if ($mode eq SEMAPHORE_MODE_WRAP or $mode eq SEMAPHORE_MODE_WRAP_READ) {
+        $client .= ':' . $id;
+    } elsif (exists($job->{jobset}) and not $semaphore->{global}) {
+        $client .= ':' . $job->{jobset};
+    }
+
+    return ($name, $client, $key);
+}
+
+###############################################################################
+# Enter into specific semaphore for given job.
+#
+# Arguments:
+#     id     - integer job's id.
+#     job    - hash with job data.
+#     name   - string semaphore name.
+#     client - string semaphore client name.
+# Returns:
+#     0/1 flag. If set, semaphore was successfully entered, otherwise it is blocked and job must wait.
+#
+sub enterSemaphore {
+    my $self = shift;
+    my $id = shift;
+    my $job = shift;
+    my $name = shift;
+    my $client = shift;
+
+    my $semaphoreInstance = $self->parent->getSemaphore($name);
+    if ($semaphoreInstance->enter($client)) {
+        $self->debug('Job \'' . $id . '\' entered into semaphore \'' . $name . '\'' . ' (client: \'' . $client . '\')');
+        return 1;
+    }
+
+    $self->debug('Job \'' . $id . '\' is waiting for semaphore \'' . $name . '\'' . ' (client: \'' . $client . '\')');
+
+    $self->{waitingJobs} ||= [];
+    push @{$self->{waitingJobs}->{$semaphoreInstance->key() . ':' . $client}}, $id;
+
+    return 0;
+}
+
+###############################################################################
+# Enter into specific semaphore for given job in 'read' mode.
+#
+# Arguments:
+#     id     - integer job's id.
+#     job    - hash with job data.
+#     name   - string semaphore name.
+#     client - string semaphore client name.
+# Returns:
+#     0/1 flag. If set, semaphore was successfully entered, otherwise it is blocked and job must wait.
+#
+sub enterReadSemaphore {
+    my $self = shift;
+    my $id = shift;
+    my $job = shift;
+    my $name = shift;
+    my $client = shift;
+
+    my $semaphoreInstance = $self->parent->getSemaphore($name);
+    if ($semaphoreInstance->enterRead($client)) {
+        $self->debug('Job \'' . $id . '\' entered into semaphore \'' . $name . '\'' . ' (client: \'' . $client . '\')' .
+            ' in \'read\' mode');
+        return 1;
+    }
+
+    $self->debug('Job \'' . $id . '\' is waiting for semaphore \'' . $name . '\'' . ' (client: \'' . $client . '\')' .
+        ' in \'read\' mode');
+
+    $self->{waitingJobs} ||= [];
+    push @{$self->{waitingJobs}->{$semaphoreInstance->key() . ':' . $client . ':r'}}, $id;
+
+    return 0;
+}
+
+###############################################################################
+# Exit from specific semaphore for given job.
+#
+# Arguments:
+#     id     - integer job's id.
+#     job    - hash with job data.
+#     name   - string semaphore name.
+#     client - string semaphore client name.
+# Returns:
+#     0/1 flag. Always 1 here because semaphore exiting can't be blocked.
+#
+sub exitSemaphore {
+    my $self = shift;
+    my $id = shift;
+    my $job = shift;
+    my $name = shift;
+    my $client = shift;
+
+    $self->parent->getSemaphore($name)->exit($client);
+
+    $self->debug('Job \'' . $id . '\' exited from semaphore \'' . $name . '\'' . ' (client: \'' . $client . '\')');
+
+    return 1;
+}
+
+###############################################################################
+# Exit from specific semaphore for given job in 'read' mode.
+#
+# Arguments:
+#     id     - integer job's id.
+#     job    - hash with job data.
+#     name   - string semaphore name.
+#     client - string semaphore client name.
+# Returns:
+#     0/1 flag. Always 1 here because semaphore exiting can't be blocked.
+#
+sub exitReadSemaphore {
+    my $self = shift;
+    my $id = shift;
+    my $job = shift;
+    my $name = shift;
+    my $client = shift;
+
+    $self->parent->getSemaphore($name)->exitRead($client);
+
+    $self->debug('Job \'' . $id . '\' exited from semaphore \'' . $name . '\'' . ' (client: \'' . $client . '\')' .
+        ' in \'read\' mode');
+
+    return 1;
 }
 
 ###############################################################################
@@ -227,13 +527,13 @@ sub finishRedoJob {
 # Execution using worker executable is asynchronous too because system call 'fork' is used.
 #
 # Arguments:
-#     job - hash with job data.
 #     id  - integer job id.
+#     job - hash with job data.
 #
 sub runJob {
     my $self = shift;
-    my $job = shift;
     my $id = shift;
+    my $job = shift;
 
     my $worker = $self->config->getJobWorkerName($job->{type});
     if (defined($worker)) {

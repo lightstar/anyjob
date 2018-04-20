@@ -5,7 +5,7 @@ package AnyJob::Daemon::Base;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  12.03.2018
+# Last update:  20.04.2018
 #
 
 use strict;
@@ -22,7 +22,8 @@ use AnyJob::Utils qw(readInt writeInt isProcessRunning);
 # Construct new AnyJob::Daemon::Base object.
 #
 # Arguments:
-#     processor      - object which must implement 'process' method. It will be called in daemon process loop.
+#     processor      - object which must implement 'init' and 'process' methods. 'Init' method will be called just
+#                      before starting daemon process loop and 'process' method will be called on each loop iteration.
 #     logger         - logger object which must implement 'debug' and 'error' methods.
 #     detached       - 0/1 flag. If set daemon will run in 'detached' mode i.e. will fork, close all input/output, etc.
 #     delay          - delay in seconds between process loop iterations. By default - 0 (i.e. no delay).
@@ -189,6 +190,14 @@ sub run {
 
     if ($self->{parent}) {
         $SIG{CHLD} = sub {$self->childStopped()};
+    }
+
+    eval {
+        $self->{processor}->init();
+    };
+
+    if ($@) {
+        $self->error('Init error: ' . $@);
     }
 
     while ($self->{running}) {

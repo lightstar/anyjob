@@ -15,6 +15,7 @@ anyjob:observerq:private:<name> - queue for events processed by private observer
 2. Data storage.
 
 anyjob:jobs:<node>              - sorted set with ids of all active jobs on specified node.
+anyjob:jobs:<node>>:wait        - set with ids of all jobs waiting for semaphores.
 anyjob:job:<id>                 - job data in JSON format for specified job id.
 anyjob:jobsets                  - sorted set with ids of all active jobsets.
 anyjob:jobset:<id>              - jobset data in JSON format for specified jobset id.

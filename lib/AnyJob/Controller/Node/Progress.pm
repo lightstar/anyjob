@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  28.02.2018
+# Last update:  20.04.2018
 #
 
 use strict;
@@ -15,8 +15,16 @@ use utf8;
 use JSON::XS;
 
 use AnyJob::Constants::Events qw(EVENT_PROGRESS EVENT_REDIRECT EVENT_FINISH);
+use AnyJob::Constants::Semaphore;
 
 use base 'AnyJob::Controller::Node';
+
+###############################################################################
+# Method which will be called one time before beginning of processing.
+#
+sub init {
+    my $self = shift;
+}
 
 ###############################################################################
 # Get array of all possible event queues.
@@ -255,6 +263,9 @@ sub finishJob {
     unless (defined($job)) {
         return;
     }
+
+    delete $job->{semaphores};
+    $self->processSemaphores(SEMAPHORE_FINISH_SEQUENCE, $id, $job);
 
     $self->debug('Job \'' . $id . '\' ' . ($event->{success} ? 'successfully finished' : 'finished with error') .
         ': \'' . $event->{message} . '\'');
