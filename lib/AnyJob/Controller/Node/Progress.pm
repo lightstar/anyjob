@@ -5,7 +5,7 @@ package AnyJob::Controller::Node::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  20.04.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -264,8 +264,8 @@ sub finishJob {
         return;
     }
 
-    delete $job->{semaphores};
-    $self->processSemaphores(SEMAPHORE_FINISH_SEQUENCE, $id, $job);
+    $self->semaphoreController->processSemaphores(SEMAPHORE_FINISH_SEQUENCE, $id, $job,
+        $self->config->getJobSemaphores($job->{type}));
 
     $self->debug('Job \'' . $id . '\' ' . ($event->{success} ? 'successfully finished' : 'finished with error') .
         ': \'' . $event->{message} . '\'');

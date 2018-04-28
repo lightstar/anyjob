@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::Clean;
 #
 # Author:       LightStar
 # Created:      23.10.2017
-# Last update:  03.04.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -16,6 +16,13 @@ use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_LIMIT DEFAULT_CLEAN_DELAY);
 use AnyJob::Constants::Events qw(EVENT_CLEAN_JOBSET);
 
 use base 'AnyJob::Controller::Global';
+
+###############################################################################
+# Method which will be called one time before beginning of processing.
+#
+sub init {
+    my $self = shift;
+}
 
 ###############################################################################
 # Get array of all possible event queues.

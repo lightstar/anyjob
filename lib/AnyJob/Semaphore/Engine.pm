@@ -6,7 +6,7 @@ package AnyJob::Semaphore::Engine;
 #
 # Author:       LightStar
 # Created:      04.04.2018
-# Last update:  20.04.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -190,7 +190,7 @@ sub new {
 
 ###############################################################################
 # Returns:
-#     parent component which is usually subclassed from AnyJob::Base object.
+#     parent component which is usually subclassed from AnyJob::Base class.
 #
 sub parent {
     my $self = shift;

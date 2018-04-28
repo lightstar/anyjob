@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::BuildClean;
 #
 # Author:       LightStar
 # Created:      30.11.2017
-# Last update:  03.04.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -14,29 +14,7 @@ use utf8;
 
 use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_LIMIT DEFAULT_CLEAN_DELAY);
 
-use base 'AnyJob::Controller::Global';
-
-###############################################################################
-# Get array of all possible event queues.
-#
-# Returns:
-#     array of string queue names.
-#
-sub getEventQueues {
-    my $self = shift;
-    return [];
-}
-
-###############################################################################
-# Get array of event queues which needs to be listened right now.
-#
-# Returns:
-#     array of string queue names.
-#
-sub getActiveEventQueues {
-    my $self = shift;
-    return [];
-}
+use base 'AnyJob::Controller::Base';
 
 ###############################################################################
 # Get delay before next 'process' method invocation.
@@ -65,6 +43,22 @@ sub process {
     }
 
     return $self->updateProcessDelay($self->delay());
+}
+
+###############################################################################
+# Remove creator's build data from storage.
+#
+# Arguments:
+#     id - integer build id.
+#
+sub cleanBuild {
+    my $self = shift;
+    my $id = shift;
+
+    $self->debug('Clean build \'' . $id . '\'');
+
+    $self->redis->zrem('anyjob:builds', $id);
+    $self->redis->del('anyjob:build:' . $id);
 }
 
 ###############################################################################

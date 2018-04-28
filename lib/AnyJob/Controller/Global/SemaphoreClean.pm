@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::SemaphoreClean;
 #
 # Author:       LightStar
 # Created:      05.04.2018
-# Last update:  20.04.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -15,29 +15,7 @@ use utf8;
 
 use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_LIMIT DEFAULT_CLEAN_DELAY);
 
-use base 'AnyJob::Controller::Global';
-
-###############################################################################
-# Get array of all possible event queues.
-#
-# Returns:
-#     array of string queue names.
-#
-sub getEventQueues {
-    my $self = shift;
-    return [];
-}
-
-###############################################################################
-# Get array of event queues which needs to be listened right now.
-#
-# Returns:
-#     array of string queue names.
-#
-sub getActiveEventQueues {
-    my $self = shift;
-    return [];
-}
+use base 'AnyJob::Controller::Base';
 
 ###############################################################################
 # Get delay before next 'process' method invocation.

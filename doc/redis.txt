@@ -18,6 +18,7 @@ anyjob:jobs:<node>              - sorted set with ids of all active jobs on spec
 anyjob:jobs:<node>>:wait        - set with ids of all jobs waiting for semaphores.
 anyjob:job:<id>                 - job data in JSON format for specified job id.
 anyjob:jobsets                  - sorted set with ids of all active jobsets.
+anyjob:jobsets:wait             - set with ids of all jobsets waiting for semaphores.
 anyjob:jobset:<id>              - jobset data in JSON format for specified jobset id.
 anyjob:observer:<name>:log      - sorted set with job ids for which logs were collected by observer with specified name.
 anyjob:observer:<name>:log:<id> - list with log data collected by observer with specified name for job with specified id.

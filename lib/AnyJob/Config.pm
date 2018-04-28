@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  20.04.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -256,6 +256,20 @@ sub getAllBuilders {
 
     $self->{builders} = \@builders;
     return \@builders;
+}
+
+###############################################################################
+# Get jobset configuration or undef.
+#
+# Arguments:
+#     type - string jobset type.
+# Returns:
+#     hash with jobset configuration or undef if there are no such jobset type.
+#
+sub getJobSetConfig {
+    my $self = shift;
+    my $type = shift;
+    return $self->section('jobset_' . $type);
 }
 
 ###############################################################################
@@ -660,13 +674,13 @@ sub isJobSupported {
 ###############################################################################
 # Get hash with some job's semaphores configuration. This hash will have next structure:
 # {
-#    '<mode>' => [ { 'name': '<name>', 'client': '<client>', 'global': '1' }, ... ],
+#    '<mode>' => [ { 'name': '<name>', 'client': '<client>', 'cmode': '<clientMode>' }, ... ],
 #    ...
 # }
-# '<mode>' here is one of predefined semaphore mode names for job, '<name>' is one of configured semaphore names,
-# '<client>' is arbitrary client name (it is optional, job type will be used by default) and 'global' is optional
-# flag (unset by default). When 'global' flag is set, jobset's id will not be appended to semaphore client name for
-# every non-wrap mode.
+# '<mode>' here is one of predefined semaphore mode names for entity, '<name>' is one of configured semaphore names,
+# '<client>' is arbitrary client name (it is optional, string 'job' will be used by default) and
+# '<clientMode>' is optional client mode ('entity', 'jobset' or 'single'). When client mode is not specified, some
+# default value will be used depending on mode.
 #
 # Arguments:
 #     type - string job type.
@@ -690,21 +704,58 @@ sub getJobSemaphores {
 
     my $semaphores;
     eval {
-        $semaphores = decode_json($config->{semaphores});
+        $semaphores = $self->parseSemaphores($config->{semaphores});
     };
-    if ($@ or ref($semaphores) ne 'HASH') {
+    if ($@) {
         require Carp;
         Carp::confess('Wrong semaphores of job \'' . $type . '\': ' . $config->{semaphores});
     }
 
-    foreach my $mode (keys(%$semaphores)) {
-        if (ref($semaphores->{$mode}) ne 'ARRAY') {
-            $semaphores->{$mode} = [ $semaphores->{$mode} ];
-        }
-        $semaphores->{$mode} = [ map {ref($_) eq 'HASH' ? $_ : { name => $_ }} @{$semaphores->{$mode}} ];
+    $self->{jobSemaphores}->{$type} = $semaphores;
+    return $semaphores;
+}
+
+###############################################################################
+# Get hash with some jobset's semaphores configuration. This hash will have next structure:
+# {
+#    '<mode>' => [ { 'name': '<name>', 'client': '<client>', 'cmode': '<clientMode>' }, ... ],
+#    ...
+# }
+# '<mode>' here is one of predefined semaphore mode names for entity, '<name>' is one of configured semaphore names,
+# '<client>' is arbitrary client name (it is optional, string 'jobset' will be used by default) and
+# '<clientMode>' is optional client mode ('entity', 'jobset' or 'single'). When client mode is not specified, some
+# default value will be used depending on mode.
+#
+# Arguments:
+#     type - string jobset type.
+# Returns:
+#     hash with semaphores configuration.
+#
+sub getJobSetSemaphores {
+    my $self = shift;
+    my $type = shift;
+
+    if (exists($self->{jobSetSemaphores}->{$type})) {
+        return $self->{jobSetSemaphores}->{$type};
     }
 
-    $self->{jobSemaphores}->{$type} = $semaphores;
+    $self->{jobSetSemaphores}->{$type} = {};
+
+    my $config = $self->getJobSetConfig($type);
+    unless (defined($config) and exists($config->{semaphores})) {
+        return {};
+    }
+
+    my $semaphores;
+    eval {
+        $semaphores = $self->parseSemaphores($config->{semaphores});
+    };
+    if ($@) {
+        require Carp;
+        Carp::confess('Wrong semaphores of jobset \'' . $type . '\': ' . $config->{semaphores});
+    }
+
+    $self->{jobSetSemaphores}->{$type} = $semaphores;
     return $semaphores;
 }
 
@@ -979,6 +1030,44 @@ sub parseParams {
     }
 
     return $params;
+}
+
+###############################################################################
+# Parse hash with detailed information about semaphores guarding some entity.
+# {
+#    '<mode>' => [ { 'name': '<name>', 'client': '<client>', 'cmode': '<clientMode>' }, ... ],
+#    ...
+# }
+# '<mode>' here is one of predefined semaphore mode names for entity, '<name>' is one of configured semaphore names,
+# '<client>' is arbitrary client name (it is optional, string with entity type will be used by default) and
+# '<clientMode>' is optional client mode ('entity', 'jobset' or 'single'). When client mode is not specified, some
+# default value will be used depending on mode.
+#
+# Arguments:
+#     semaphores - string with semaphores configuration in JSON format.
+# Returns:
+#     hash with semaphores configuration.
+#
+sub parseSemaphores {
+    my $self = shift;
+    my $semaphores = shift;
+
+    eval {
+        $semaphores = decode_json($semaphores);
+    };
+    if ($@ or ref($semaphores) ne 'HASH') {
+        require Carp;
+        Carp::confess('Wrong semaphores');
+    }
+
+    foreach my $mode (keys(%$semaphores)) {
+        if (ref($semaphores->{$mode}) ne 'ARRAY') {
+            $semaphores->{$mode} = [ $semaphores->{$mode} ];
+        }
+        $semaphores->{$mode} = [ map {ref($_) eq 'HASH' ? $_ : { name => $_ }} @{$semaphores->{$mode}} ];
+    }
+
+    return $semaphores;
 }
 
 1;

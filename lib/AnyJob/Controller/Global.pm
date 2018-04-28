@@ -6,7 +6,7 @@ package AnyJob::Controller::Global;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  05.04.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -17,6 +17,8 @@ use JSON::XS;
 
 use AnyJob::Constants::Events qw(EVENT_CREATE_JOBSET);
 use AnyJob::Constants::States qw(STATE_BEGIN);
+use AnyJob::Constants::Semaphore;
+use AnyJob::Semaphore::Controller;
 
 use base 'AnyJob::Controller::Base';
 
@@ -28,7 +30,47 @@ our @MODULES = qw(
     Clean
     BuildClean
     SemaphoreClean
+);
+
+###############################################################################
+# Construct new AnyJob::Controller::Global object.
+#
+# Arguments:
+#     parent - parent component which is usually AnyJob::Daemon object.
+# Returns:
+#     AnyJob::Controller::Global object.
+#
+sub new {
+    my $class = shift;
+    my %args = @_;
+    my $self = $class->SUPER::new(%args);
+    $self->{semaphoreController} = AnyJob::Semaphore::Controller->new(
+        parent     => $self->{parent},
+        entityType => 'jobset'
     );
+    return $self;
+}
+
+###############################################################################
+# Returns:
+#     AnyJob::Semaphore::Controller object.
+#
+sub semaphoreController {
+    my $self = shift;
+    return $self->{semaphoreController};
+}
+
+###############################################################################
+# Method which will be called one time before beginning of processing.
+# Used to try to run all jobsets waiting for semaphores.
+#
+sub init {
+    my $self = shift;
+    my @ids = $self->redis->smembers('anyjob:jobsets:wait');
+    foreach my $id (@ids) {
+        $self->tryRunWaitingJobSet($id);
+    }
+}
 
 ###############################################################################
 # Get array of all possible event queues.
@@ -42,12 +84,24 @@ sub getEventQueues {
 }
 
 ###############################################################################
+# Get array of semaphore signal queues which needs to be listened by this controller right now.
+#
+# Returns:
+#     array of string queue names.
+#
+sub getSignalQueues {
+    my $self = shift;
+    return $self->semaphoreController->getSignalQueues();
+}
+
+###############################################################################
 # Method called for each received event from new jobsets queue.
 # It also can process events with only one job inside redirecting it to queue of the right node (for that
 # it must contain string 'node' field).
 # There can be two types of events.
-# 1. 'Create jobset' event. Sent by creator component.
+# 1. 'Create jobset' event. Sent by creator component. Field 'type' is optional here.
 # {
+#     type => '...'
 #     jobs => [ {
 #         type => '...',
 #         node => '...',
@@ -81,6 +135,25 @@ sub processEvent {
 }
 
 ###############################################################################
+# Method which will be called by daemon component to process signal from one of semaphore queues.
+# Used to try to run all jobsets waiting for corresponding semaphore.
+#
+# Arguments:
+#     queue - string queue name from where signal was received.
+#
+sub processSignal {
+    my $self = shift;
+    my $queue = shift;
+
+    $self->debug('Received signal from queue \'' . $queue . '\'');
+
+    $self->semaphoreController->processSignal($queue, sub {
+        my $id = shift;
+        $self->tryRunWaitingJobSet($id);
+    });
+}
+
+###############################################################################
 # Register new jobset and create all jobs contained inside.
 #
 # Arguments:
@@ -99,6 +172,7 @@ sub createJobSet {
     }
 
     my $jobSet = {
+        (exists($event->{type}) ? (type => $event->{type}) : ()),
         jobs  => $event->{jobs},
         props => $event->{props},
         state => STATE_BEGIN,
@@ -111,26 +185,77 @@ sub createJobSet {
 
     my $id = $self->getNextJobSetId();
     $self->redis->zadd('anyjob:jobsets', $jobSet->{time} + $self->getJobSetCleanTimeout($jobSet), $id);
-    $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
     $self->parent->incActiveJobSetCount();
+
+    $self->debug('Create jobset \'' . $id . '\' ' .
+        (exists($jobSet->{type}) ? 'with type \'' . $jobSet->{type} . '\'), ' : 'with ') .
+        ' props ' . encode_json($jobSet->{props}) . ' and jobs ' . encode_json($jobSet->{jobs}));
+
+    my $isJobSetNotBlocked = 1;
+    if (exists($jobSet->{type})) {
+        $isJobSetNotBlocked = $self->semaphoreController->processSemaphores(SEMAPHORE_RUN_SEQUENCE, $id, $jobSet,
+            $self->config->getJobSetSemaphores($jobSet->{type}));
+    }
+
+    $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
 
     foreach my $job (@{$jobSet->{jobs}}) {
         delete $job->{state};
     }
 
-    $self->debug('Create jobset \'' . $id . '\' with props ' . encode_json($jobSet->{props}) .
-        ' and jobs ' . encode_json($jobSet->{jobs}));
+    unless ($isJobSetNotBlocked) {
+        $self->redis->sadd('anyjob:jobsets:wait', $id);
+    }
 
     $self->sendEvent(EVENT_CREATE_JOBSET, {
-            id    => $id,
-            props => $jobSet->{props},
-            jobs  => $jobSet->{jobs}
-        });
+        id    => $id,
+        props => $jobSet->{props},
+        jobs  => $jobSet->{jobs}
+    });
 
-    foreach my $job (@{$jobSet->{jobs}}) {
-        my $node = delete $job->{node};
-        $job->{jobset} = $id;
-        $self->redis->rpush('anyjob:queue:' . $node, encode_json($job));
+    if ($isJobSetNotBlocked) {
+        foreach my $job (@{$jobSet->{jobs}}) {
+            my $node = delete $job->{node};
+            $job->{jobset} = $id;
+            $self->redis->rpush('anyjob:queue:' . $node, encode_json($job));
+        }
+    }
+}
+
+###############################################################################
+# Try to run jobset waiting for some semaphore.
+#
+# Arguments:
+#     id - integer jobset's id.
+#
+sub tryRunWaitingJobSet {
+    my $self = shift;
+    my $id = shift;
+
+    my $jobSet = $self->getJobSet($id);
+    unless (defined($jobSet)) {
+        return;
+    }
+
+    $self->debug('Try run waiting jobset \'' . $id . '\' ' .
+        (exists($jobSet->{type}) ? 'with type \'' . $jobSet->{type} . '\'), ' : 'with ') .
+        ' props ' . encode_json($jobSet->{props}) . ' and jobs ' . encode_json($jobSet->{jobs}));
+
+    my $isJobSetNotBlocked = 1;
+    if (exists($jobSet->{type})) {
+        $isJobSetNotBlocked = $self->semaphoreController->processSemaphores(SEMAPHORE_RUN_SEQUENCE, $id, $jobSet,
+            $self->config->getJobSetSemaphores($jobSet->{type}));
+    }
+
+    $self->redis->set('anyjob:jobset:' . $id, encode_json($jobSet));
+
+    if ($isJobSetNotBlocked) {
+        $self->redis->srem('anyjob:jobsets:wait', $id);
+        foreach my $job (@{$jobSet->{jobs}}) {
+            my $node = delete $job->{node};
+            $job->{jobset} = $id;
+            $self->redis->rpush('anyjob:queue:' . $node, encode_json($job));
+        }
     }
 }
 
@@ -149,22 +274,6 @@ sub cleanJobSet {
     $self->redis->zrem('anyjob:jobsets', $id);
     $self->redis->del('anyjob:jobset:' . $id);
     $self->parent->decActiveJobSetCount();
-}
-
-###############################################################################
-# Remove creator's build data from storage.
-#
-# Arguments:
-#     id - integer build id.
-#
-sub cleanBuild {
-    my $self = shift;
-    my $id = shift;
-
-    $self->debug('Clean build \'' . $id . '\'');
-
-    $self->redis->zrem('anyjob:builds', $id);
-    $self->redis->del('anyjob:build:' . $id);
 }
 
 ###############################################################################

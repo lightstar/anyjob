@@ -8,7 +8,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  27.02.2017
+# Last update:  28.04.2017
 #
 
 use strict;
@@ -290,6 +290,8 @@ sub parseJob {
 #                props => { 'prop1' => '...', 'prop2' => '...', ... }
 #            }, ...]
 #     props - hash with properties injected into all jobs and jobset if any.
+#     type  - string jobset type (optional, can be undef). If defined, jobset will be created even if there is only
+#             one job.
 # Returns:
 #     string error message or undef if there are no any errors.
 #
@@ -297,6 +299,7 @@ sub createJobs {
     my $self = shift;
     my $jobs = shift;
     my $props = shift;
+    my $jobset = shift;
     $props ||= {};
 
     my $error = $self->checkJobs($jobs);
@@ -330,24 +333,24 @@ sub createJobs {
 
         foreach my $node (@{$job->{nodes}}) {
             push @separatedJobs, {
-                    node   => $node,
-                    type   => $job->{type},
-                    params => $job->{params},
-                    props  => $job->{props}
-                };
+                node   => $node,
+                type   => $job->{type},
+                params => $job->{params},
+                props  => $job->{props}
+            };
         }
     }
 
-    if (scalar(@separatedJobs) == 1) {
+    if (scalar(@separatedJobs) == 1 and not defined($jobset)) {
         $self->createJob($separatedJobs[0]->{node}, $separatedJobs[0]->{type},
             $separatedJobs[0]->{params}, $separatedJobs[0]->{props});
-    } elsif (scalar(@separatedJobs) > 1) {
+    } elsif (scalar(@separatedJobs) > 0) {
         foreach my $name (keys(%jobProps)) {
             if ($jobProps{$name}->{count} == scalar(@separatedJobs) and not exists($props->{$name})) {
                 $props->{$name} = $jobProps{$name}->{value};
             }
         }
-        $self->createJobSet(\@separatedJobs, $props);
+        $self->createJobSet($jobset, \@separatedJobs, $props);
     }
 
     return undef;
@@ -384,10 +387,10 @@ sub createJob {
     $props ||= {};
 
     $self->redis->rpush('anyjob:queue:' . $node, encode_json({
-            type   => $type,
-            params => $params,
-            props  => $props
-        }));
+        type   => $type,
+        params => $params,
+        props  => $props
+    }));
 }
 
 ###############################################################################
@@ -395,12 +398,14 @@ sub createJob {
 # Almost nothing is checked here so better use higher level method 'createJobs' instead.
 #
 # Arguments:
+#     type   - string jobset type (optional, can be undef).
 #     jobs   - arrays of hashes with information about jobs to create. Each hash should contain string fields
 #              'type', 'node' and optionally inner hashes 'params' and 'props'.
 #     props  - optional hash with jobset properties.
 #
 sub createJobSet {
     my $self = shift;
+    my $type = shift;
     my $jobs = shift;
     my $props = shift;
 
@@ -427,10 +432,11 @@ sub createJobSet {
     }
 
     $self->redis->rpush('anyjob:queue', encode_json({
-            jobset => 1,
-            props  => $props,
-            jobs   => $jobs
-        }));
+        (defined($type) ? (type => $type) : ()),
+        jobset => 1,
+        props  => $props,
+        jobs   => $jobs
+    }));
 }
 
 ###############################################################################

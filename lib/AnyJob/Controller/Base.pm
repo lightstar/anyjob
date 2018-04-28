@@ -6,7 +6,7 @@ package AnyJob::Controller::Base;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  20.04.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -88,13 +88,6 @@ sub debug {
 }
 
 ###############################################################################
-# Method which will be called one time before beginning of processing. Does nothing by default.
-#
-sub init {
-    my $self = shift;
-}
-
-###############################################################################
 # Write error message to log.
 #
 # Arguments:
@@ -104,6 +97,13 @@ sub error {
     my $self = shift;
     my $message = shift;
     $self->{parent}->error($message);
+}
+
+###############################################################################
+# Method which will be called one time before beginning of processing. Does nothing by default.
+#
+sub init {
+    my $self = shift;
 }
 
 ###############################################################################

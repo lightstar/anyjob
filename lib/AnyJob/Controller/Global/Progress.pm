@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  28.02.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -16,8 +16,16 @@ use JSON::XS;
 
 use AnyJob::Constants::Events qw(EVENT_PROGRESS_JOBSET EVENT_FINISH_JOBSET);
 use AnyJob::Constants::States qw(STATE_BEGIN STATE_FINISHED);
+use AnyJob::Constants::Semaphore;
 
 use base 'AnyJob::Controller::Global';
+
+###############################################################################
+# Method which will be called one time before beginning of processing.
+#
+sub init {
+    my $self = shift;
+}
 
 ###############################################################################
 # Get array of all possible event queues.
@@ -151,6 +159,12 @@ sub progressJobInJobSet {
     my @finishedJobs = grep {$_->{state} eq STATE_FINISHED} @{$jobSet->{jobs}};
     if (scalar(@finishedJobs) == scalar(@{$jobSet->{jobs}})) {
         $jobSetFinished = 1;
+
+        if (exists($jobSet->{type})) {
+            $self->semaphoreController->processSemaphores(SEMAPHORE_FINISH_SEQUENCE, $id, $jobSet,
+                $self->config->getJobSetSemaphores($jobSet->{type}));
+        }
+
         $self->debug('Jobset \'' . $id . '\' finished');
         $self->cleanJobSet($id);
     } else {

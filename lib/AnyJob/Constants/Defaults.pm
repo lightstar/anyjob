@@ -5,7 +5,7 @@ package AnyJob::Constants::Defaults;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  03.04.2018
+# Last update:  28.04.2018
 #
 
 use strict;
@@ -100,6 +100,11 @@ use constant DEFAULT_NODES_CONFIG_PATH => 'nodes';
 use constant DEFAULT_JOBS_CONFIG_PATH => 'jobs';
 
 ###############################################################################
+# Default path for jobsets configuration (relative to config file).
+#
+use constant DEFAULT_JOBSETS_CONFIG_PATH => 'jobsets';
+
+###############################################################################
 # Default path for observers configuration (relative to config file).
 #
 use constant DEFAULT_OBSERVERS_CONFIG_PATH => 'observers';
@@ -192,6 +197,7 @@ our @EXPORT = qw(
     DEFAULT_REDIS
     DEFAULT_NODES_CONFIG_PATH
     DEFAULT_JOBS_CONFIG_PATH
+    DEFAULT_JOBSETS_CONFIG_PATH
     DEFAULT_OBSERVERS_CONFIG_PATH
     DEFAULT_CREATORS_CONFIG_PATH
     DEFAULT_BUILDERS_CONFIG_PATH
