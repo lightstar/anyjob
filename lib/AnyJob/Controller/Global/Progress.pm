@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::Progress;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  28.04.2018
+# Last update:  02.05.2018
 #
 
 use strict;
@@ -174,6 +174,7 @@ sub progressJobInJobSet {
     if ($jobSetFinished) {
         $self->sendEvent(EVENT_FINISH_JOBSET, {
             id    => $id,
+            (exists($jobSet->{type}) ? (type => $jobSet->{type}) : ()),
             props => $jobSet->{props},
             jobs  => $jobSet->{jobs}
         });
@@ -245,6 +246,7 @@ sub progressJobSet {
 
     $self->sendEvent(EVENT_PROGRESS_JOBSET, {
         id    => $id,
+        (exists($jobSet->{type}) ? (type => $jobSet->{type}) : ()),
         props => $jobSet->{props},
         (exists($event->{state}) ? (state => $event->{state}) : ()),
         (exists($event->{progress}) ? (progress => $event->{progress}) : ()),

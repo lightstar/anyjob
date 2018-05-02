@@ -14,7 +14,8 @@ key = value
 But you are not required to use section names at all as by default 'anyjob' section name will be used in main
 configuration file. Also you are allowed and even encouraged to use 'creator.cfg', 'daemon.cfg' and 'worker.cfg'
 files in base directory of main configuration file which will contain 'creator', 'daemon' and 'worker' sections
-respectively.
+respectively. File 'semaphore.cfg' is loaded too and is supposed to have explicit semaphores sections (it is used
+as alternative to separate configuration files in semaphores path).
 
 In addition to main configuration file configuration files are searched in some other paths. Key-value pairs
 in this files can have no explicit section name, in which case the default section name for this file is used.
@@ -26,6 +27,9 @@ in this files can have no explicit section name, in which case the default secti
       Default section name prefix: 'job_'.
       2 subdirectories are independently searched here: 'work' for daemon and worker components and 'create'
       for creator component.
+- jobsets path.
+      Default: 'jobsets' directory in main configuration file base path.
+      Default section name prefix: 'jobset_'.
 - workers path.
       Default: 'workers' directory in main configuration file base path.
       Default section name prefix: 'worker_'.
@@ -38,6 +42,9 @@ in this files can have no explicit section name, in which case the default secti
 - builders path.
       Default: 'builders' directory in main configuration file base path.
       Default section name prefix: 'builder_'.
+- semaphores path.
+      Default: 'semaphores' directory in main configuration file base path.
+      Default section name prefix: 'semaphore_'.
 
 All these paths are searched for any files with '.cfg' extension and their names are concatenated to default section
 name. For example if in nodes path lies a file named 'broadcast.cfg', all this file content without explicit section
@@ -189,30 +196,34 @@ Each node must have its own configuration section which should be named 'node_<n
 Usually they are located in 'nodes/<name>.cfg' files relative to main configuration file base path. Below are all
 recognizible keys.
 
-disabled              - 0/1 flag. If set, this node will be unavailable. Default: 0.
-global                - 0/1 flag. If set, daemon on this node will run global controller. Default: 0.
-regular               - 0/1 flag. If set, daemon on this node will run node-specific controller. Default: 0.
-observers             - list of global observer names separated by comma which will run by daemon on this node.
-                        Default: none.
-workers               - list of worker names separated by comma which will be launched by as daemons on this node.
-                        Default: none.
-create_delay          - delay in seconds between create queue checkings by node controller. Default: none.
-create_limit          - maximum create messages processed by node controller in one iteration. By default global
-                        'limit' setting is used.
-max_jobs              - maximum number of active jobs allowed on node. Infinite by default.
-clean_delay           - delay in seconds between timeouted jobs checkings. By default global 'clean_delay'
-                        setting is used.
-clean_limit           - maximum timeouted jobs cleaned in one iteration. By default global 'limit' setting is used.
-global_clean_delay    - delay in seconds between timeouted jobsets checkings. By default global 'clean_delay'
-                        setting is used.
-global_clean_limit    - maximum timeouted jobsets cleaned in one iteration. By default global 'limit' setting is used.
-build_clean_delay     - delay in seconds between timeouted builds checkings. By default global 'clean_delay'
-                        setting is used.
-build_clean_limit     - maximum timeouted builds cleaned in one iteration. By default global 'limit' setting is used.
-job_clean_timeout     - default timeout in seconds for each active job existing in storage. By default global
-                        'clean_timeout' setting is used.
-jobset_clean_timeout  - default timeout in seconds for each active jobset existing in storage. By default global
-                        'clean_timeout' setting is used.
+disabled                - 0/1 flag. If set, this node will be unavailable. Default: 0.
+global                  - 0/1 flag. If set, daemon on this node will run global controller. Default: 0.
+regular                 - 0/1 flag. If set, daemon on this node will run node-specific controller. Default: 0.
+observers               - list of global observer names separated by comma which will run by daemon on this node.
+                          Default: none.
+workers                 - list of worker names separated by comma which will be launched by as daemons on this node.
+                          Default: none.
+max_jobs                - maximum number of active jobs allowed on node. Infinite by default.
+clean_delay             - delay in seconds between timeouted jobs checkings. By default global 'clean_delay'
+                          setting is used.
+clean_limit             - maximum timeouted jobs cleaned in one iteration. By default global 'clean_limit'
+                          setting is used.
+global_clean_delay      - delay in seconds between timeouted jobsets checkings. By default global 'clean_delay'
+                          setting is used.
+global_clean_limit      - maximum timeouted jobsets cleaned in one iteration. By default global 'clean_limit'
+                          setting is used.
+build_clean_delay       - delay in seconds between timeouted builds checkings. By default global 'clean_delay'
+                          setting is used.
+build_clean_limit       - maximum timeouted builds cleaned in one iteration. By default global 'clean_limit'
+                          setting is used.
+job_clean_timeout       - default timeout in seconds for each active job existing in storage. By default global
+                          'clean_timeout' setting is used.
+jobset_clean_timeout    - default timeout in seconds for each active jobset existing in storage. By default global
+                          'clean_timeout' setting is used.
+semaphore_clean_delay   - delay in seconds between timeouted semaphore enterings checks. By default global 'clean_delay'
+                          setting is used.
+semaphore_clean_limit   - maximum timeouted semaphores cleaned in one iteration. By default global 'clean_limit'
+                          setting is used.
 
 9. Separate worker configuration sections.
 
@@ -328,12 +339,63 @@ params                - JSON array of objects with job parameters description. T
                                     of objects with two fields: 'label' (value label) and 'value' (value itself).
 props                 - JSON array of objects with properties description. If exists, that array overrides 'props'
                         parameter from creator configuration section.
+semaphores            - JSON hash with semaphores processed by daemon during start and/or finish this job. Each key
+                        is one of predefined modes:
+                           - wrap            - semaphore is entered at job start and exited at job finish.
+                           - wrapRead        - semaphore is entered in 'read' mode at job start and exited at job
+                                               finish.
+                           - enter           - semaphore is entered at job start.
+                           - enterRead       - semaphore is entered in 'read' mode at job start.
+                           - exit            - semaphore is exited at job finish.
+                           - exitRead        - semaphore is exited in 'read' mode at job finish.
+                           - exitAtStart     - semaphore is exited at job start.
+                           - exitReadAtStart - semaphore is exited in 'read' mode at job start.
+                        Value could be just string and then it is semaphore name, other parameters take default values
+                        in that case. Or it could be hash with the following parameters (only 'name' is required one):
+                           - name          - semaphore name.
+                           - client        - semaphore client name. Default: 'job'.
+                           - cmode         - client mode. It could be one of three predefined strings:
+                                                - entity - job id is appended to client name.
+                                                - jobset - jobset id (if any) is appended to client name.
+                                                - single - nothing is appended to client name.
+                                             By default 'entity' client mode is used in 'wrap' and 'wrapRead' modes and
+                                             'jobset' client mode is used in any other case.
+                        Note that in most cases you should use only 'wrap' and 'wrapRead' modes and rely on default
+                        values of 'client' and 'cmode' parameters. Other modes and custom clients are supposed to be
+                        very advanced features, do not use it if you don't really know what you are doing.
+                        Example:
+                            { "wrap": "sem1" }
+                        Another example (advanced one):
+                            { "wrap": "sem1", "enter": { "name": "sem2", "client": "task1", "cmode": "single" } }
 
 Note that there is only one specific job module included in distribution: 'AnyJob::Worker::Job::Example'. So its
 prefix is 'AnyJob::Worker::Job' and name is 'example'. You can use it for reference before writing your own modules
 which should extend 'AnyJob::Worker::Job::Base' module.
 
-11. Observer configuration sections.
+11. Jobset configuration sections.
+
+Each jobset can have type and in that case it must have its own configuration section which should be named
+'jobset_<type>' where '<type>' is jobset's type. Usually they are located in 'jobsets/<type>.cfg' file relative
+to main configuration file base path. Below are all recognizible keys.
+
+semaphores            - JSON hash with semaphores processed by daemon during start and/or finish this jobset.
+                        Its structure is described in 'Job configuration section' chapter. The only difference is that
+                        default semaphore client name is 'jobset' and 'entity'/'jobset' client modes are effectively
+                        the same ones.
+
+12. Semaphores configuration sections.
+
+Each semaphore must have its own configuration section which should be named 'semaphore_<name>' where '<name>' is
+semaphore's name. They can be located either in 'semaphore.cfg' file or in 'semaphores/<name>.cfg' files relative
+to main configuration file base path. Below are all recognizible keys.
+
+count                 - maximum semaphore value, i.e. maximum allowed enterings inside this semaphore (all enterings
+                        in 'read' mode are counted as one). Default: 1.
+local                 - 0/1 flag. If set, this observer is local to current node, otherwise it is global one.
+                        Default: 0.
+timeout               - timeout in seconds for each entering into semaphore. Default: 3600.
+
+13. Observer configuration sections.
 
 Each global observer must have its own configuration section which should be named 'observer_<name>' where '<name>' is
 observer's name. Usually they are located in 'observers/<name>.cfg' files relative to main configuration file base
@@ -382,7 +444,7 @@ body_template         - base file name with body template used in template toolk
 Your own observer modules should extend 'AnyJob::Controller::Observer::Base' and have prefix
 'AnyJob::Controller::Observer'.
 
-12. Web creator configuration section.
+14. Web creator configuration section.
 
 Web creator configuration section is named 'creator_web'. Usually it is located in 'creators/web.cfg' file
 relative to main configuration file base path. Below are all recognizible keys.
@@ -395,7 +457,7 @@ event_filter          - javascript code which will run for every received privat
                         event will be processed, otherwise - skipped. Object with event data is accessible as variable
                         'event'. Default: none (all events will be processed).
 
-13. Web creator authentication section.
+15. Web creator authentication section.
 
 Web creator authentication section is named 'creator_web_auth' and used for basic authentication in creator web
 application. Every key here is user login and value - its encrypted password. To generate encrypted password in
@@ -405,14 +467,14 @@ algorithms, only crypt and md5 ones.
 
 Usually it is located in 'creators/web/auth.cfg' file relative to main configuration file base path.
 
-14. Web creator access section.
+16. Web creator access section.
 
 Web creator access section is named 'creator_web_access' and used for providing accesses to users in creator web
 application. Every key here is user login and value - provided accesses separated by comma.
 
 Usually it is located in 'creators/web/access.cfg' file relative to main configuration file base path.
 
-15. Slack creator configuration section.
+17. Slack creator configuration section.
 
 Slack creator configuration section is named 'creator_slack'. Usually it is located in 'creators/slack.cfg' file
 relative to main configuration file base path. Below are all recognizible keys.
@@ -437,14 +499,14 @@ event_filter          - javascript code which will run for every received privat
 build_clean_timeout   - timeout in seconds for cleaning too long existing active builds. If none specified,
                         'clean_timeout' setting from global section is used.
 
-16. Slack creator access section.
+18. Slack creator access section.
 
 Slack creator access section is named 'creator_slack_access' and used for providing accesses to users in creator slack
 application. Every key here is slack user id and value - provided accesses separated by comma.
 
 Usually it is located in 'creators/slack/access.cfg' file relative to main configuration file base path.
 
-17. Slack builder configuration sections.
+19. Slack builder configuration sections.
 
 Each slack builder must have its own configuration section which should be named 'builder_slack_<name>' where '<name>'
 is builder's name. Usually they are located in 'builders/slack/<name>.cfg' files relative to main configuration file

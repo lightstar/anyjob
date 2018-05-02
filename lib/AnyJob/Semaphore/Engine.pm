@@ -6,7 +6,7 @@ package AnyJob::Semaphore::Engine;
 #
 # Author:       LightStar
 # Created:      04.04.2018
-# Last update:  28.04.2018
+# Last update:  02.05.2018
 #
 
 use strict;
@@ -76,6 +76,7 @@ use constant EXIT_SCRIPT => <<'EOF';
         if table.getn(clients) > 0 then
             for i, client in ipairs(clients) do
                 redis.call('rpush', 'anyjob:semq:' .. client, '')
+                redis.call('expire', 'anyjob:semq:' .. client, '60')
             end
             redis.call('del', KEYS[4])
         end
@@ -104,6 +105,7 @@ use constant EXIT_READ_SCRIPT => <<'EOF';
         if table.getn(clients) > 0 then
             for i, client in ipairs(clients) do
                 redis.call('rpush', 'anyjob:semq:' .. client, '')
+                redis.call('expire', 'anyjob:semq:' .. client, '60')
             end
             redis.call('del', KEYS[4])
         end
@@ -147,6 +149,7 @@ use constant CLEAN_SCRIPT => <<'EOF';
             if table.getn(waitingClients) > 0 then
                 for i, waitingClient in ipairs(waitingClients) do
                     redis.call('rpush', 'anyjob:semq:' .. waitingClient, '')
+                    redis.call('expire', 'anyjob:semq:' .. waitingClient, '60')
                 end
                 redis.call('del', 'anyjob:sem:' .. key .. ':wait')
             end

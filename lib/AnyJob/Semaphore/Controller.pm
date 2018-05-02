@@ -6,7 +6,7 @@ package AnyJob::Semaphore::Controller;
 #
 # Author:       LightStar
 # Created:      28.04.2018
-# Last update:  28.04.2018
+# Last update:  02.05.2018
 #
 
 use strict;
@@ -197,8 +197,12 @@ sub prepareSemaphore {
     my $clientMode = $semaphore->{cmode} || SEMAPHORE_DEFAULT_CLIENT_MODES()->{$mode};
     if ($clientMode eq SEMAPHORE_CLIENT_MODE_ENTITY) {
         $client .= ':' . $id;
-    } elsif ($clientMode eq SEMAPHORE_CLIENT_MODE_JOBSET and exists($entity->{jobset})) {
-        $client .= ':' . $entity->{jobset};
+    } elsif ($clientMode eq SEMAPHORE_CLIENT_MODE_JOBSET) {
+        if (exists($entity->{jobset})) {
+            $client .= ':' . $entity->{jobset};
+        } elsif (exists($entity->{jobs})) {
+            $client .= ':' . $id;
+        }
     }
 
     return ($name, $client, $key);

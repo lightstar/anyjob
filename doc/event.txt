@@ -123,6 +123,7 @@ Fields "state", "progress" and "log" are optional but at least one (and usually 
     "time": <integer unix timestamp>,
     "node": "<string node name>",
     "id": <integer jobset id>,
+    "type": "<string jobset type (optional, exists only if jobset has type)>",
     "props": {
         "<string property name>": "<string property value>",
         ...
@@ -150,6 +151,7 @@ Fields "state", "progress" and "log" are optional but at least one (and usually 
     "time": <integer unix timestamp>,
     "node": "<string node name>",
     "id": <integer jobset id>,
+    "type": "<string jobset type (optional, exists only if jobset has type)>",
     "props": {
         "<string property name>": "<string property value>",
         ...
@@ -169,6 +171,7 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "time": <integer unix timestamp>,
     "node": "<string node name>",
     "id": <integer jobset id>,
+    "type": "<string jobset type (optional, exists only if jobset has type)>",
     "props": {
         "<string property name>": "<string property value>",
         ...
@@ -201,6 +204,7 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "time": <integer unix timestamp>,
     "node": "<string node name>",
     "id": <integer jobset id>,
+    "type": "<string jobset type (optional, exists only if jobset has type)>",
     "props": {
         "<string property name>": "<string property value>",
         ...

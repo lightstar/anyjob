@@ -27,18 +27,18 @@ about each other and act in a coordinated manner.
 
 ### Basic principles and concept
 
-*Job* is entity which must be run on some node. It has *type*, *parameters* and *properties*. All jobs are created
+**Job** is entity which must be run on some node. It has *type*, *parameters* and *properties*. All jobs are created
 by *creator* component and allowed to unite into interrelated group called *jobset*. Parameters and properties have
 similar structure (it's just 'name-value' pairs), but allowed parameters are individual for each job type and
 properties are global for the whole system. Parameters are used by *worker* component during job execution, and
 properties are used by AnyJob system itself and by observers too.
 
-*Event* is entity which holds information about some movement in job or jobset execution. Events are sent to
+**Event** is entity which holds information about some movement in job or jobset execution. Events are sent to
 *observers*.
 
-*Node* is some physical or virtual server where jobs are run.
+**Node** is some physical or virtual server where jobs are run.
 
-*Creator* is a separate component which creates new jobs and jobsets. It can contain arbitrary number of
+**Creator** is a separate component which creates new jobs and jobsets. It can contain arbitrary number of
 addons providing different creation methods. By now it supports next ones:
 - Using console application *bin/anyjobc.pl*. Just feed to it job type, nodes separated by comma, parameters and
 properties in format 'name=value'.
@@ -49,10 +49,10 @@ In addition to actual creating creator supports another interesting feature: obs
 individual observers creator observes just the jobs it created and can send notifications directly to users who
 created them. That embedded into creator observer is called *private* observer.
 
-*Builder* is a inner component of creator which is used to build jobs in several steps. By now it is used only by slack
+**Builder** is a inner component of creator which is used to build jobs in several steps. By now it is used only by slack
 application.
 
-*Daemon* is a separate component which is a heart of the system, and there are one or more controllers which are run
+**Daemon** is a separate component which is a heart of the system, and there are one or more controllers which are run
 inside. Daemon is started on each node by bash script 'rc.anyjobd'. There should be *global* controller on one
 choosed node which controls entire system including jobsets, and *regular* controller on every node where jobs are
 supposed to be run. 
@@ -60,7 +60,7 @@ supposed to be run.
 Daemon may launch additional processes, in particular worker daemons and copies of itself which are used to serve
 special "isolated" controllers.
 
-*Observer* is a controller subtype which observes events sent directly to it and it runs inside daemon. Each observer
+**Observer** is a controller subtype which observes events sent directly to it and it runs inside daemon. Each observer
 should exist only in one copy in the whole system. On receiving event observer usually generates some notification
 using provided template and sends it to one or more configured recipients (i.e. by mail, into slack channel or just
 to log file).
@@ -68,7 +68,7 @@ to log file).
 Observers can be configured as isolated ones which are launched in separated processes to not disturb other controllers
 operation.
 
-*Worker* is a separate component which performs one specific job. Two types of workers are supported: external
+**Worker** is a separate component which performs one specific job. Two types of workers are supported: external
 executable (by default 'bin/anyjobw.pl') and worker daemon (by default 'bin/anyjobwd.pl'). Both of them are launched
 by daemon automatically, but the first one is executed for each job individually and the second is working all
 the time retrieving jobs from special queue. 
@@ -82,6 +82,10 @@ jobset state if it needs coordinated work. Convenient methods for every such use
 Optionally creating of special context object is supported which has meaning when you launch jobs inside worker
 daemons. Context object is created right after daemon start and exists all its working time, so you can use it
 to manage shared long-term resources such as database connections and so on.
+
+**Semaphore** is a special entity used to wrap job or jobset execution into special section which can be entered
+only limited number of times. So using semaphores one could define that some job or jobset in any specific
+moment in time can be executed only by limited number of workers.
 
 ### Before using
 
@@ -110,6 +114,7 @@ classes (*AnyJob::Worker::Job::Base* and *AnyJob::Worker::Context::Base*) are av
    - [doc/event.txt](doc/event.txt) - events and observers.
    - [doc/props.txt](doc/props.txt) - properties of jobs and jobsets.
    - [doc/redis.txt](doc/redis.txt) - keys used in *redis*.
+   - [doc/semaphore.txt](doc/semaphore.txt) - semaphores.
 
 If you plan to extend AnyJob, it is recommended to study code and comments. At least you should examine
 *AnyJob::Worker::Job::Base* and *AnyJob::Worker::Job::Example* to understand how to correctly write new job modules.
@@ -151,19 +156,15 @@ some additional jobs.
 5. *Redis* is now used both for data storage and for message queuing. It performs good, but it would be better to
 abstract away by using some specific modules to simplify transition to some other mechanisms in future.
 
-6. It would be nice to limit jobs execution using some configured blocks or semaphores. So one could say that
-some job can execute only consequentially or only in limited quantity of simultaneously launched copies. By now
-it is possible to limit active jobs count only globally.
-
-7. It is worth implementing some common use worker modules 'out of the box'. For example such that would execute
+6. It is worth implementing some common use worker modules 'out of the box'. For example such that would execute
 some arbitrary program and intercept its input and output, or run specific method in some perl module with defined
 parameters, etc.
 
-8. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
+7. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
 add translations for all messages and possibility to switch between languages (russian is priority of course).
 
-9. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
+8. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
 adding possibility to specify group, type and nodes using separate dialogs.
 
-10. It is worth to add support for links leading to partially created jobs in the web application to simplify job
+9. It is worth to add support for links leading to partially created jobs in the web application to simplify job
 creation.

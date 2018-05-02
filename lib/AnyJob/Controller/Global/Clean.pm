@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::Clean;
 #
 # Author:       LightStar
 # Created:      23.10.2017
-# Last update:  28.04.2018
+# Last update:  02.05.2018
 #
 
 use strict;
@@ -76,10 +76,11 @@ sub process {
     foreach my $id (@ids) {
         if (defined(my $jobSet = $self->getJobSet($id))) {
             $self->sendEvent(EVENT_CLEAN_JOBSET, {
-                    id    => $id,
-                    props => $jobSet->{props},
-                    jobs  => $jobSet->{jobs}
-                });
+                id    => $id,
+                (exists($jobSet->{type}) ? (type => $jobSet->{type}) : ()),
+                props => $jobSet->{props},
+                jobs  => $jobSet->{jobs}
+            });
         } else {
             $self->error('Cleaned jobset \'' . $id . '\' not found');
         }

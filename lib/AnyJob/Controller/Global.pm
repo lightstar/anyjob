@@ -6,7 +6,7 @@ package AnyJob::Controller::Global;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  28.04.2018
+# Last update:  02.05.2018
 #
 
 use strict;
@@ -188,7 +188,7 @@ sub createJobSet {
     $self->parent->incActiveJobSetCount();
 
     $self->debug('Create jobset \'' . $id . '\' ' .
-        (exists($jobSet->{type}) ? 'with type \'' . $jobSet->{type} . '\'), ' : 'with ') .
+        (exists($jobSet->{type}) ? 'with type \'' . $jobSet->{type} . '\', ' : 'with ') .
         ' props ' . encode_json($jobSet->{props}) . ' and jobs ' . encode_json($jobSet->{jobs}));
 
     my $isJobSetNotBlocked = 1;
@@ -209,6 +209,7 @@ sub createJobSet {
 
     $self->sendEvent(EVENT_CREATE_JOBSET, {
         id    => $id,
+        (exists($jobSet->{type}) ? (type => $jobSet->{type}) : ()),
         props => $jobSet->{props},
         jobs  => $jobSet->{jobs}
     });

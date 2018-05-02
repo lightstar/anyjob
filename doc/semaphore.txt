@@ -1,0 +1,54 @@
+Semaphores are entities which can be entered and exited by some clients. Each semaphore has maximum count of enterings
+so when it is reached, all further enterings are blocked. So typical scenario of using semaphores is like that:
+
+1. Some client chooses semaphore it wish to enter and chooses its unique client name. This client name will
+identify this particular client to semaphore.
+
+2. Client tries to enter into semaphore sending his own name along the way. If semaphore is free (its maximum value
+not reached yet), this client is registered inside semaphore as entered one and semaphore increases his internal value
+by one (which is initially zero). If semaphore is blocked (its internal value had reached the maximum value), entering
+to semaphore fails and this client is registered inside semaphore as waiting one.
+
+3. If semaphore is successfully entered, client can perform any work it must and then it should exit from semaphore
+using the very same client name. By the way internal value of semaphore is decreased by one.
+
+4. If semaphore is blocked and can't be entered yet, client must wait listening to special queue into which semaphore
+will send signal when it becomes free. Each client has its own waiting queue. When client receives signal, it
+can try to enter semaphore again returning to point 2. Note that signals in this waiting queue live only for 60 seconds
+so client must listen to it without significant pauses.
+
+5. If client doesn't exit from semaphore for a configurable amount of time, it will be exited automatically by
+special cleaning controller.
+
+Client may choose to enter into semaphore in 'read' mode which increases semaphore's internal value only once for all
+such enterings. If client entered into semaphore in 'read' mode, then it must exit also in that 'read' mode.
+
+That is the basic description of semaphores and they are used by daemon to enter into semaphores before some job or
+jobset processing and exit from them afterwards.
+
+Each job and jobset has a number of predefined modes of processing in which you can inject some semaphore and possible
+configuration specifying how to process that semaphore. Below are all supported modes.
+
+1. 'Wrap' mode. In that mode semaphore is entered before job/jobset execution and exited after execution is finished.
+2. 'WrapRead' mode. Like the 'wrap', but semaphore is entered and exited in 'read' mode.
+3. 'Enter' mode. In that mode semaphore is entered before job/jobset execution.
+4. 'EnterRead' mode. Like the 'enter', but semaphore is entered in 'read' mode.
+5. 'Exit' mode. In that mode semaphore is exited after job/jobset execution.
+6. 'ExitRead' mode. Like the 'exit', but semaphore is exited in 'read' mode.
+7. 'ExitAtStart' mode. In that mode semaphore is exited before job/jobset execution.
+8. 'ExitReadAtStart' mode. Like the 'exitAtStart', but semaphore is exited in 'read' mode.
+
+Semaphores in these modes are processed in exactly that order before job/jobset execution and in reverse order after
+execution is finished.
+
+Semaphore in each mode has additional configuration keys:
+  - client - base client name to use. By default it is 'job' for jobs and 'jobset' for jobsets.
+  - cmode  - client mode to use.
+                - entity - job/jobset id is appended to client name.
+                - jobset - jobset id is appended to client name (if any).
+                - single - nothing is appended to client name.
+             By default 'entity' client mode is used for 'wrap' and 'wrapRead' processing modes and 'jobset' is used
+             for everything else.
+
+Note that most of the time you should use 'wrap' and 'wrapRead' processing modes using default values for 'client' and
+'cmode' configuration keys which should be sufficient for 99% of usecases.
