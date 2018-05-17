@@ -8,7 +8,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  28.04.2017
+# Last update:  17.05.2017
 #
 
 use strict;
@@ -72,6 +72,7 @@ sub addon {
 # Each hash should contain 'type' (string job type), 'nodes' (array of strings with node names),
 # 'params' (hash with job parameters) and 'props' (hash with job properties) fields.
 # All of it will be checked for correctness.
+# If 'params' and/or 'props' fields are absent, empty ones are automatically created.
 #
 # Arguments:
 #     jobs - array of hashes with job information.
@@ -95,6 +96,9 @@ sub checkJobs {
         if (defined($error = $self->checkJobNodes($job))) {
             last;
         }
+
+        $job->{params} ||= {};
+        $job->{props} ||= {};
 
         unless (defined($self->checkJobParams($job->{params}, $self->config->getJobParams($job->{type})))) {
             $error = 'wrong params of job with type \'' . $job->{type} . '\'';
@@ -276,10 +280,9 @@ sub parseJob {
 }
 
 ###############################################################################
-# Create provided jobs. If there is only one job, it will be created by itself,
-# otherwise jobset is created containing all jobs.
+# Create jobs using provided array. For each job in it jobset or job is created depending on number of nodes and
+# job configuration.
 # At first created jobs are checked using 'checkJobs' method, and creating fails if there are any errors.
-# If all jobs contain identical properties with identical values, they all are injected into jobset properties.
 #
 # Arguments:
 #     jobs - array of hashes with job information. I.e.:
@@ -289,9 +292,8 @@ sub parseJob {
 #                params => { 'param1' => '...', 'param2' => '...', ... },
 #                props => { 'prop1' => '...', 'prop2' => '...', ... }
 #            }, ...]
-#     props - hash with properties injected into all jobs and jobset if any.
-#     type  - string jobset type (optional, can be undef). If defined, jobset will be created even if there is only
-#             one job.
+#     props - hash with properties injected into all jobs if any.
+#
 # Returns:
 #     string error message or undef if there are no any errors.
 #
@@ -299,7 +301,6 @@ sub createJobs {
     my $self = shift;
     my $jobs = shift;
     my $props = shift;
-    my $jobset = shift;
     $props ||= {};
 
     my $error = $self->checkJobs($jobs);
@@ -311,46 +312,29 @@ sub createJobs {
         return 'wrong props';
     }
 
-    my @separatedJobs;
-    my %jobProps;
     foreach my $job (@$jobs) {
-        foreach my $name (keys(%{$job->{props}})) {
-            unless (exists($jobProps{$name})) {
-                $jobProps{$name} = {
-                    value => $job->{props}->{$name},
-                    count => scalar(@{$job->{nodes}})
-                };
-            } elsif ($jobProps{$name}->{value} eq $job->{props}->{$name}) {
-                $jobProps{$name}->{count} += scalar(@{$job->{nodes}});
-            }
-        }
-
         foreach my $name (keys(%$props)) {
             unless (exists($job->{props}->{$name})) {
                 $job->{props}->{$name} = $props->{$name};
             }
         }
 
-        foreach my $node (@{$job->{nodes}}) {
-            push @separatedJobs, {
-                node   => $node,
-                type   => $job->{type},
-                params => $job->{params},
-                props  => $job->{props}
-            };
-        }
-    }
+        my $jobConfig = $self->config->getJobConfig($job->{type}) || {};
+        my $jobset = $jobConfig->{jobset};
+        my $isNoJobSetForLoner = $jobConfig->{no_jobset_for_loner};
 
-    if (scalar(@separatedJobs) == 1 and not defined($jobset)) {
-        $self->createJob($separatedJobs[0]->{node}, $separatedJobs[0]->{type},
-            $separatedJobs[0]->{params}, $separatedJobs[0]->{props});
-    } elsif (scalar(@separatedJobs) > 0) {
-        foreach my $name (keys(%jobProps)) {
-            if ($jobProps{$name}->{count} == scalar(@separatedJobs) and not exists($props->{$name})) {
-                $props->{$name} = $jobProps{$name}->{value};
-            }
+        if (scalar(@{$job->{nodes}}) == 1 and (not defined($jobset) or $isNoJobSetForLoner)) {
+            $self->createJob($job->{nodes}->[0], $job->{type}, $job->{params}, $job->{props});
+        } else {
+            $self->createJobSet($jobset, [
+                map {{
+                    node   => $_,
+                    type   => $job->{type},
+                    params => $job->{params},
+                    props  => $job->{props}
+                }} @{$job->{nodes}}
+            ], $job->{props});
         }
-        $self->createJobSet($jobset, \@separatedJobs, $props);
     }
 
     return undef;

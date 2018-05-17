@@ -23,7 +23,7 @@ package AnyJob::Creator::Parser;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  27.02.2018
+# Last update:  17.05.2018
 #
 
 use strict;
@@ -160,9 +160,8 @@ sub prepare {
     }
 
     my $type = shift(@{$self->{args}});
-
-    $self->{jobConfig} = $self->config->getJobConfig($type);
-    unless (defined($self->{jobConfig})) {
+    my $config = $self->config->getJobConfig($type);
+    unless (defined($config)) {
         push @{$self->{errors}}, {
                 type  => 'error',
                 field => 'type',
@@ -191,6 +190,7 @@ sub prepare {
     $self->{propsHash} = { map {$_->{name} => $_} @{$self->{props}} };
 
     $self->{nodes} = { map {$_ => 1} @{$self->config->getJobNodes($type)} };
+    $self->{defaultNodes} = $config->{default_nodes};
 
     return 1;
 }
@@ -500,10 +500,10 @@ sub processUnknownArg {
 sub injectDefaultNodes {
     my $self = shift;
 
-    if (defined($self->{jobConfig}->{defaultNodes}) and scalar(@{$self->job->{nodes}}) == 0) {
+    if (defined($self->{defaultNodes}) and scalar(@{$self->job->{nodes}}) == 0) {
         $self->job->{nodes} = [
             grep {exists($self->{nodes}->{$_})}
-                split(/\s*,\s*/, $self->{jobConfig}->{defaultNodes})
+                split(/\s*,\s*/, $self->{defaultNodes})
         ];
 
         if (scalar(@{$self->job->{nodes}}) > 0) {

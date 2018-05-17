@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  28.04.2018
+# Last update:  17.05.2018
 #
 
 use strict;
@@ -177,7 +177,7 @@ sub getAllJobs {
 
             my $nodesHash = { map {$_ => 1} @$nodes };
             my $defaultNodes = { map {$_ => 1} grep {exists($nodesHash->{$_})}
-                split(/\s*,\s*/, $self->{data}->{$section}->{defaultNodes} || '') };
+                split(/\s*,\s*/, $self->{data}->{$section}->{default_nodes} || '') };
 
             my $props = $self->getJobProps($type);
             push @jobs, {
@@ -495,17 +495,17 @@ sub getJobNodesAccess {
     $self->{jobNodesAccess}->{$type} = {};
 
     my $config = $self->getJobConfig($type);
-    unless (defined($config) and exists($config->{nodesAccess})) {
+    unless (defined($config) and exists($config->{nodes_access})) {
         return {};
     }
 
-    my $nodesAccess = $config->{nodesAccess};
+    my $nodesAccess = $config->{nodes_access};
     eval {
         $nodesAccess = decode_json($nodesAccess);
     };
     if ($@ or ref($nodesAccess) ne 'HASH') {
         require Carp;
-        Carp::confess('Wrong nodes access of job \'' . $type . '\': ' . $config->{nodesAccess});
+        Carp::confess('Wrong nodes access of job \'' . $type . '\': ' . $config->{nodes_access});
     }
 
     foreach my $node (keys(%$nodesAccess)) {
@@ -674,13 +674,15 @@ sub isJobSupported {
 ###############################################################################
 # Get hash with some job's semaphores configuration. This hash will have next structure:
 # {
-#    '<mode>' => [ { 'name': '<name>', 'client': '<client>', 'cmode': '<clientMode>' }, ... ],
+#    '<mode>' => [ { 'name': '<name>', 'client': '<client>', 'cmode': '<clientMode>', 'jobset': '<0/1>' }, ... ],
 #    ...
 # }
 # '<mode>' here is one of predefined semaphore mode names for entity, '<name>' is one of configured semaphore names,
 # '<client>' is arbitrary client name (it is optional, string 'job' will be used by default) and
 # '<clientMode>' is optional client mode ('entity', 'jobset' or 'single'). When client mode is not specified, some
 # default value will be used depending on mode.
+# 'jobset' is optional field. If it is set to '0', semaphore will be processed only for jobs not within any jobset, and
+# if it set to '1', semaphore will be processed only for jobs within some jobset. By default all jobs are processed.
 #
 # Arguments:
 #     type - string job type.

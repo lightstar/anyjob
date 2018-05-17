@@ -6,7 +6,7 @@ package AnyJob::Semaphore::Controller;
 #
 # Author:       LightStar
 # Created:      28.04.2018
-# Last update:  02.05.2018
+# Last update:  17.05.2018
 #
 
 use strict;
@@ -192,6 +192,15 @@ sub prepareSemaphore {
 
     if (exists($entity->{semaphores}) and $entity->{semaphores}->{$key}) {
         return undef;
+    }
+
+    if (exists($semaphore->{jobset}) and not exists($entity->{jobs})) {
+        if ($semaphore->{jobset} == 0 and exists($entity->{jobset})) {
+            return undef;
+        }
+        if ($semaphore->{jobset} == 1 and not exists($entity->{jobset})) {
+            return undef;
+        }
     }
 
     my $clientMode = $semaphore->{cmode} || SEMAPHORE_DEFAULT_CLIENT_MODES()->{$mode};

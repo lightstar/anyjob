@@ -49,6 +49,9 @@ Semaphore in each mode has additional configuration keys:
                 - single - nothing is appended to client name.
              By default 'entity' client mode is used for 'wrap' and 'wrapRead' processing modes and 'jobset' is used
              for everything else.
+  - jobset - 0/1 flag. If set, semaphore is processed only for jobs within some jobset. If not set, semaphore is
+             processed only for jobs not within any jobset. By default this flag is ignored at all.
+             This configuration key has meaning only for jobs.
 
 Note that most of the time you should use 'wrap' and 'wrapRead' processing modes using default values for 'client' and
 'cmode' configuration keys which should be sufficient for 99% of usecases.

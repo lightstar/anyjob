@@ -286,9 +286,9 @@ disabled              - 0/1 flag. If set, this job will be unavailable. Default:
 nodes                 - list of node names separated by comma on which this job can be executed. If set to 'all', this
                         job can be executed on all nodes. Default: 'all'.
 except                - list of node names separated by comma on which this job can't be executed. Default: none.
-defaultNodes          - list of node names separated by comma on which this job will execute by default. Default: none.
+default_nodes         - list of node names separated by comma on which this job will execute by default. Default: none.
 access                - string with accesses required to create this job.
-nodesAccess           - JSON hash where keys are node names and values are strings with accesses needed to create job
+nodes_access          - JSON hash where keys are node names and values are strings with accesses needed to create job
                         on these nodes. Missing nodes here means no required access.
 label                 - short text description of this job. By default job type itself is used.
 group                 - optional group name for this job. Used to organize jobs and simplify selecting them in creator.
@@ -339,6 +339,10 @@ params                - JSON array of objects with job parameters description. T
                                     of objects with two fields: 'label' (value label) and 'value' (value itself).
 props                 - JSON array of objects with properties description. If exists, that array overrides 'props'
                         parameter from creator configuration section.
+jobset                - string jobset type. If exists, set of these jobs on different nodes are created within
+                        jobset with specified type (even if it is created only on one node).
+no_jobset_for_loner   - 0/1 flag. If set, lone job is created separately (not within jobset) even if 'jobset'
+                        configuration is specified. Default: 0.
 semaphores            - JSON hash with semaphores processed by daemon during start and/or finish this job. Each key
                         is one of predefined modes:
                            - wrap            - semaphore is entered at job start and exited at job finish.
@@ -360,6 +364,9 @@ semaphores            - JSON hash with semaphores processed by daemon during sta
                                                 - single - nothing is appended to client name.
                                              By default 'entity' client mode is used in 'wrap' and 'wrapRead' modes and
                                              'jobset' client mode is used in any other case.
+                           - jobset        - 0/1 flag. If set, semaphore is processed only for jobs within some jobset.
+                                             If not set, semaphore is processed only for jobs not within any jobset.
+                                             By default this flag is ignored at all.
                         Note that in most cases you should use only 'wrap' and 'wrapRead' modes and rely on default
                         values of 'client' and 'cmode' parameters. Other modes and custom clients are supposed to be
                         very advanced features, do not use it if you don't really know what you are doing.
