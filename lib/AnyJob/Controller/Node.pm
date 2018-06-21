@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  28.04.2018
+# Last update:  20.06.2018
 #
 
 use strict;
@@ -187,8 +187,8 @@ sub createJob {
         (exists($event->{jobset}) ? (jobset => $event->{jobset}) : ()),
         state  => STATE_BEGIN,
         time   => time(),
-        params => $event->{params},
-        props  => $event->{props}
+        params => $event->{params} || {},
+        props  => $event->{props} || {}
     };
 
     $job->{state} = STATE_BEGIN;

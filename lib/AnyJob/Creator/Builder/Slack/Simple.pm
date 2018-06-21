@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Simple;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  14.02.2018
+# Last update:  20.06.2018
 #
 
 use strict;
@@ -37,8 +37,8 @@ sub command {
     my $triggerId = shift;
     my $userName = shift;
 
-    my ($job, $errors);
-    ($job, undef, $errors) = $self->parent->parseJob($text);
+    my ($delay, $job, $errors);
+    ($delay, $job, undef, $errors) = $self->parent->parse($text);
     unless (defined($job)) {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }

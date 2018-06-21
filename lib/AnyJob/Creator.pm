@@ -5,10 +5,11 @@ package AnyJob::Creator;
 # There are several creation ways which are implemented as creator addons under 'Creator\Addon' package path.
 # Creator also manages special 'private' observers which are intended to deliver event messages directly
 # to clients who created appropriate jobs.
+# Additionally creator can delay jobs and do various actions with delayed jobs.
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  17.05.2017
+# Last update:  20.06.2018
 #
 
 use strict;
@@ -87,7 +88,7 @@ sub checkJobs {
         return 'no jobs';
     }
 
-    my $error;
+    my $error = undef;
     foreach my $job (@$jobs) {
         if (defined($error = $self->checkJobType($job))) {
             last;
@@ -252,31 +253,65 @@ sub checkJobParamType {
 }
 
 ###############################################################################
+# Check delay data used to delay jobs.
+#
+# Arguments:
+#     delay - hash with delay data. It should contain 'create' field with create data, optional 'time' field with
+#             integer delay time in unix timestamp format and optional 'id' field with integer delayed id.
+# Returns:
+#     string error message or undef if there are no any errors.
+#
+sub checkDelay {
+    my $self = shift;
+    my $delay = shift;
+
+    unless (defined($delay) and ref($delay) eq 'HASH') {
+        return 'wrong delay';
+    }
+
+    unless (defined($delay->{create})) {
+        return 'wrong delay create data';
+    }
+
+    if (defined($delay->{time}) and ($delay->{time} !~ /^\d+$/o or $delay->{time} <= 0)) {
+        return 'wrong delay time';
+
+    }
+
+    if (defined($delay->{id}) and ($delay->{id} !~ /^\d+$/o or $delay->{id} <= 0)) {
+        return 'wrong delay id';
+    }
+
+    return undef;
+}
+
+###############################################################################
 # Parse given input which can be string command-line or array of string command-line arguments.
-# Result is some job(s) to create.
+# Result is some job(s) to create and/or some action with delayed.
 # See AnyJob::Creator::Parser module for details.
 #
 # Arguments:
 #     input         - string input line or array of string arguments.
 #     allowedExtra  - hash with allowed additional parameters.
 # Returns:
-#     hash with parsed job information.
-#     hash with parsed extra parameters.
+#     hash with parsed delay information or undef in case of error or lack of action with delayed.
+#     hash with parsed job information or undef in case of error.
+#     hash with parsed extra parameters or undef in case of error.
 #     array of hashes with errors/warnings.
 #
-sub parseJob {
+sub parse {
     my $self = shift;
     my $input = shift;
     my $allowedExtra = shift;
 
-    my $parser = AnyJob::Creator::Parser->new(parent => $self, input => $input, allowedExtra => $allowedExtra);
-    unless (defined($parser->prepare())) {
-        return (undef, undef, $parser->errors);
-    }
-
+    my $parser = AnyJob::Creator::Parser->new(
+        parent       => $self,
+        (ref($input) eq 'ARRAY' ? (args => $input) : (input => $input)),
+        allowedExtra => $allowedExtra
+    );
     $parser->parse();
 
-    return ($parser->job, $parser->extra, $parser->errors);
+    return ($parser->delay, $parser->job, $parser->extra, $parser->errors);
 }
 
 ###############################################################################
@@ -285,13 +320,13 @@ sub parseJob {
 # At first created jobs are checked using 'checkJobs' method, and creating fails if there are any errors.
 #
 # Arguments:
-#     jobs - array of hashes with job information. I.e.:
-#            [{
+#     jobs  - array of hashes with job information. I.e.:
+#             [{
 #                type => '...',
 #                nodes => [ 'node1', 'node2', ... ],
 #                params => { 'param1' => '...', 'param2' => '...', ... },
 #                props => { 'prop1' => '...', 'prop2' => '...', ... }
-#            }, ...]
+#             }, ...]
 #     props - hash with properties injected into all jobs if any.
 #
 # Returns:
@@ -301,17 +336,117 @@ sub createJobs {
     my $self = shift;
     my $jobs = shift;
     my $props = shift;
-    $props ||= {};
 
-    my $error = $self->checkJobs($jobs);
+    my ($preparedJobs, $error) = $self->prepareJobs($jobs, $props);
     if (defined($error)) {
         return $error;
     }
 
-    unless (ref($props) eq 'HASH') {
-        return 'wrong props';
+    foreach my $job (@$preparedJobs) {
+        if ($job->{isJobSet}) {
+            $self->createJobSet($job->{jobSetType}, $job->{jobs}, $job->{jobs}->[0]->{props});
+        } else {
+            $self->createJob($job->{jobs}->[0]);
+        }
     }
 
+    return undef;
+}
+
+###############################################################################
+# Delay jobs using provided delay data and jobs array.
+# At first delay data is checked using 'checkDelay' method, delayed jobs are checked using 'checkJobs' method,
+# and delaying fails if there are any errors.
+#
+# Arguments:
+#     delay - hash with delay data. It should contain 'create' field with create data, 'time' field with
+#             integer delay time in unix timestamp format and optional 'id' field with integer delayed id.
+#             If 'id' field is specified, already existing delayed object will be updated.
+#     jobs  - array of hashes with job information. I.e.:
+#             [{
+#                type => '...',
+#                nodes => [ 'node1', 'node2', ... ],
+#                params => { 'param1' => '...', 'param2' => '...', ... },
+#                props => { 'prop1' => '...', 'prop2' => '...', ... }
+#             }, ...]
+#     props - hash with properties injected into all jobs if any.
+#
+# Returns:
+#     string error message or undef if there are no any errors.
+#
+sub delayJobs {
+    my $self = shift;
+    my $delay = shift;
+    my $jobs = shift;
+    my $props = shift;
+
+    my $error = $self->checkDelay($delay);
+    if (defined($error)) {
+        return $error;
+    }
+
+    my $preparedJobs;
+    ($preparedJobs, $error) = $self->prepareJobs($jobs, $props);
+    if (defined($error)) {
+        return $error;
+    }
+
+    foreach my $job (@$preparedJobs) {
+        my $delayedJob = (not $job->{isJobSet}) ? $job->{jobs}->[0] : {
+            (defined($job->{jobSetType}) ? (type => $job->{jobSetType}) : ()),
+            jobset => 1,
+            jobs   => $job->{jobs},
+            props  => $job->{jobs}->[0]->{props}
+        };
+        if (defined($delay->{id})) {
+            $self->updateDelayed($delay->{id}, $delay->{create}, [ $delayedJob ], $delay->{time});
+        } else {
+            $self->createDelayed($delay->{create}, [ $delayedJob ], $delay->{time});
+        }
+    }
+
+    return undef;
+}
+
+###############################################################################
+# Prepare jobs for creating or delaying using provided array.
+# At first all jobs are checked using 'checkJobs' method, and preparing fails if there are any errors.
+# Each prepared job is a hash with the following fields:
+#     'jobs'       - array of hashes with 'node', 'type', 'params' and 'props' fields.
+#     'isJobSet'   - 0/1 flag. If set, jobset must be created, otherwise - just one separate job. In later case
+#                    'jobs' array always contains just one element.
+#     'jobSetType' - string jobset type or undef. Exists only if 'isJobSet' flag is set.
+#
+# Arguments:
+#     jobs  - array of hashes with job information. I.e.:
+#             [{
+#                type => '...',
+#                nodes => [ 'node1', 'node2', ... ],
+#                params => { 'param1' => '...', 'param2' => '...', ... },
+#                props => { 'prop1' => '...', 'prop2' => '...', ... }
+#             }, ...]
+#     props - hash with properties injected into all jobs if any.
+#
+# Returns:
+#     array of hashes with prepared jobs or undef in case of any error.
+#     string error message or undef if there are no any errors.
+#
+sub prepareJobs {
+    my $self = shift;
+    my $jobs = shift;
+    my $props = shift;
+    $props ||= {};
+
+    my $error = $self->checkJobs($jobs);
+    if (defined($error)) {
+        return (undef, $error);
+    }
+
+    unless (ref($props) eq 'HASH') {
+        return (undef, 'wrong props');
+    }
+
+    my @preparedJobs;
     foreach my $job (@$jobs) {
         foreach my $name (keys(%$props)) {
             unless (exists($job->{props}->{$name})) {
@@ -320,24 +455,25 @@ sub createJobs {
         }
 
         my $jobConfig = $self->config->getJobConfig($job->{type}) || {};
-        my $jobset = $jobConfig->{jobset};
-        my $isNoJobSetForLoner = $jobConfig->{no_jobset_for_loner};
+        my $jobSetType = $jobConfig->{jobset};
+        my $isJobSet = (scalar(@{$job->{nodes}}) == 1 and
+            (not defined($jobSetType) or $jobConfig->{no_jobset_for_loner})) ? 0 : 1;
 
-        if (scalar(@{$job->{nodes}}) == 1 and (not defined($jobset) or $isNoJobSetForLoner)) {
-            $self->createJob($job->{nodes}->[0], $job->{type}, $job->{params}, $job->{props});
-        } else {
-            $self->createJobSet($jobset, [
+        push @preparedJobs, {
+            jobs     => [
                 map {{
                     node   => $_,
                     type   => $job->{type},
                     params => $job->{params},
                     props  => $job->{props}
                 }} @{$job->{nodes}}
-            ], $job->{props});
-        }
+            ],
+            isJobSet => $isJobSet,
+            ($isJobSet ? (jobSetType => $jobSetType) : ())
+        };
     }
 
-    return undef;
+    return (\@preparedJobs, undef);
 }
 
 ###############################################################################
@@ -345,35 +481,24 @@ sub createJobs {
 # Almost nothing is checked here so better use higher level method 'createJobs' instead.
 #
 # Arguments:
-#     node   - string node where to create.
-#     type   - string job type.
-#     params - optional hash with job parameters.
-#     props  - optional hash with job properties.
+#     job - hash with job data. It should contain string fields 'type', 'node' and inner hashes 'params' and 'props'.
 #
 sub createJob {
     my $self = shift;
-    my $node = shift;
-    my $type = shift;
-    my $params = shift;
-    my $props = shift;
+    my $job = shift;
 
-    unless (defined($type) and defined($node) and $type ne '' and $node ne '') {
+    unless (defined($job->{type}) and defined($job->{node}) and $job->{type} ne '' and $job->{node} ne '' and
+        defined($job->{params}) and ref($job->{params}) eq 'HASH' and defined($job->{props}) and
+        ref($job->{props}) eq 'HASH'
+    ) {
         $self->error('Called createJob with wrong parameters');
         return;
     }
 
-    unless ($self->config->isJobSupported($type, $node)) {
-        $self->error('Job with type \'' . $type . '\' is not supported on node \'' . $node . '\'');
-        return;
-    }
-
-    $params ||= {};
-    $props ||= {};
-
-    $self->redis->rpush('anyjob:queue:' . $node, encode_json({
-        type   => $type,
-        params => $params,
-        props  => $props
+    $self->redis->rpush('anyjob:queue:' . $job->{node}, encode_json({
+        type   => $job->{type},
+        params => $job->{params},
+        props  => $job->{props}
     }));
 }
 
@@ -384,7 +509,7 @@ sub createJob {
 # Arguments:
 #     type   - string jobset type (optional, can be undef).
 #     jobs   - arrays of hashes with information about jobs to create. Each hash should contain string fields
-#              'type', 'node' and optionally inner hashes 'params' and 'props'.
+#              'type', 'node' and inner hashes 'params' and 'props'.
 #     props  - optional hash with jobset properties.
 #
 sub createJobSet {
@@ -392,27 +517,11 @@ sub createJobSet {
     my $type = shift;
     my $jobs = shift;
     my $props = shift;
-
-    unless (defined($jobs) and scalar(@$jobs) > 0) {
-        $self->error('Called createJobSet with wrong jobs');
-        return;
-    }
-
     $props ||= {};
 
-    foreach my $job (@$jobs) {
-        unless (defined($job->{type}) and defined($job->{node}) and $job->{type} ne '' and $job->{node} ne '') {
-            $self->error('Called createJobSet with wrong jobs');
-            return;
-        }
-
-        unless ($self->config->isJobSupported($job->{type}, $job->{node})) {
-            $self->error('Job with type \'' . $job->{type} . '\' is not supported on node \'' . $job->{node} . '\'');
-            return;
-        }
-
-        $job->{params} ||= {};
-        $job->{props} ||= {};
+    unless (defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and ref($props) eq 'HASH') {
+        $self->error('Called createJobSet with wrong parameters');
+        return;
     }
 
     $self->redis->rpush('anyjob:queue', encode_json({
@@ -420,6 +529,119 @@ sub createJobSet {
         jobset => 1,
         props  => $props,
         jobs   => $jobs
+    }));
+}
+
+###############################################################################
+# Create delayed jobs.
+# Almost nothing is checked here so better use higher level method 'delayJobs' instead.
+#
+# Arguments:
+#     create - hash with create data.
+#     jobs   - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
+#              individual job.
+#     time   - integer delay time in unix timestamp format.
+#
+sub createDelayed {
+    my $self = shift;
+    my $create = shift;
+    my $jobs = shift;
+    my $time = shift;
+
+    unless (defined($create) and defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
+        defined($time) and $time =~ /^\d+$/o and $time > 0
+    ) {
+        $self->error('Called createDelayed with wrong parameters');
+        return;
+    }
+
+    $self->redis->rpush('anyjob:delayq', encode_json({
+        action => 'create',
+        create => $create,
+        jobs   => $jobs,
+        time   => $time
+    }));
+}
+
+###############################################################################
+# Update delayed jobs.
+# Almost nothing is checked here so better use higher level method 'delayJobs' instead.
+#
+# Arguments:
+#     id     - integer delayed object id to update.
+#     create - hash with create data.
+#     jobs   - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
+#              individual job.
+#     time   - integer delay time in unix timestamp format.
+#
+sub updateDelayed {
+    my $self = shift;
+    my $id = shift;
+    my $create = shift;
+    my $jobs = shift;
+    my $time = shift;
+
+    unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and defined($create) and
+        defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
+        defined($time) and $time =~ /^\d+$/o and $time > 0
+    ) {
+        $self->error('Called updateDelayed with wrong parameters');
+        return;
+    }
+
+    $self->redis->rpush('anyjob:delayq', encode_json({
+        action => 'update',
+        id     => $id,
+        create => $create,
+        jobs   => $jobs,
+        time   => $time
+    }));
+}
+
+###############################################################################
+# Delete delayed jobs.
+# Almost nothing is checked here so calling method should check provided arguments by itself.
+#
+# Arguments:
+#     id  - integer delayed object id to delete.
+#
+sub deleteDelayed {
+    my $self = shift;
+    my $id = shift;
+
+    unless (defined($id) and $id =~ /^\d+$/o and $id > 0) {
+        $self->error('Called deleteDelayed with wrong parameters');
+        return;
+    }
+
+    $self->redis->rpush('anyjob:delayq', encode_json({
+        action => 'delete',
+        id     => $id
+    }));
+}
+
+###############################################################################
+# Get delayed jobs.
+# Almost nothing is checked here so calling method should check provided arguments by itself.
+#
+# Arguments:
+#     resultQueue - string queue name into where the result will be sent.
+#     id          - optional integer delayed object id to get. If not provided, all delayed jobs are retrieved.
+#
+sub getDelayed {
+    my $self = shift;
+    my $resultQueue = shift;
+    my $id = shift;
+
+    unless (defined($resultQueue) and (not defined($id) or ($id =~ /^\d+$/o and $id > 0))) {
+        $self->error('Called getDelayed with wrong parameters');
+        return;
+    }
+
+    $self->redis->rpush('anyjob:delayq', encode_json({
+        action  => 'get',
+        resultq => $resultQueue,
+        (defined($id) ? (id => $id) : ())
     }));
 }
 

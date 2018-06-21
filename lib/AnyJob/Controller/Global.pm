@@ -6,7 +6,7 @@ package AnyJob::Controller::Global;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  02.05.2018
+# Last update:  20.06.2018
 #
 
 use strict;
@@ -30,6 +30,7 @@ our @MODULES = qw(
     Clean
     BuildClean
     SemaphoreClean
+    Delay
 );
 
 ###############################################################################
@@ -122,15 +123,16 @@ sub processEvent {
     my $self = shift;
     my $event = shift;
 
-    if (exists($event->{node})) {
-        my $node = delete $event->{node};
+    if (exists($event->{jobset})) {
+        $self->createJobSet($event);
+    } else {
+        my $node = $event->{node};
         if (defined($node) and $node ne '') {
+            delete $event->{node};
             $self->redis->rpush('anyjob:queue:' . $node, encode_json($event));
         } else {
             $self->error('No node in event: ' . encode_json($event));
         }
-    } elsif (exists($event->{jobset})) {
-        $self->createJobSet($event);
     }
 }
 
@@ -163,6 +165,11 @@ sub createJobSet {
     my $self = shift;
     my $event = shift;
 
+    unless (defined($event->{jobs}) and ref($event->{jobs}) eq 'ARRAY' and scalar(@{$event->{jobs}}) > 0) {
+        $self->error('No jobs in jobset: ' . encode_json($event));
+        return;
+    }
+
     foreach my $job (@{$event->{jobs}}) {
         unless ($self->config->isJobSupported($job->{type}, $job->{node})) {
             $self->error('Job with type \'' . $job->{type} . '\' is not supported on node \'' . $job->{node} .
@@ -174,12 +181,14 @@ sub createJobSet {
     my $jobSet = {
         (exists($event->{type}) ? (type => $event->{type}) : ()),
         jobs  => $event->{jobs},
-        props => $event->{props},
+        props => $event->{props} || {},
         state => STATE_BEGIN,
         time  => time()
     };
 
     foreach my $job (@{$jobSet->{jobs}}) {
+        $job->{params} ||= {};
+        $job->{props} ||= {};
         $job->{state} = STATE_BEGIN;
     }
 

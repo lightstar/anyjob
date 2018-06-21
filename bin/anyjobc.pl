@@ -1,13 +1,13 @@
 #!/usr/bin/perl
 
 ###############################################################################
-# Creator executable which can be launched manually from console (or by using cron for example) to create job.
+# Creator executable which can be launched manually from console (or by using cron for example) to create or delay job.
 # All arguments are passed to AnyJob::Creator::Addon::Console module and then parsed by AnyJob::Creator::Parser,
 # so look there for details.
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  01.03.2018
+# Last update:  20.06.2018
 #
 
 use lib ($ENV{ANYJOB_LIB} || ($ENV{ANYJOB_PATH} || '/opt/anyjob') . '/lib');
@@ -28,7 +28,7 @@ BEGIN {
 my $creator = AnyJob::Creator->new();
 
 my $console = $creator->addon('console');
-print $console->create(\@ARGV) . "\n";
+print $console->run(\@ARGV) . "\n";
 $console->stop();
 
 exit(0);

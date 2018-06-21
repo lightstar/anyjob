@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Dialog;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  21.02.2018
+# Last update:  20.06.2018
 #
 
 use strict;
@@ -39,8 +39,8 @@ sub command {
     my $triggerId = shift;
     my $userName = shift;
 
-    my ($job, $errors);
-    ($job, undef, $errors) = $self->parent->parseJob($text);
+    my ($delay, $job, $errors);
+    ($delay, $job, undef, $errors) = $self->parent->parse($text);
     unless (defined($job)) {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
@@ -57,13 +57,14 @@ sub command {
     my $id = $self->getNextBuildId();
     $self->redis->zadd('anyjob:builds', time() + $self->getCleanTimeout(), $id);
     $self->redis->set('anyjob:build:' . $id, encode_json({
-            type        => 'slack_dialog',
-            userId      => $userId,
-            userName    => $userName,
-            job         => $job,
-            trigger     => $triggerId,
-            responseUrl => $responseUrl
-        }));
+        type        => 'slack_dialog',
+        userId      => $userId,
+        userName    => $userName,
+        job         => $job,
+        (defined($delay) ? (delay => $delay) : ()),
+        trigger     => $triggerId,
+        responseUrl => $responseUrl
+    }));
 
     $self->debug('Create slack app dialog build \'' . $id . '\' by user \'' . $userId . '\' (\'' . $userName .
         '\') with response url \'' . $responseUrl . '\', trigger \'' . $triggerId . '\' and job: ' . encode_json($job));
@@ -110,11 +111,11 @@ sub dialogSubmission {
     $self->debug('Create jobs using slack app dialog build: ' . encode_json($build));
 
     my $error = $self->parent->createJobs([ $build->{job} ], {
-            creator      => 'slack',
-            author       => $build->{userName},
-            observer     => 'slack',
-            response_url => $build->{responseUrl}
-        });
+        creator      => 'slack',
+        author       => $build->{userName},
+        observer     => 'slack',
+        response_url => $build->{responseUrl}
+    });
     if (defined($error)) {
         $self->debug('Creating failed: ' . $error);
         $self->sendResponse({ text => 'Error: ' . $error }, $build->{responseUrl});
@@ -147,9 +148,9 @@ sub applySubmission {
             unless ($self->parent->checkJobParamType($param->{type}, $submission->{$param->{name}},
                 $param->{options})) {
                 push @errors, {
-                        name  => $param->{name},
-                        error => 'wrong param'
-                    };
+                    name  => $param->{name},
+                    error => 'wrong param'
+                };
             } else {
                 $job->{params}->{$param->{name}} = $submission->{$param->{name}};
             }
@@ -159,9 +160,9 @@ sub applySubmission {
             (not defined($submission->{$param->{name}}) or $submission->{$param->{name}} eq '')
         ) {
             push @errors, {
-                    name  => $param->{name},
-                    error => 'param is required'
-                };
+                name  => $param->{name},
+                error => 'param is required'
+            };
         }
     }
 

@@ -7,7 +7,7 @@ package AnyJob::Base;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  06.02.2018
+# Last update:  20.06.2018
 #
 
 use strict;
@@ -176,6 +176,25 @@ sub getJobSet {
     my $self = shift;
     my $id = shift;
     return $self->getObject('anyjob:jobset:' . $id);
+}
+
+###############################################################################
+# Retrieve delayed object by id.
+#
+# Arguments:
+#     id - integer delayed id.
+# Returns:
+#     hash with delayed object data:
+#      {
+#          create => {...},
+#          jobs => [...],
+#          time => ...
+#      }
+#
+sub getDelayed {
+    my $self = shift;
+    my $id = shift;
+    return $self->getObject('anyjob:delayed:' . $id);
 }
 
 ###############################################################################
