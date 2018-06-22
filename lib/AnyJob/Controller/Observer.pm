@@ -8,7 +8,7 @@ package AnyJob::Controller::Observer;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  03.04.2018
+# Last update:  22.06.2018
 #
 
 use strict;
@@ -18,7 +18,9 @@ use utf8;
 use JSON::XS;
 
 use AnyJob::Constants::Defaults qw(DEFAULT_CLEAN_LIMIT DEFAULT_CLEAN_TIMEOUT);
+use AnyJob::Constants::Events qw(EVENT_TYPE_JOB);
 use AnyJob::DateTime qw(formatDateTime);
+use AnyJob::Events qw(getEventType);
 use AnyJob::EventFilter;
 
 use base 'AnyJob::Controller::Base';
@@ -120,6 +122,7 @@ sub getEventQueues {
 #     node => '...',
 #     time => ...,
 #     id => ...,
+#     type => ...,
 #     jobs => [ {
 #         id => ...,
 #         type => '...',
@@ -204,7 +207,9 @@ sub preprocessEvent {
     }
 
     $event->{config} = $config;
-    if (exists($event->{type})) {
+
+    my $eventType = getEventType($event->{event});
+    if (defined($eventType) and $eventType eq EVENT_TYPE_JOB and exists($event->{type})) {
         $event->{job} = $self->config->getJobConfig($event->{type}) || {};
     }
 
