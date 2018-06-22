@@ -19,7 +19,7 @@ package AnyJob::Creator::Parser::Delay;
 #
 # Author:       LightStar
 # Created:      29.05.2018
-# Last update:  21.06.2018
+# Last update:  22.06.2018
 #
 
 use strict;
@@ -144,36 +144,83 @@ sub parse {
 
     my $action = $self->parseDelayAction();
     if ($action eq DELAY_ACTION_CREATE) {
-        if (defined(my $time = $self->parseDelayTime())) {
-            $self->{delay} = {
-                action => DELAY_ACTION_CREATE,
-                create => {},
-                time   => $time
-            };
-        }
-    } elsif ($action eq DELAY_ACTION_GET) {
-        my $id = $self->parseDelayId(1);
-        $self->{delay} = {
-            action => DELAY_ACTION_GET,
-            (defined($id) ? (id => $id) : ())
-        }
+        $self->processCreateAction();
     } elsif ($action eq DELAY_ACTION_UPDATE) {
-        if (defined(my $id = $self->parseDelayId()) and defined(my $time = $self->parseDelayTime())) {
-            $self->{delay} = {
-                action => DELAY_ACTION_UPDATE,
-                create => {},
-                id     => $id,
-                time   => $time
-            };
-        }
+        $self->processUpdateAction();
     } elsif ($action eq DELAY_ACTION_DELETE) {
-        if (defined(my $id = $self->parseDelayId())) {
-            $self->{delay} = {
-                action => DELAY_ACTION_DELETE,
-                id     => $id
-            };
-        }
+        $self->processDeleteAction();
+    } elsif ($action eq DELAY_ACTION_GET) {
+        $self->processGetAction();
     }
+
+    if (scalar(@{$self->{errors}}) == 0) {
+        $self->injectCreateData();
+    }
+}
+
+###############################################################################
+# Parse parameters of 'create delayed' action.
+#
+sub processCreateAction {
+    my $self = shift;
+
+    if (defined(my $time = $self->parseDelayTime())) {
+        $self->{delay} = {
+            action => DELAY_ACTION_CREATE,
+            create => {},
+            time   => $time
+        };
+    }
+}
+
+###############################################################################
+# Parse parameters of 'update delayed' action.
+#
+sub processUpdateAction {
+    my $self = shift;
+
+    if (defined(my $id = $self->parseDelayId()) and defined(my $time = $self->parseDelayTime())) {
+        $self->{delay} = {
+            action => DELAY_ACTION_UPDATE,
+            create => {},
+            id     => $id,
+            time   => $time
+        };
+    }
+}
+
+###############################################################################
+# Parse parameters of 'delete delayed' action.
+#
+sub processDeleteAction {
+    my $self = shift;
+
+    if (defined(my $id = $self->parseDelayId())) {
+        $self->{delay} = {
+            action => DELAY_ACTION_DELETE,
+            id     => $id
+        };
+    }
+}
+
+###############################################################################
+# Parse parameters of 'get delayed' action.
+#
+sub processGetAction {
+    my $self = shift;
+
+    my $id = $self->parseDelayId(1);
+    $self->{delay} = {
+        action => DELAY_ACTION_GET,
+        (defined($id) ? (id => $id) : ())
+    }
+}
+
+###############################################################################
+# Inject create data into hash with parsed delay data if needed to.
+#
+sub injectCreateData {
+    my $self = shift;
 
     if (defined($self->{delay}->{create})) {
         my @args;
@@ -186,23 +233,6 @@ sub parse {
         }
         $self->{delay}->{create}->{input} = join(' ', @args);
     }
-}
-
-###############################################################################
-# Check if current argument is delay action and return it. Otherwise implicit delay action is returned
-# (which is 'create').
-#
-# Returns:
-#     string name of delay action.
-#
-sub parseDelayAction {
-    my $self = shift;
-
-    if (exists(DELAY_EXPLICIT_ACTIONS()->{$self->{args}->[0]})) {
-        return shift(@{$self->{args}});
-    }
-
-    return DELAY_ACTION_CREATE;
 }
 
 ###############################################################################
@@ -225,6 +255,23 @@ sub parseDelayTime {
     }
 
     return $dateTime->{unixTime};
+}
+
+###############################################################################
+# Check if current argument is delay action and return it. Otherwise implicit delay action is returned
+# (which is 'create').
+#
+# Returns:
+#     string name of delay action.
+#
+sub parseDelayAction {
+    my $self = shift;
+
+    if (exists(DELAY_EXPLICIT_ACTIONS()->{$self->{args}->[0]})) {
+        return shift(@{$self->{args}});
+    }
+
+    return DELAY_ACTION_CREATE;
 }
 
 ###############################################################################
