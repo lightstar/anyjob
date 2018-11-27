@@ -5,7 +5,7 @@ package AnyJob::Events;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  01.12.2017
+# Last update:  27.11.2018
 #
 
 use strict;
@@ -64,6 +64,10 @@ my @EVENTS = (
     {
         event => EVENT_CLEAN_JOBSET,
         type  => EVENT_TYPE_JOBSET
+    },
+    {
+        event => EVENT_DELAYED_WORKS,
+        type  => EVENT_TYPE_DELAYED_WORK
     }
 );
 

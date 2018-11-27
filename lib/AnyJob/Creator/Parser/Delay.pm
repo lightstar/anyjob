@@ -15,11 +15,11 @@ package AnyJob::Creator::Parser::Delay;
 # (such as AnyJob::Creator::Parser::Job).
 #
 # Parameter 'time' here is string with date and time in any format supported by AnyJob::DateTime::parseDateTime method.
-# Parameter 'id' is integer id of already created delayed object.
+# Parameter 'id' is integer id of already created delayed work.
 #
 # Author:       LightStar
 # Created:      29.05.2018
-# Last update:  22.06.2018
+# Last update:  27.11.2018
 #
 
 use strict;
@@ -82,15 +82,15 @@ sub parent {
 #     {
 #         action => '...',
 #         id => ...,
-#         time => ...,
-#         create => { input => '...' }
+#         name => '',
+#         time => ...
 #     }
-#     Field 'action' here is one of strings identifying action which needs to be performed on delayed object: 'create',
+#     Field 'action' here is one of strings identifying action which needs to be performed on delayed work: 'create',
 #     'update', 'delete' or 'get'.
 #     Field 'id' here is present only for 'update' and 'delete' actions, and could optionally exist for 'get' action.
-#     It is integer id of delayed object.
+#     It is integer id of delayed work.
 #     Field 'time' here is present only for 'create' and 'update' actions. It is integer time in unix timestamp format.
-#     Field 'create' here is present only for 'create' and 'update' actions. Its inner 'input' field contains all
+#     Field 'name' here is present only for 'create' and 'update' actions. Its inner 'input' field contains all
 #     remained parameters, escaped and joined using space character.
 #
 sub delay {
@@ -154,12 +154,12 @@ sub parse {
     }
 
     if (scalar(@{$self->{errors}}) == 0) {
-        $self->injectCreateData();
+        $self->generateName();
     }
 }
 
 ###############################################################################
-# Parse parameters of 'create delayed' action.
+# Parse parameters of 'create delayed work' action.
 #
 sub processCreateAction {
     my $self = shift;
@@ -167,14 +167,13 @@ sub processCreateAction {
     if (defined(my $time = $self->parseDelayTime())) {
         $self->{delay} = {
             action => DELAY_ACTION_CREATE,
-            create => {},
             time   => $time
         };
     }
 }
 
 ###############################################################################
-# Parse parameters of 'update delayed' action.
+# Parse parameters of 'update delayed work' action.
 #
 sub processUpdateAction {
     my $self = shift;
@@ -182,7 +181,6 @@ sub processUpdateAction {
     if (defined(my $id = $self->parseDelayId()) and defined(my $time = $self->parseDelayTime())) {
         $self->{delay} = {
             action => DELAY_ACTION_UPDATE,
-            create => {},
             id     => $id,
             time   => $time
         };
@@ -190,7 +188,7 @@ sub processUpdateAction {
 }
 
 ###############################################################################
-# Parse parameters of 'delete delayed' action.
+# Parse parameters of 'delete delayed work' action.
 #
 sub processDeleteAction {
     my $self = shift;
@@ -204,7 +202,7 @@ sub processDeleteAction {
 }
 
 ###############################################################################
-# Parse parameters of 'get delayed' action.
+# Parse parameters of 'get delayed works' action.
 #
 sub processGetAction {
     my $self = shift;
@@ -217,12 +215,12 @@ sub processGetAction {
 }
 
 ###############################################################################
-# Inject create data into hash with parsed delay data if needed to.
+# Generate delayed work name if needed to.
 #
-sub injectCreateData {
+sub generateName {
     my $self = shift;
 
-    if (defined($self->{delay}->{create})) {
+    if (exists(DELAY_ACTIONS_WITH_NAME()->{$self->{delay}->{action}})) {
         my @args;
         foreach my $arg (@{$self->{args}}) {
             if ($arg =~ /[\s\'\"]/) {
@@ -231,7 +229,7 @@ sub injectCreateData {
             }
             push @args, $arg;
         }
-        $self->{delay}->{create}->{input} = join(' ', @args);
+        $self->{delay}->{name} = join(' ', @args);
     }
 }
 
@@ -275,10 +273,10 @@ sub parseDelayAction {
 }
 
 ###############################################################################
-# Check if current argument is id of delayed object and return it. Otherwise error is reported.
+# Check if current argument is id of delayed work and return it. Otherwise error is reported.
 #
 # Returns:
-#     integer id of delayed object or undef in case of error.
+#     integer id of delayed work or undef in case of error.
 #
 sub parseDelayId {
     my $self = shift;

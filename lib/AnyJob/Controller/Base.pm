@@ -6,7 +6,7 @@ package AnyJob::Controller::Base;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  20.06.2018
+# Last update:  27.11.2018
 #
 
 use strict;
@@ -135,17 +135,17 @@ sub getJobSet {
 }
 
 ###############################################################################
-# Retrieve delayed object by id.
+# Retrieve delayed work by id.
 #
 # Arguments:
-#     id - integer delayed id.
+#     id - integer delayed work id.
 # Returns:
-#     hash with delayed data.
+#     hash with delayed work data.
 #
-sub getDelayed {
+sub getDelayedWork {
     my $self = shift;
     my $id = shift;
-    return $self->{parent}->getDelayed($id);
+    return $self->{parent}->getDelayedWork($id);
 }
 
 ###############################################################################

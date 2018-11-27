@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  28.02.2018
+# Last update:  26.11.2018
 #
 
 use strict;
@@ -17,7 +17,9 @@ use AnyEvent::HTTP;
 use Template;
 use Scalar::Util qw(weaken);
 
+use AnyJob::Constants::Events qw(EVENT_TYPE_JOB);
 use AnyJob::Utils qw(getModuleName requireModule);
+use AnyJob::Events qw(getEventType);
 
 use base 'AnyJob::Creator::Addon::Base';
 
@@ -248,7 +250,8 @@ sub getEventPayload {
     my $self = shift;
     my $event = shift;
 
-    if (exists($event->{type})) {
+    my $eventType = getEventType($event->{event});
+    if (defined($eventType) and $eventType eq EVENT_TYPE_JOB and exists($event->{type})) {
         $event->{job} = $self->config->getJobConfig($event->{type});
     }
 

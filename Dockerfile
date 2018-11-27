@@ -4,10 +4,10 @@
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  20.04.2018
+# Last update:  27.11.2018
 #
 
-FROM perl:5.26
+FROM perl:5.28
 
 RUN cpanm JSON::XS
 RUN cpanm Redis
@@ -31,4 +31,4 @@ COPY . /opt/anyjob/
 ENV ANYJOB_LIB /opt/anyjob/lib
 ENV ANYJOB_CONF /opt/anyjob/etc/example/anyjob.cfg
 
-ENTRYPOINT ["perl5.26.0"]
+ENTRYPOINT ["perl5.28.0"]

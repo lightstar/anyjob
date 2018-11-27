@@ -5,7 +5,7 @@ package AnyJob::Constants::Events;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  01.12.2017
+# Last update:  27.11.2018
 #
 
 use strict;
@@ -60,6 +60,11 @@ use constant EVENT_PROGRESS_JOBSET => 'progressJobSet';
 use constant EVENT_CLEAN_JOBSET => 'cleanJobSet';
 
 ###############################################################################
+# Event sent when information about delayed works is requested.
+#
+use constant EVENT_DELAYED_WORKS => 'delayedWorks';
+
+###############################################################################
 # Event type for events related to job.
 #
 use constant EVENT_TYPE_JOB => 'job';
@@ -68,6 +73,11 @@ use constant EVENT_TYPE_JOB => 'job';
 # Event type for events related to jobset.
 #
 use constant EVENT_TYPE_JOBSET => 'jobset';
+
+###############################################################################
+# Event type for events related to delayed works.
+#
+use constant EVENT_TYPE_DELAYED_WORK => 'delayedWork';
 
 our @EXPORT = qw(
     EVENT_CREATE
@@ -79,8 +89,10 @@ our @EXPORT = qw(
     EVENT_FINISH_JOBSET
     EVENT_PROGRESS_JOBSET
     EVENT_CLEAN_JOBSET
+    EVENT_DELAYED_WORKS
     EVENT_TYPE_JOB
     EVENT_TYPE_JOBSET
-    );
+    EVENT_TYPE_DELAYED_WORK
+);
 
 1;

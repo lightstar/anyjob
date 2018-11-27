@@ -229,10 +229,65 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
         },
 }
 
+10. 'Delayed works' event. It is sent by explicit request and contains information about delayed works (all or only
+specific one).
+{
+    "event": "delayedWorks",
+    "works": [
+        {
+            "id": <integer delayed work id>,
+            "name": "<string delayed work name>",
+            "time": <integer time in unix timestamp format indicating when this delayed work will be processed>,
+            "jobs": [
+                {
+                    "node": "<string node name>",
+                    "type": "<string job type>",
+                    "params": {
+                        "<string parameter name>": "<string parameter value>",
+                        ...
+                    },
+                    "props": {
+                        "<string property name>": "<string property value>",
+                        ...
+                    },
+                },
+                {
+                    "jobset": 1,
+                    "type": "<string jobset type (optional, exists only if jobset has type)>",
+                    "props": {
+                        "<string property name>": "<string property value>",
+                        ...
+                    },
+                    "jobs": [
+                        {
+                            "node": "<string node name>",
+                            "type": "<string job type>",
+                            "params": {
+                                "<string parameter name>": "<string parameter value>",
+                                ...
+                            },
+                            "props": {
+                                "<string property name>": "<string property value>",
+                                ...
+                            }
+                        },
+                        ...
+                    ]
+                },
+                ...
+            ]
+        },
+        ...
+    ],
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    }
+}
+
 Note that in global observers variables 'config' and 'job' are injected too. They refer to data with observer and
-job configuration respectively. In private observers there is only 'job' variable. In angularjs template
-none of it is available but you can use global 'config' object which is injected into root angularjs scope on
-application start.
+job configuration respectively. In private observers and in angularjs template there is only 'job' variable.
+In angularjs template you can also use global 'config' object which is injected into root scope on application start.
 
 Also note that some observers ('mail' one for example) do some preprocessing, for example convert unix timestamps
 into strings with formatted datetime, and do log collecting so all logs are injected into 'finish' event data such as:

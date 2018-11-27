@@ -8,8 +8,8 @@
         <span data-ng-switch-when="cleanJobSet">Job Set cleaned.</span>
     </span>
 
-    <span data-ng-if="event.type && event.node">
-        {{config.jobsByType[event.type].label || event.type}}
+    <span data-ng-if="event.job && event.node">
+        {{event.job.label || event.type}}
         ({{event.node}}<span data-ng-if="event.redirect"> -> {{event.redirect}}</span>).
     </span>
 

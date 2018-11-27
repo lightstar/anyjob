@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  13.12.2017
+ * Last update:  27.11.2018
  */
 
 app.directive('observer', function ($timeout) {
@@ -56,7 +56,7 @@ app.directive('observer', function ($timeout) {
             };
 
             /**
-             * Preprocess received event data. Inject '$index' and 'class' properties into it.
+             * Preprocess received event data. Inject '$index', 'job' and 'class' properties into it.
              *
              * @param {object} event - received event data.
              */
@@ -65,23 +65,36 @@ app.directive('observer', function ($timeout) {
 
                 switch(event.event) {
                     case EVENT_CREATE:
+                        event.job = $scope.config.jobsByType[event.type];
+                        event.class = 'text-primary';
+                        break;
                     case EVENT_CREATE_JOBSET:
                         event.class = 'text-primary';
                         break;
                     case EVENT_PROGRESS:
                     case EVENT_REDIRECT:
+                        event.job = $scope.config.jobsByType[event.type];
+                        event.class = 'text-info';
+                        break;
                     case EVENT_PROGRESS_JOBSET:
                         event.class = 'text-info';
                         break;
                     case EVENT_FINISH:
+                        event.job = $scope.config.jobsByType[event.type];
                         event.class = event.success ? 'text-success' : 'text-danger';
                         break;
                     case EVENT_FINISH_JOBSET:
                         event.class = 'text-success';
                         break;
                     case EVENT_CLEAN:
+                        event.job = $scope.config.jobsByType[event.type];
+                        event.class = 'text-danger';
+                        break;
                     case EVENT_CLEAN_JOBSET:
                         event.class = 'text-danger';
+                        break;
+                    case EVENT_DELAYED_WORKS:
+                        event.class = 'text-info';
                         break;
                     default:
                         event.class = '';

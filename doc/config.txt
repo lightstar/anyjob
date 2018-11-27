@@ -110,6 +110,8 @@ nodes_path            - path to nodes configuration relative to main configurati
                         Default: 'nodes'.
 jobs_path             - path to jobs configuration relative to main configuration file base path.
                         Default: 'jobs'.
+jobsets_path          - path to jobsets configuration relative to main configuration file base path.
+                        Default: 'jobsets'.
 observers_path        - path to observers configuration relative to main configuration file base path.
                         Default: 'observers'.
 creators_path         - path to creators configuration relative to main configuration file base path.

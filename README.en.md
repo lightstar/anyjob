@@ -87,6 +87,11 @@ to manage shared long-term resources such as database connections and so on.
 only limited number of times. So using semaphores one could define that some job or jobset in any specific
 moment in time can be executed only by limited number of workers.
 
+**Work** is entity containing arbitrary collection of jobs and jobsets.
+
+**Delayed work** is entity containing collection of arbitrary jobs and jobsets with information about
+time when to execute them.
+
 ### Before using
 
 To use AnyJob you need:
