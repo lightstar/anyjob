@@ -5,7 +5,7 @@ package AnyJob::Constants::Events;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  27.11.2018
+# Last update:  06.12.2018
 #
 
 use strict;
@@ -60,9 +60,29 @@ use constant EVENT_PROGRESS_JOBSET => 'progressJobSet';
 use constant EVENT_CLEAN_JOBSET => 'cleanJobSet';
 
 ###############################################################################
+# Event sent when delayed work is created.
+#
+use constant EVENT_CREATE_DELAYED_WORK => 'createDelayedWork';
+
+###############################################################################
+# Event sent when delayed work is updated.
+#
+use constant EVENT_UPDATE_DELAYED_WORK => 'updateDelayedWork';
+
+###############################################################################
+# Event sent when delayed work is deleted.
+#
+use constant EVENT_DELETE_DELAYED_WORK => 'deleteDelayedWork';
+
+###############################################################################
+# Event sent when delayed work is processed.
+#
+use constant EVENT_PROCESS_DELAYED_WORK => 'processDelayedWork';
+
+###############################################################################
 # Event sent when information about delayed works is requested.
 #
-use constant EVENT_DELAYED_WORKS => 'delayedWorks';
+use constant EVENT_GET_DELAYED_WORKS => 'getDelayedWorks';
 
 ###############################################################################
 # Event type for events related to job.
@@ -89,7 +109,11 @@ our @EXPORT = qw(
     EVENT_FINISH_JOBSET
     EVENT_PROGRESS_JOBSET
     EVENT_CLEAN_JOBSET
-    EVENT_DELAYED_WORKS
+    EVENT_CREATE_DELAYED_WORK
+    EVENT_UPDATE_DELAYED_WORK
+    EVENT_DELETE_DELAYED_WORK
+    EVENT_PROCESS_DELAYED_WORK
+    EVENT_GET_DELAYED_WORKS
     EVENT_TYPE_JOB
     EVENT_TYPE_JOBSET
     EVENT_TYPE_DELAYED_WORK

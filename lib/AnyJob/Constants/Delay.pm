@@ -5,7 +5,7 @@ package AnyJob::Constants::Delay;
 #
 # Author:       LightStar
 # Created:      29.05.2018
-# Last update:  27.11.2018
+# Last update:  06.12.2018
 #
 
 use strict;
@@ -57,6 +57,11 @@ use constant DELAY_ACTIONS_WITH_NAME => { map {$_ => 1} (DELAY_ACTION_CREATE, DE
 #
 use constant DELAY_GET_TIMEOUT => 10;
 
+###############################################################################
+# Default delayed work author name.
+#
+use constant DELAY_AUTHOR_UNKNOWN => 'unknown';
+
 our @EXPORT = qw(
     DELAY_ACTION_CREATE
     DELAY_ACTION_UPDATE
@@ -66,6 +71,7 @@ our @EXPORT = qw(
     DELAY_JOB_ACTIONS
     DELAY_ACTIONS_WITH_NAME
     DELAY_GET_TIMEOUT
+    DELAY_AUTHOR_UNKNOWN
 );
 
 1;

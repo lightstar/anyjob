@@ -66,7 +66,23 @@ my @EVENTS = (
         type  => EVENT_TYPE_JOBSET
     },
     {
-        event => EVENT_DELAYED_WORKS,
+        event => EVENT_CREATE_DELAYED_WORK,
+        type  => EVENT_TYPE_DELAYED_WORK
+    },
+    {
+        event => EVENT_UPDATE_DELAYED_WORK,
+        type  => EVENT_TYPE_DELAYED_WORK
+    },
+    {
+        event => EVENT_DELETE_DELAYED_WORK,
+        type  => EVENT_TYPE_DELAYED_WORK
+    },
+    {
+        event => EVENT_PROCESS_DELAYED_WORK,
+        type  => EVENT_TYPE_DELAYED_WORK
+    },
+    {
+        event => EVENT_GET_DELAYED_WORKS,
         type  => EVENT_TYPE_DELAYED_WORK
     }
 );

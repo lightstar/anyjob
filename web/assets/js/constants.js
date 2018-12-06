@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      29.11.2017
- * Last update:  27.11.2018
+ * Last update:  06.12.2018
  */
 
 /**
@@ -18,7 +18,11 @@ var EVENT_CREATE_JOBSET = 'createJobSet';
 var EVENT_FINISH_JOBSET = 'finishJobSet';
 var EVENT_PROGRESS_JOBSET = 'progressJobSet';
 var EVENT_CLEAN_JOBSET = 'cleanJobSet';
-var EVENT_DELAYED_WORKS = 'delayedWorks';
+var EVENT_CREATE_DELAYED_WORK = 'createDelayedWork';
+var EVENT_UPDATE_DELAYED_WORK = 'updateDelayedWork';
+var EVENT_DELETE_DELAYED_WORK = 'deleteDelayedWork';
+var EVENT_PROCESS_DELAYED_WORK = 'processDelayedWork';
+var EVENT_GET_DELAYED_WORKS = 'getDelayedWorks';
 
 /**
  * Minimal delay in milliseconds between appearings of new events in observer.

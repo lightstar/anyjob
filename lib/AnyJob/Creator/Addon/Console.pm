@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Console;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  27.11.2018
+# Last update:  06.12.2018
 #
 
 use strict;
@@ -15,7 +15,7 @@ use utf8;
 use JSON::XS;
 
 use AnyJob::Constants::Delay;
-use AnyJob::Constants::Events qw(EVENT_DELAYED_WORKS);
+use AnyJob::Constants::Events qw(EVENT_GET_DELAYED_WORKS);
 use AnyJob::DateTime qw(formatDateTime);
 
 use base 'AnyJob::Creator::Addon::Base';
@@ -86,7 +86,7 @@ sub createJob {
 
     $self->debug('Create job using console creator: ' . encode_json($job));
 
-    my $error = $self->parent->createJobs([ $job ]);
+    my $error = $self->parent->createJobs([ $job ], { author => 'console' });
     if (defined($error)) {
         $self->debug('Creating failed: ' . $error);
         return 'Error: ' . $error;
@@ -112,7 +112,7 @@ sub delayJob {
     $self->debug('Delay job using console creator: ' . encode_json($job) .
         ', delay data: ' . encode_json($delay));
 
-    my $error = $self->parent->delayJobs($delay, [ $job ]);
+    my $error = $self->parent->delayJobs($delay, [ $job ], { author => 'console' });
     if (defined($error)) {
         $self->debug('Delaying failed: ' . $error);
         return 'Error: ' . $error;
@@ -170,16 +170,22 @@ sub getDelayedWorks {
         return 'Error: response is not valid json: ' . $response;
     }
 
-    if ($event->{event} ne EVENT_DELAYED_WORKS) {
+    if ($event->{event} ne EVENT_GET_DELAYED_WORKS) {
         return 'Error: response event does not have valid type: ' . $response;
     }
 
     if (scalar(@{$event->{works}} == 0)) {
         return 'No delayed works';
-    } else {
-        return join("\n", map {$_->{id} . '. ' . $_->{name} .
-            ' (' . formatDateTime($_->{time}) . ')'} @{$event->{works}});
     }
+
+    my @workLines;
+    foreach my $work (@{$event->{works}}) {
+        my $line = $work->{id} . '. ' . $work->{name} . ' (' . formatDateTime($work->{time}) . ')' .
+            ' - created by \'' . $work->{props}->{author} . '\' at ' . formatDateTime($work->{props}->{time});
+        push @workLines, $line
+    }
+
+    return join("\n", @workLines);
 }
 
 1;

@@ -9,7 +9,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  27.11.2018
+# Last update:  06.12.2018
 #
 
 use strict;
@@ -407,9 +407,9 @@ sub delayJobs {
     }
 
     if (defined($delay->{id})) {
-        $self->updateDelayedWork($delay->{id}, $delay->{name}, $delay->{time}, \@delayedJobs);
+        $self->updateDelayedWork($delay->{id}, $delay->{name}, $delay->{time}, \@delayedJobs, $props);
     } else {
-        $self->createDelayedWork($delay->{name}, $delay->{time}, \@delayedJobs);
+        $self->createDelayedWork($delay->{name}, $delay->{time}, \@delayedJobs, $props);
     }
 
     return undef;
@@ -544,19 +544,22 @@ sub createJobSet {
 # Almost nothing is checked here so better use higher level method 'delayJobs' instead.
 #
 # Arguments:
-#     name - string delayed work name.
-#     time - integer delay time in unix timestamp format.
-#     jobs - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
-#            individual job.
+#     name  - string delayed work name.
+#     time  - integer delay time in unix timestamp format.
+#     jobs  - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
+#             individual job.
+#     props - optional hash with delayed work properties.
 #
 sub createDelayedWork {
     my $self = shift;
     my $name = shift;
     my $time = shift;
     my $jobs = shift;
+    my $props = shift;
 
     unless (defined($name) and $name ne '' and defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
-        defined($time) and $time =~ /^\d+$/o and $time > 0
+        defined($time) and $time =~ /^\d+$/o and $time > 0 and
+        (not defined($props) or ref($props) eq 'HASH')
     ) {
         $self->error('Called createDelayedWork with wrong parameters');
         return;
@@ -566,7 +569,8 @@ sub createDelayedWork {
         action => 'create',
         name   => $name,
         time   => $time,
-        jobs   => $jobs
+        jobs   => $jobs,
+        props  => $props
     }));
 }
 
@@ -580,6 +584,7 @@ sub createDelayedWork {
 #     time - integer delay time in unix timestamp format.
 #     jobs - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
 #            individual job.
+#     props - optional hash with delayed work properties.
 #
 sub updateDelayedWork {
     my $self = shift;
@@ -587,10 +592,12 @@ sub updateDelayedWork {
     my $name = shift;
     my $time = shift;
     my $jobs = shift;
+    my $props = shift;
 
     unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and defined($name) and $name ne '' and
         defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
-        defined($time) and $time =~ /^\d+$/o and $time > 0
+        defined($time) and $time =~ /^\d+$/o and $time > 0 and
+        (not defined($props) or ref($props) eq 'HASH')
     ) {
         $self->error('Called updateDelayedWork with wrong parameters');
         return;
@@ -601,7 +608,8 @@ sub updateDelayedWork {
         id     => $id,
         name   => $name,
         time   => $time,
-        jobs   => $jobs
+        jobs   => $jobs,
+        props  => $props
     }));
 }
 

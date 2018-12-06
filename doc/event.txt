@@ -229,10 +229,115 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
         },
 }
 
-10. 'Delayed works' event. It is sent by explicit request and contains information about delayed works (all or only
+10. 'Create delayed work' event. It indicates that some delayed work was just created.
+{
+    "event": "createDelayedWork",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer delayed work id>,
+    "name": "<string delayed work name>",
+    "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
+    "workJobs": [
+        {
+            "node": "<string node name>",
+            "type": "<string job type>",
+            "params": {
+                "<string parameter name>": "<string parameter value>",
+                ...
+            },
+            "props": {
+                "<string property name>": "<string property value>",
+                ...
+            },
+        },
+        {
+            "jobset": 1,
+            "type": "<string jobset type (optional, exists only if jobset has type)>",
+            "props": {
+                "<string property name>": "<string property value>",
+                ...
+            },
+            "jobs": [
+                {
+                    "node": "<string node name>",
+                    "type": "<string job type>",
+                    "params": {
+                        "<string parameter name>": "<string parameter value>",
+                        ...
+                    },
+                    "props": {
+                        "<string property name>": "<string property value>",
+                        ...
+                    }
+                },
+                ...
+            ]
+        },
+        ...
+    ],
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    }
+}
+
+11. 'Update delayed work' event. It indicates that some delayed work was just updated.
+{
+    "event": "updateDelayedWork",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer delayed work id>,
+    "name": "<string delayed work name>",
+    "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
+    "workJobs": [
+        ...
+    ],
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    }
+}
+
+12. 'Delete delayed work' event. It indicates that some delayed work was just deleted.
+{
+    "event": "deleteDelayedWork",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer delayed work id>,
+    "name": "<string delayed work name>",
+    "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
+    "workJobs": [
+        ...
+    ],
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    }
+}
+
+13. 'Process delayed work' event. It indicates that some delayed work was just processed.
+{
+    "event": "processDelayedWork",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer delayed work id>,
+    "name": "<string delayed work name>",
+    "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
+    "workJobs": [
+        ...
+    ],
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    }
+}
+
+14. 'Get delayed works' event. It is sent by explicit request and contains information about delayed works (all or only
 specific one).
 {
-    "event": "delayedWorks",
+    "event": "getDelayedWorks",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
     "works": [
         {
             "id": <integer delayed work id>,

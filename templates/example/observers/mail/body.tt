@@ -14,6 +14,11 @@
     [% ELSIF event == 'progressJobSet' %]Job Set is running
     [% ELSIF event == 'finishJobSet' %]Job Set finished
     [% ELSIF event == 'cleanJobSet' %]Job Set cleaned
+    [% ELSIF event == 'createDelayedWork' %]Delayed work created
+    [% ELSIF event == 'updateDelayedWork' %]Delayed work updated
+    [% ELSIF event == 'deleteDelayedWork' %]Delayed work deleted
+    [% ELSIF event == 'processDelayedWork' %]Delayed work processed
+    [% ELSIF event == 'getDelayedWorks' %]Delayed works requested
     [% END %]
 </h3>
 
@@ -32,6 +37,14 @@
 
     [% IF time %]
         Event time: <b>[% time %]</b><br>
+    [% END %]
+
+    [% IF name %]
+        Name: <b>[% name %]</b><br>
+    [% END %]
+
+    [% IF delayTime %]
+        Delay time: <b>[% delayTime %]</b><br>
     [% END %]
 
     <br>
@@ -59,6 +72,34 @@
                 [% END %]
             [% END %]
             <br>
+        [% END %]
+    [% END %]
+
+    [% IF workJobs && workJobs.size %]
+        [% FOREACH workJob IN workJobs %]
+            [% IF workJob.jobs && workJob.jobs.size %]
+                [% FOREACH job IN workJob.jobs %]
+                    Job: <b>[% job.type %]</b><br>
+                    Node: <b>[% job.node %]</b><br>
+                    [% IF job.params && job.params.size %]
+                        Parameters:<br>
+                        [% FOREACH param IN job.params.pairs %]
+                            &nbsp;&nbsp;<b>[% param.key %]</b>: [% param.value %]<br>
+                        [% END %]
+                    [% END %]
+                    <br>
+                [% END %]
+            [% ELSE %]
+                Job: <b>[% workJob.type %]</b><br>
+                Node: <b>[% workJob.node %]</b><br>
+                [% IF workJob.params && workJob.params.size %]
+                    Parameters:<br>
+                    [% FOREACH param IN workJob.params.pairs %]
+                        &nbsp;&nbsp;<b>[% param.key %]</b>: [% param.value %]<br>
+                    [% END %]
+                [% END %]
+                <br>
+            [% END %]
         [% END %]
     [% END %]
 

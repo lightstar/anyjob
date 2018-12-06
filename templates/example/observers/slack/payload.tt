@@ -10,6 +10,11 @@
             [% ELSIF event == 'progressJobSet' %]Job Set is running
             [% ELSIF event == 'finishJobSet' %]Job Set finished
             [% ELSIF event == 'cleanJobSet' %]Job Set cleaned
+            [% ELSIF event == 'createDelayedWork' %]Delayed work created
+            [% ELSIF event == 'updateDelayedWork' %]Delayed work updated
+            [% ELSIF event == 'deleteDelayedWork' %]Delayed work deleted
+            [% ELSIF event == 'processDelayedWork' %]Delayed work processed
+            [% ELSIF event == 'getDelayedWorks' %]Delayed works requested
             [% END %]",
         [% IF (event == 'finish' && success) || event == 'finishJobSet' %]
             "color": "good",
@@ -20,6 +25,22 @@
             "author_name": "[% props.author %][% IF props.creator && props.creator != 'slack' %] ([% props.creator %])[% END %]",
         [% END %]
         "fields": [
+            [% IF name %]
+                {
+                    "title": "Name",
+                    "value": "[% name %]",
+                    "short": true
+                },
+            [% END %]
+
+            [% IF delayTime %]
+                {
+                    "title": "Delay time",
+                    "value": "[% delayTime %]",
+                    "short": true
+                },
+            [% END %]
+
             [% IF job && node %]
                 {
                     "title": "[% job.label || type %] ([% node %][% redirect ? ' -> ' _ redirect : '' %])",
@@ -45,6 +66,36 @@
                             [% END %]",
                         "short": true
                     },
+                [% END %]
+            [% END %]
+
+            [% IF workJobs && workJobs.size %]
+                [% FOREACH workJob IN workJobs %]
+                    [% IF workJob.jobs && workJob.jobs.size %]
+                        [% FOREACH job IN workJob.jobs %]
+                            {
+                                "title": "[% job.type %] ([% job.node %])",
+                                "value": "
+                                    [% IF job.params && job.params.size %]
+                                        [% FOREACH param IN job.params.pairs %]
+                                            [% '\n- ' %][% param.key %]: [% param.value | replace( '"', '\"' ) %]
+                                        [% END %]
+                                    [% END %]",
+                                "short": true
+                            },
+                        [% END %]
+                    [% ELSE %]
+                        {
+                            "title": "[% workJob.type %] ([% workJob.node %])",
+                            "value": "
+                                [% IF workJob.params && workJob.params.size %]
+                                    [% FOREACH param IN workJob.params.pairs %]
+                                        [% '\n- ' %][% param.key %]: [% param.value | replace( '"', '\"' ) %]
+                                    [% END %]
+                                [% END %]",
+                            "short": true
+                        },
+                    [% END %]
                 [% END %]
             [% END %]
 

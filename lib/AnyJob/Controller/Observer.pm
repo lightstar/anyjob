@@ -8,7 +8,7 @@ package AnyJob::Controller::Observer;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  22.06.2018
+# Last update:  06.12.2018
 #
 
 use strict;
@@ -215,6 +215,10 @@ sub preprocessEvent {
 
     if ($event->{time}) {
         $event->{time} = formatDateTime($event->{time});
+    }
+
+    if ($event->{delayTime}) {
+        $event->{delayTime} = formatDateTime($event->{delayTime});
     }
 
     return 1;

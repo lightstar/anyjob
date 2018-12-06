@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  27.11.2018
+# Last update:  06.12.2018
 #
 
 use strict;
@@ -15,7 +15,8 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Constants::Events qw(EVENT_DELAYED_WORKS);
+use AnyJob::Constants::Events;
+use AnyJob::Constants::Delay;
 use AnyJob::DateTime qw(formatDateTime);
 
 use base 'AnyJob::Controller::Base';
@@ -65,6 +66,7 @@ sub getProcessDelay {
 # 1. 'Create delayed work' event. Field 'name' here is arbitrary string name needed to identify this delayed work.
 # Field 'time' is integer time in unix timestamp format identifying when to run provided jobs.
 # Field 'jobs' is array of hashes where each element is either jobset with inner jobs or just one individual job.
+# Field 'props' is optional hash with arbitrary properties binded to work.
 # {
 #     action => 'create',
 #     name => '...',
@@ -81,7 +83,8 @@ sub getProcessDelay {
 #             props => {...}
 #         },
 #         ...
-#     ]
+#     ],
+#     props => { prop1 => '...', prop2 => '...', ... }
 # }
 # 2. 'Update delayed work' event. Field 'id' here is id of updated delayed work. All other fields are identical to
 # 'create delayed work' event.
@@ -102,7 +105,8 @@ sub getProcessDelay {
 #             props => {...}
 #         },
 #         ...
-#     ]
+#     ],
+#     props => { prop1 => '...', prop2 => '...', ... }
 # }
 # 3. 'Delete delayed work' event. Field 'id' here is id of deleted delayed work.
 # {
@@ -152,7 +156,8 @@ sub processCreateAction {
 
     unless (defined($event->{name}) and $event->{name} ne '' and
         defined($event->{time}) and $event->{time} =~ /^\d+$/o and $event->{time} > 0 and
-        defined($event->{jobs}) and ref($event->{jobs}) eq 'ARRAY' and scalar(@{$event->{jobs}}) > 0
+        defined($event->{jobs}) and ref($event->{jobs}) eq 'ARRAY' and scalar(@{$event->{jobs}}) > 0 and
+        (not defined($event->{props}) or ref($event->{props}) eq 'HASH')
     ) {
         $self->error('Wrong create delayed work event: ' . encode_json($event));
         return;
@@ -160,17 +165,30 @@ sub processCreateAction {
 
     my $id = $self->getNextDelayedWorkId();
     my $delayedWork = {
-        name => $event->{name},
-        time => $event->{time},
-        jobs => $event->{jobs}
+        name  => $event->{name},
+        time  => $event->{time},
+        jobs  => $event->{jobs},
+        props => $event->{props} || {}
     };
 
-    $self->debug('Create delayed work \'' . $id . '\' with name \'' . $event->{name} . '\' and time \'' .
-        formatDateTime($event->{time}) . '\': ' . encode_json($event->{jobs}));
+    $delayedWork->{props}->{author} ||= DELAY_AUTHOR_UNKNOWN;
+    $delayedWork->{props}->{time} = time();
+
+    $self->debug('Create delayed work \'' . $id . '\' with name \'' . $delayedWork->{name} . '\', time \'' .
+        formatDateTime($delayedWork->{time}) . '\', jobs ' . encode_json($delayedWork->{jobs}) . ' and props ' .
+        encode_json($delayedWork->{props}));
 
     my $time = $self->getNextTime($delayedWork);
     $self->redis->set('anyjob:delayed:' . $id, encode_json($delayedWork));
     $self->redis->zadd('anyjob:delayed', $time, $id);
+
+    $self->sendEvent(EVENT_CREATE_DELAYED_WORK, {
+        id        => $id,
+        name      => $delayedWork->{name},
+        delayTime => $delayedWork->{time},
+        workJobs  => $delayedWork->{jobs},
+        props     => $delayedWork->{props}
+    });
 
     if (not defined($self->{nextDelayedWork}) or $self->{nextDelayedWork}->{time} > $time) {
         $self->updateNextDelayedWork($id, $time);
@@ -190,7 +208,8 @@ sub processUpdateAction {
 
     unless (defined($event->{id}) and defined($event->{name}) and $event->{name} ne '' and
         defined($event->{time}) and $event->{time} =~ /^\d+$/o and $event->{time} > 0 and
-        defined($event->{jobs}) and ref($event->{jobs}) eq 'ARRAY' and scalar(@{$event->{jobs}}) > 0
+        defined($event->{jobs}) and ref($event->{jobs}) eq 'ARRAY' and scalar(@{$event->{jobs}}) > 0 and
+        (not defined($event->{props}) or ref($event->{props}) eq 'HASH')
     ) {
         $self->error('Wrong update delayed work event: ' . encode_json($event));
         return;
@@ -203,17 +222,31 @@ sub processUpdateAction {
     }
 
     my $delayedWork = {
-        name => $event->{name},
-        time => $event->{time},
-        jobs => $event->{jobs}
+        name  => $event->{name},
+        time  => $event->{time},
+        jobs  => $event->{jobs},
+        props => $event->{props} || {}
     };
 
-    $self->debug('Update delayed work \'' . $id . '\' with name \'' . $event->{name} . '\' and time \'' .
-        formatDateTime($event->{time}) . '\': ' . encode_json($event->{jobs}));
+    $delayedWork->{props}->{author} ||= DELAY_AUTHOR_UNKNOWN;
+    $delayedWork->{props}->{time} = time();
+
+    $self->debug('Update delayed work \'' . $id . '\' with name \'' . $delayedWork->{name} . '\', time \'' .
+        formatDateTime($delayedWork->{time}) . '\', jobs ' . encode_json($delayedWork->{jobs}) . ' and props ' .
+        encode_json($delayedWork->{props})
+    );
 
     my $time = $self->getNextTime($delayedWork);
     $self->redis->set('anyjob:delayed:' . $id, encode_json($delayedWork));
     $self->redis->zadd('anyjob:delayed', $time, $id);
+
+    $self->sendEvent(EVENT_UPDATE_DELAYED_WORK, {
+        id        => $id,
+        name      => $delayedWork->{name},
+        delayTime => $delayedWork->{time},
+        workJobs  => $delayedWork->{jobs},
+        props     => $delayedWork->{props}
+    });
 
     my $nextDelayedWork = $self->{nextDelayedWork};
     if (defined($nextDelayedWork) and $nextDelayedWork->{id} == $id and $nextDelayedWork->{time} < $time) {
@@ -240,13 +273,22 @@ sub processDeleteAction {
     }
 
     my $id = $event->{id};
-    unless (defined($self->getDelayedWork($id))) {
+    my $delayedWork = $self->getDelayedWork($id);
+    unless (defined($delayedWork)) {
         $self->error('No delayed work with id \'' . $id . '\' to delete');
         return;
     }
 
     $self->debug('Delete delayed work \'' . $id . '\'');
     $self->cleanDelayedWork($id);
+
+    $self->sendEvent(EVENT_DELETE_DELAYED_WORK, {
+        id        => $id,
+        name      => $delayedWork->{name},
+        delayTime => $delayedWork->{time},
+        workJobs  => $delayedWork->{jobs},
+        props     => $delayedWork->{props}
+    });
 }
 
 ###############################################################################
@@ -288,7 +330,7 @@ sub processGetAction {
 
     @delayedWorksArray = sort {$a->{id} <=> $b->{id}} @delayedWorksArray;
     $self->redis->rpush('anyjob:observerq:private:' . $event->{observer}, encode_json({
-        event => EVENT_DELAYED_WORKS,
+        event => EVENT_GET_DELAYED_WORKS,
         works => \@delayedWorksArray,
         props => $event->{props} || {}
     }));
@@ -313,6 +355,14 @@ sub process {
     }
 
     $self->debug('Process delayed work \'' . $id . '\': ' . encode_json($delayedWork->{jobs}));
+
+    $self->sendEvent(EVENT_PROCESS_DELAYED_WORK, {
+        id        => $id,
+        name      => $delayedWork->{name},
+        delayTime => $delayedWork->{time},
+        workJobs  => $delayedWork->{jobs},
+        props     => $delayedWork->{props}
+    });
 
     foreach my $job (@{$delayedWork->{jobs}}) {
         if (exists($job->{jobset})) {
@@ -381,8 +431,6 @@ sub updateNextDelayedWork {
 sub cleanDelayedWork {
     my $self = shift;
     my $id = shift;
-
-    $self->debug('Clean delayed work \'' . $id . '\'');
 
     $self->redis->zrem('anyjob:delayed', $id);
     $self->redis->del('anyjob:delayed:' . $id);

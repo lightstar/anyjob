@@ -7,4 +7,9 @@
 [% ELSIF event == 'progressJobSet' %]Job Set is running
 [% ELSIF event == 'finishJobSet' %]Job Set finished
 [% ELSIF event == 'cleanJobSet' %]Job Set cleaned
+[% ELSIF event == 'createDelayedWork' %]Delayed work created
+[% ELSIF event == 'updateDelayedWork' %]Delayed work updated
+[% ELSIF event == 'deleteDelayedWork' %]Delayed work deleted
+[% ELSIF event == 'processDelayedWork' %]Delayed work processed
+[% ELSIF event == 'getDelayedWorks' %]Delayed works requested
 [% END %]
