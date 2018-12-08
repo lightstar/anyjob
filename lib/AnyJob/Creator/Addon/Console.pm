@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Console;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  06.12.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -154,7 +154,7 @@ sub getDelayedWorks {
 
     $self->debug('Get delayed works using console creator: ' . encode_json($delay));
 
-    $self->parent->getDelayedWorks('console', undef, $delay->{id});
+    $self->parent->getDelayedWorks('console', $delay->{id});
 
     my $response;
     (undef, $response) = $self->parent->redis->blpop('anyjob:observerq:private:console', DELAY_GET_TIMEOUT);

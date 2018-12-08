@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Simple;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  20.06.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -38,7 +38,7 @@ sub command {
     my $userName = shift;
 
     my ($delay, $job, $errors);
-    ($delay, $job, undef, $errors) = $self->parent->parse($text);
+    ($delay, $job, undef, $errors) = $self->parent->parse($text, undef, { no_delay => 1 });
     unless (defined($job)) {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
@@ -56,11 +56,11 @@ sub command {
         '\'): ' . encode_json($job));
 
     my $error = $self->parent->createJobs([ $job ], {
-            creator      => 'slack',
-            author       => $userName,
-            observer     => 'slack',
-            response_url => $responseUrl
-        });
+        creator      => 'slack',
+        author       => $userName,
+        observer     => 'slack',
+        response_url => $responseUrl
+    });
     if (defined($error)) {
         $self->debug('Creating failed: ' . $error);
         return 'Error: ' . $error;

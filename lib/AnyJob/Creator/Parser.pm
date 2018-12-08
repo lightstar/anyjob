@@ -15,7 +15,7 @@ package AnyJob::Creator::Parser;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  21.06.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -37,6 +37,9 @@ use AnyJob::Creator::Parser::Delay;
 #     args         - already parsed array of string arguments (alternative to 'input').
 #     allowedExtra - array of strings with allowed additional params in command-line which will be returned in
 #                    separate hash after parsing.
+#     options      - optional hash with extra options. Supported ones are:
+#                      - no_delay - skip parsing special '@delay' argument in front of input.
+#                      - delay    - consider delay data in input (as with '@delay' argument in front).
 # Returns:
 #     AnyJob::Creator::Parser object.
 #
@@ -59,6 +62,7 @@ sub new {
     }
 
     $self->{allowedExtra} ||= {};
+    $self->{options} ||= {};
     $self->{errors} = [];
 
     $self->{jobParser} = undef;
@@ -128,10 +132,14 @@ sub errors {
 sub parse {
     my $self = shift;
 
-    my $delayAction = undef;
-    if (scalar(@{$self->{args}}) > 0 and $self->{args}->[0] eq '@delay') {
+    my $isDelay = $self->{options}->{delay} ? 1 : 0;
+    if (not $self->{options}->{no_delay} and scalar(@{$self->{args}}) > 0 and $self->{args}->[0] eq '@delay') {
         shift(@{$self->{args}});
+        $isDelay = 1;
+    }
 
+    my $delayAction = undef;
+    if ($isDelay) {
         $self->{delayParser} = AnyJob::Creator::Parser::Delay->new(
             parent => $self->{parent},
             args   => $self->{args}

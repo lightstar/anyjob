@@ -9,7 +9,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  06.12.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -294,6 +294,7 @@ sub checkDelay {
 # Arguments:
 #     input         - string input line or array of string arguments.
 #     allowedExtra  - hash with allowed additional parameters.
+#     options       - optional hash with additional options given to AnyJob::Creator::Parser module.
 # Returns:
 #     hash with parsed delay information or undef in case of error or lack of action with delayed work.
 #     hash with parsed job information or undef in case of error.
@@ -304,11 +305,13 @@ sub parse {
     my $self = shift;
     my $input = shift;
     my $allowedExtra = shift;
+    my $options = shift;
 
     my $parser = AnyJob::Creator::Parser->new(
         parent       => $self,
         (ref($input) eq 'ARRAY' ? (args => $input) : (input => $input)),
-        allowedExtra => $allowedExtra
+        allowedExtra => $allowedExtra,
+        options      => $options
     );
     $parser->parse();
 
@@ -617,20 +620,24 @@ sub updateDelayedWork {
 # Delete delayed work.
 #
 # Arguments:
-#     id  - integer delayed work id to delete.
+#     id    - integer delayed work id to delete.
+#     props - optional hash with some properties or undef. If exists, all of them will be injected into finally
+#             generated 'delete delayed work' event.
 #
 sub deleteDelayedWork {
     my $self = shift;
     my $id = shift;
+    my $props = shift;
 
-    unless (defined($id) and $id =~ /^\d+$/o and $id > 0) {
+    unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and (not defined($props) or ref($props) eq 'HASH')) {
         $self->error('Called deleteDelayedWork with wrong parameters');
         return;
     }
 
     $self->redis->rpush('anyjob:delayq', encode_json({
         action => 'delete',
-        id     => $id
+        id     => $id,
+        (defined($props) ? (props => $props) : ())
     }));
 }
 
@@ -638,18 +645,19 @@ sub deleteDelayedWork {
 # Get delayed works.
 #
 # Arguments:
-#     observer - string observer name which will receive event with response.
-#     props    - optional hash with request properties or undef.
+#     observer - string private observer name which will receive resulting 'get delayed works' event with response.
 #     id       - optional integer delayed work id to get. If not provided, all delayed works are retrieved.
+#     props    - optional hash with some properties or undef. If exists, all of them will be sent back with
+#                generated 'get delayed works' event.
 #
 sub getDelayedWorks {
     my $self = shift;
     my $observer = shift;
-    my $props = shift;
     my $id = shift;
+    my $props = shift;
 
-    unless (defined($observer) and (not defined($props) or ref($props) eq 'HASH') and
-        (not defined($id) or ($id =~ /^\d+$/o and $id > 0))
+    unless (defined($observer) and (not defined($id) or ($id =~ /^\d+$/o and $id > 0)) and
+        (not defined($props) or ref($props) eq 'HASH')
     ) {
         $self->error('Called getDelayedWorks with wrong parameters');
         return;
@@ -658,8 +666,8 @@ sub getDelayedWorks {
     $self->redis->rpush('anyjob:delayq', encode_json({
         action   => 'get',
         observer => $observer,
-        (defined($props) ? (props => $props) : ()),
-        (defined($id) ? (id => $id) : ())
+        (defined($id) ? (id => $id) : ()),
+        (defined($props) ? (props => $props) : ())
     }));
 }
 

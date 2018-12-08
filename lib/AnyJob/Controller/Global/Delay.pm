@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  06.12.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -106,22 +106,24 @@ sub getProcessDelay {
 #         },
 #         ...
 #     ],
-#     props => { prop1 => '...', prop2 => '...', ... }
+#     props => {...}
 # }
 # 3. 'Delete delayed work' event. Field 'id' here is id of deleted delayed work.
+# Field 'props' is optional hash with some properties which will be injected into work properties in the final
+# delete event.
 # {
 #     action => 'delete',
-#     id => ...
+#     id => ...,
+#     props => '...'
 # }
-# 4. 'Get delayed works' event. Field 'observer' here is name of observer where event with response will be sent.
-# Field 'props' is optional hash with some properties which will be sent to observer with response event.
-# Field 'id' is optional and it is id of retrieved delayed work. If no id is given, then all delayed works are
-# retrieved.
+# 4. 'Get delayed works' event. Field 'observer' here is name of private observer where event with response will be
+#  sent. Field 'id' is optional and it is id of retrieved delayed work. If no id is given, then all delayed works are
+# retrieved. Field 'props' is optional hash with some properties which will be sent to observer with response event.
 # {
 #     action => 'get',
 #     observer => '...',
-#     props => {...},
-#     id => ...
+#     id => ...,
+#     props => {...}
 # }
 #
 sub processEvent {
@@ -267,7 +269,7 @@ sub processDeleteAction {
     my $self = shift;
     my $event = shift;
 
-    unless (defined($event->{id})) {
+    unless (defined($event->{id}) and (not defined($event->{props}) or ref($event->{props}) eq 'HASH')) {
         $self->error('Wrong delete delayed work event: ' . encode_json($event));
         return;
     }
@@ -282,12 +284,19 @@ sub processDeleteAction {
     $self->debug('Delete delayed work \'' . $id . '\'');
     $self->cleanDelayedWork($id);
 
+    my $props = $delayedWork->{props};
+    if (defined($event->{props})) {
+        $props = { %$props };
+        my @keys = keys(%{$event->{props}});
+        @{$props}{@keys} = @{$event->{props}}{@keys};
+    }
+
     $self->sendEvent(EVENT_DELETE_DELAYED_WORK, {
         id        => $id,
         name      => $delayedWork->{name},
         delayTime => $delayedWork->{time},
         workJobs  => $delayedWork->{jobs},
-        props     => $delayedWork->{props}
+        props     => $props
     });
 }
 

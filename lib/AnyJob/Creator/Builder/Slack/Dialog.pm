@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Dialog;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  20.06.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -40,7 +40,7 @@ sub command {
     my $userName = shift;
 
     my ($delay, $job, $errors);
-    ($delay, $job, undef, $errors) = $self->parent->parse($text);
+    ($delay, $job, undef, $errors) = $self->parent->parse($text, undef, { no_delay => 1 });
     unless (defined($job)) {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }

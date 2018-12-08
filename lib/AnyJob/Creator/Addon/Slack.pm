@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  26.11.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -20,6 +20,7 @@ use Scalar::Util qw(weaken);
 use AnyJob::Constants::Events qw(EVENT_TYPE_JOB);
 use AnyJob::Utils qw(getModuleName requireModule);
 use AnyJob::Events qw(getEventType);
+use AnyJob::DateTime qw(formatDateTime);
 
 use base 'AnyJob::Creator::Addon::Base';
 
@@ -250,10 +251,7 @@ sub getEventPayload {
     my $self = shift;
     my $event = shift;
 
-    my $eventType = getEventType($event->{event});
-    if (defined($eventType) and $eventType eq EVENT_TYPE_JOB and exists($event->{type})) {
-        $event->{job} = $self->config->getJobConfig($event->{type});
-    }
+    $self->preprocessEvent($event);
 
     my $config = $self->config->getCreatorConfig('slack') || {};
     my $payloadTemplate = $config->{event_template} || 'payload';
@@ -266,6 +264,34 @@ sub getEventPayload {
 
     utf8::encode($payload);
     return $payload;
+}
+
+###############################################################################
+# Prepare private observer event for further processing.
+# Inject 'job' (hash with job configuration if this is job-related event) and format times.
+#
+# Arguments:
+#     event  - hash with event data.
+#
+sub preprocessEvent {
+    my $self = shift;
+    my $event = shift;
+
+    my $eventType = getEventType($event->{event});
+    if (defined($eventType) and $eventType eq EVENT_TYPE_JOB and exists($event->{type})) {
+        $event->{job} = $self->config->getJobConfig($event->{type});
+    }
+
+    if ($event->{works}) {
+        foreach my $work (@{$event->{works}}) {
+            if (exists($work->{time})) {
+                $work->{time} = formatDateTime($work->{time});
+            }
+            if (exists($work->{props}->{time})) {
+                $work->{props}->{time} = formatDateTime($work->{props}->{time});
+            }
+        }
+    }
 }
 
 1;

@@ -3,13 +3,23 @@
         "title": "
             [% IF job && node %]
                 [% job.label || type %] ([% node %][% redirect ? ' -> ' _ redirect : '' %])
+            [% ELSIF name && delayTime %]
+                Delayed work
+            [% ELSIF event == 'getDelayedWorks' %]
+                Delayed works
             [% ELSE %]
                 Job Set
             [% END %]
         ",
         "text": "
-            [% IF event == 'create' || event == 'createJobSet' %]
+            [% IF event == 'create' || event == 'createJobSet' || event == 'createDelayedWork' %]
                 created
+            [% ELSIF event == 'updateDelayedWork' %]
+                updated
+            [% ELSIF event == 'processDelayedWork' %]
+                processed
+            [% ELSIF event == 'deleteDelayedWork' %]
+                deleted
             [% ELSIF event == 'progress' || event == 'progressJobSet' %]
                 [% state || progress || log.message | replace( '"', '\"' ) %]
             [% ELSIF event == 'finish' %]
@@ -18,11 +28,18 @@
                 finished
             [% ELSIF event == 'clean' || event == 'cleanJobSet' %]
                 cleaned
+            [% ELSIF event == 'getDelayedWorks' %]
+                [% FOREACH work IN works %]
+                    [% '\n' _ work.id %]. [% work.name %] ([% work.time %])
+                        - created by '[% work.props.author %]' at [% work.props.time %]
+                [% END %]
             [%  END %]
         ",
-        [% IF (event == 'finish' && success) || event == 'finishJobSet' %]
+        [% IF (event == 'finish' && success) || event == 'finishJobSet' || event == 'processDelayedWork' %]
             "color": "good"
-        [% ELSIF (event == 'finish' && !success) || event == 'clean' || event == 'cleanJobSet' %]
+        [% ELSIF (event == 'finish' && !success) || event == 'clean' || event == 'cleanJobSet' ||
+                  event == 'deleteDelayedWork'
+        %]
             "color": "danger"
         [% END %]
     },
