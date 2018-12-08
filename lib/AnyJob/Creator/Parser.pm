@@ -168,6 +168,8 @@ sub parse {
         }
 
         $self->{jobParser}->parse();
+
+        push @{$self->{errors}}, @{$self->{jobParser}->errors()};
     }
 }
 
