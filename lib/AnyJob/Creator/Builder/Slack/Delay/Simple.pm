@@ -46,7 +46,9 @@ sub command {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
 
-    unless ($self->parentAddon->checkJobAccess($userId, $job)) {
+    if ((defined($job) and not $self->parentAddon->checkJobAccess($userId, $job)) or
+        not $self->parentAddon->checkDelayAccess($userId, $delay)
+    ) {
         return 'Error: access denied';
     }
 

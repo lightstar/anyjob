@@ -29,9 +29,13 @@
             [% ELSIF event == 'clean' || event == 'cleanJobSet' %]
                 cleaned
             [% ELSIF event == 'getDelayedWorks' %]
-                [% FOREACH work IN works %]
-                    [% '\n' _ work.id %]. [% work.name %] ([% work.time %])
-                        - created by '[% work.props.author %]' at [% work.props.time %]
+                [% IF works.size %]
+                    [% FOREACH work IN works %]
+                        [% '\n\n' _ work.id %]. [% work.name %] ([% work.time %])
+                        [% '\n' %]Created by '[% work.props.author %]' at [% work.props.time %]
+                    [% END %]
+                [% ELSE %]
+                    No delayed works.
                 [% END %]
             [%  END %]
         ",

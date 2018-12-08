@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  17.05.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -20,6 +20,7 @@ use AnyJob::Constants::Defaults qw(
     DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_WORKER_DAEMON_EXEC DEFAULT_TEMPLATES_PATH
     DEFAULT_INTERNAL_PROPS injectPathIntoConstant
 );
+use AnyJob::Constants::Delay qw(DELAY_ALL_ACTIONS);
 use AnyJob::Access::Resource;
 
 use base 'AnyJob::Config::Base';
@@ -587,7 +588,7 @@ sub getJobWorkerOptions {
     my $worker = $config->{worker} || $workerSection->{worker};
     my $workerConfig = defined($worker) ? $self->getWorkerConfig($worker) || {} : {};
 
-    return (
+    return +(
         injectPathIntoConstant($config->{work_dir} || $workerConfig->{work_dir} || $workerSection->{work_dir} ||
             DEFAULT_WORKER_WORK_DIR),
         injectPathIntoConstant($config->{exec} || $workerConfig->{exec} || $workerSection->{exec} ||
@@ -620,7 +621,7 @@ sub getWorkerDaemonOptions {
 
     my $workerSection = $self->section('worker') || {};
 
-    return (
+    return +(
         injectPathIntoConstant($config->{work_dir} || $workerSection->{work_dir} || DEFAULT_WORKER_WORK_DIR),
         injectPathIntoConstant($config->{exec} || $workerSection->{daemon_exec} || DEFAULT_WORKER_DAEMON_EXEC),
         $config->{lib} || $workerSection->{lib},
@@ -985,6 +986,47 @@ sub getAccessGroups {
 
     $self->{accessGroups} = $accessGroups;
     return $accessGroups;
+}
+
+###############################################################################
+# Get hash with delay operations accesses. Each key in that hash is action name and value is according access.
+# Details see in documentation.
+#
+# Returns:
+#     hash with delay operations accesses.
+#
+sub getDelayAccess {
+    my $self = shift;
+
+    if (exists($self->{delayAccess})) {
+        return $self->{delayAccess};
+    }
+
+    my $delayAccess = {};
+
+    my $config = $self->section('creator') || {};
+    if (exists($config->{delay_access})) {
+        eval {
+            $delayAccess = decode_json($config->{delay_access});
+        };
+        if ($@ or ref($delayAccess) ne 'HASH') {
+            require Carp;
+            Carp::confess('Wrong delay access: ' . $config->{delay_access});
+        }
+    }
+
+    $self->{delayAccess} = {};
+    foreach my $action (@{DELAY_ALL_ACTIONS()}) {
+        if (exists($delayAccess->{$action})) {
+            if ($delayAccess->{$action} ne '') {
+                $self->{delayAccess}->{$action} = AnyJob::Access::Resource->new(input => $delayAccess->{$action});
+            } else {
+                $self->{delayAccess}->{$action} = $AnyJob::Access::Resource::ACCESS_ANY;
+            }
+        }
+    }
+
+    return $self->{delayAccess};
 }
 
 ###############################################################################

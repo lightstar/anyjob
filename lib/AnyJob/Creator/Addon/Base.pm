@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  01.03.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -244,7 +244,6 @@ sub checkJobAccess {
     my $job = shift;
 
     my $userJobs = $self->getUserJobs($user);
-    my $userProps = $self->getUserProps($user);
 
     my ($userJob) = grep {$_->{type} eq $job->{type}} @$userJobs;
     unless (defined($userJob)) {
@@ -257,13 +256,41 @@ sub checkJobAccess {
         }
     }
 
+    my $userJobProps;
+    if (exists($userJob->{props})) {
+        $userJobProps = $userJob->{props};
+    } else {
+        $userJobProps = $self->getUserProps($user);
+    }
+
     foreach my $name (keys(%{$job->{props}})) {
-        unless (grep {$_->{name} eq $name} @$userProps) {
+        unless (grep {$_->{name} eq $name} @$userJobProps) {
             return 0;
         }
     }
 
     return 1;
+}
+
+###############################################################################
+# Check if specified user has access to some delay operation.
+#
+# Arguments:
+#     user  - string user name.
+#     delay - hash with data about delay operation this user wishes to perform.
+# Returns:
+#     0/1 flag. If set, user is permitted to perform this operation, otherwise - not.
+#
+sub checkDelayAccess {
+    my $self = shift;
+    my $user = shift;
+    my $delay = shift;
+
+    my $delayAccess = $self->config->getDelayAccess();
+    my $userAccess = $self->getUserAccess($user);
+
+    my $action = $delay->{action};
+    return (exists($delayAccess->{$action}) and $delayAccess->{$action}->hasAccess($userAccess)) ? 1 : 0;
 }
 
 ###############################################################################

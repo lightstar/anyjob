@@ -5,7 +5,7 @@ package AnyJob::Constants::Delay;
 #
 # Author:       LightStar
 # Created:      29.05.2018
-# Last update:  06.12.2018
+# Last update:  08.12.2018
 #
 
 use strict;
@@ -33,6 +33,11 @@ use constant DELAY_ACTION_DELETE => 'delete';
 # Name of 'get delayed works' action.
 #
 use constant DELAY_ACTION_GET => 'get';
+
+###############################################################################
+# Array with all supported delay actions.
+#
+use constant DELAY_ALL_ACTIONS => [ DELAY_ACTION_CREATE, DELAY_ACTION_UPDATE, DELAY_ACTION_DELETE, DELAY_ACTION_GET ];
 
 ###############################################################################
 # Hash with actions which need to be written explicitly in command string.
@@ -67,6 +72,7 @@ our @EXPORT = qw(
     DELAY_ACTION_UPDATE
     DELAY_ACTION_DELETE
     DELAY_ACTION_GET
+    DELAY_ALL_ACTIONS
     DELAY_EXPLICIT_ACTIONS
     DELAY_JOB_ACTIONS
     DELAY_ACTIONS_WITH_NAME
