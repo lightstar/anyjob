@@ -235,7 +235,7 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "time": <integer unix timestamp>,
     "node": "<string node name>",
     "id": <integer delayed work id>,
-    "name": "<string delayed work name>",
+    "summary": "<string delayed work summary>",
     "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
     "workJobs": [
         {
@@ -287,7 +287,7 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "time": <integer unix timestamp>,
     "node": "<string node name>",
     "id": <integer delayed work id>,
-    "name": "<string delayed work name>",
+    "summary": "<string delayed work summary>",
     "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
     "workJobs": [
         ...
@@ -304,7 +304,7 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "time": <integer unix timestamp>,
     "node": "<string node name>",
     "id": <integer delayed work id>,
-    "name": "<string delayed work name>",
+    "summary": "<string delayed work summary>",
     "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
     "workJobs": [
         ...
@@ -321,7 +321,7 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "time": <integer unix timestamp>,
     "node": "<string node name>",
     "id": <integer delayed work id>,
-    "name": "<string delayed work name>",
+    "summary": "<string delayed work summary>",
     "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
     "workJobs": [
         ...
@@ -341,7 +341,7 @@ specific one).
     "works": [
         {
             "id": <integer delayed work id>,
-            "name": "<string delayed work name>",
+            "summary": "<string delayed work summary>",
             "time": <integer time in unix timestamp format indicating when this delayed work will be processed>,
             "jobs": [
                 {

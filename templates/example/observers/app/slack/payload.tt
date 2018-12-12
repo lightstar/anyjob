@@ -3,7 +3,7 @@
         "title": "
             [% IF job && node %]
                 [% job.label || type %] ([% node %][% redirect ? ' -> ' _ redirect : '' %])
-            [% ELSIF name && delayTime %]
+            [% ELSIF summary && delayTime %]
                 Delayed work
             [% ELSIF event == 'getDelayedWorks' %]
                 Delayed works
@@ -31,7 +31,7 @@
             [% ELSIF event == 'getDelayedWorks' %]
                 [% IF works.size %]
                     [% FOREACH work IN works %]
-                        [% '\n\n' _ work.id %]. [% work.name %] ([% work.time %])
+                        [% '\n\n' _ work.id %]. [% work.summary %] ([% work.time %])
                         [% '\n' %]Created by '[% work.props.author %]' at [% work.props.time %]
                     [% END %]
                 [% ELSE %]

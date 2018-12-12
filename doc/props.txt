@@ -4,6 +4,7 @@ creator           - creator name. Default: none.
 author            - author name (name of user who created this job or jobset). Default: none.
 observer          - private observer name. Default: none.
 response_url      - url where slack private events should go. Default: none.
+delayed           - 0/1 flag. If set, this job or jobset is created using delayed work. Default: 0.
 silent            - 0/1 flag. If set, events related to this job or jobset will not be processed by global observers.
                     By default corresponding setting in job configuration is used.
 nomail            - 0/1 flag. If set, events related to this job or jobset will not be processed by mail global

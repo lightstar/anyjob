@@ -187,7 +187,7 @@ props                 - JSON array of objects describing all properties that can
                         every that object are the same as for job parameters (see below about job configuration).
                         Default: '[]'.
 internal_props        - list of internal properties names separated by comma. Those names are not set by user but by
-                        creator itself. Default: 'creator,author,observer,response_url'.
+                        creator itself. Default: 'creator,author,observer,response_url,delayed'.
 access_groups         - JSON hash with access groups used to access jobs, jobs nodes, jobs parameters and properties.
                         Each hash key here is group name, and value is array of strings with provided accesses.
                         Look for details about what accesses and access groups are in access.txt documentation file.

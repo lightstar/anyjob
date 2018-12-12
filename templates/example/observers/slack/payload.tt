@@ -25,10 +25,10 @@
             "author_name": "[% props.author %][% IF props.creator && props.creator != 'slack' %] ([% props.creator %])[% END %]",
         [% END %]
         "fields": [
-            [% IF name %]
+            [% IF summary %]
                 {
-                    "title": "Name",
-                    "value": "[% name %]",
+                    "title": "Summary",
+                    "value": "[% summary %]",
                     "short": true
                 },
             [% END %]

@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Console;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  08.12.2018
+# Last update:  12.12.2018
 #
 
 use strict;
@@ -180,7 +180,7 @@ sub getDelayedWorks {
 
     my @workLines;
     foreach my $work (@{$event->{works}}) {
-        my $line = $work->{id} . '. ' . $work->{name} . ' (' . formatDateTime($work->{time}) . ')' .
+        my $line = $work->{id} . '. ' . $work->{summary} . ' (' . formatDateTime($work->{time}) . ')' .
             ' - created by \'' . $work->{props}->{author} . '\' at ' . formatDateTime($work->{props}->{time});
         push @workLines, $line
     }

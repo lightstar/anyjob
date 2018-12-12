@@ -39,8 +39,8 @@
         Event time: <b>[% time %]</b><br>
     [% END %]
 
-    [% IF name %]
-        Name: <b>[% name %]</b><br>
+    [% IF summary %]
+        Summary: <b>[% summary %]</b><br>
     [% END %]
 
     [% IF delayTime %]

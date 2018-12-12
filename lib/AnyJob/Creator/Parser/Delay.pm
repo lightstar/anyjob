@@ -19,7 +19,7 @@ package AnyJob::Creator::Parser::Delay;
 #
 # Author:       LightStar
 # Created:      29.05.2018
-# Last update:  27.11.2018
+# Last update:  12.12.2018
 #
 
 use strict;
@@ -82,7 +82,7 @@ sub parent {
 #     {
 #         action => '...',
 #         id => ...,
-#         name => '',
+#         summary => '',
 #         time => ...
 #     }
 #     Field 'action' here is one of strings identifying action which needs to be performed on delayed work: 'create',
@@ -90,8 +90,8 @@ sub parent {
 #     Field 'id' here is present only for 'update' and 'delete' actions, and could optionally exist for 'get' action.
 #     It is integer id of delayed work.
 #     Field 'time' here is present only for 'create' and 'update' actions. It is integer time in unix timestamp format.
-#     Field 'name' here is present only for 'create' and 'update' actions. Its inner 'input' field contains all
-#     remained parameters, escaped and joined using space character.
+#     Field 'summary' here is present only for 'create' and 'update' actions. It contains all remained parameters,
+#     escaped and joined using space character.
 #
 sub delay {
     my $self = shift;
@@ -154,7 +154,7 @@ sub parse {
     }
 
     if (scalar(@{$self->{errors}}) == 0) {
-        $self->generateName();
+        $self->generateSummary();
     }
 }
 
@@ -215,21 +215,38 @@ sub processGetAction {
 }
 
 ###############################################################################
-# Generate delayed work name if needed to.
+# Generate delayed work summary if needed to.
 #
-sub generateName {
+sub generateSummary {
     my $self = shift;
 
     if (exists(DELAY_ACTIONS_WITH_NAME()->{$self->{delay}->{action}})) {
+        my $escapeRe = qr/[\s\'\"]/;
+        my $escapeSub = sub {
+            my $arg = shift;
+            $arg =~ s/\'/\\\'/g;
+            return '\'' . $arg . '\'';
+        };
+
         my @args;
-        foreach my $arg (@{$self->{args}}) {
-            if ($arg =~ /[\s\'\"]/) {
-                $arg =~ s/\'/\\\'/g;
-                $arg = '\'' . $arg . '\'';
+        for (@{$self->{args}}) {
+            my $arg = $_;
+
+            my ($name, $value) = ($arg =~ /^([^=]+)(?:\=(.+))?$/);
+            unless (defined($value)) {
+                if ($arg =~ $escapeRe) {
+                    $arg = $escapeSub->($arg);
+                }
+            } elsif ($name =~ $escapeRe) {
+                $arg = $escapeSub->($name . '=' . $value);
+            } elsif ($value =~ $escapeRe) {
+                $arg = $name . '=' . $escapeSub->($value);
             }
+
             push @args, $arg;
         }
-        $self->{delay}->{name} = join(' ', @args);
+
+        $self->{delay}->{summary} = join(' ', @args);
     }
 }
 

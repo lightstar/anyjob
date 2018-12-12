@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  08.12.2018
+# Last update:  12.12.2018
 #
 
 use strict;
@@ -63,13 +63,13 @@ sub getProcessDelay {
 ###############################################################################
 # Method called for each received event from delay queue.
 # There can be four types of events. All of them are sent by creator component.
-# 1. 'Create delayed work' event. Field 'name' here is arbitrary string name needed to identify this delayed work.
+# 1. 'Create delayed work' event. Field 'summary' here is arbitrary string needed to describe this delayed work.
 # Field 'time' is integer time in unix timestamp format identifying when to run provided jobs.
 # Field 'jobs' is array of hashes where each element is either jobset with inner jobs or just one individual job.
 # Field 'props' is optional hash with arbitrary properties binded to work.
 # {
 #     action => 'create',
-#     name => '...',
+#     summary => '...',
 #     time => ...,
 #     jobs => [
 #         {
@@ -91,7 +91,7 @@ sub getProcessDelay {
 # {
 #     action => 'update',
 #     id => ...,
-#     name => '...',
+#     summary => '...',
 #     time => ...,
 #     jobs => [
 #         {
@@ -156,7 +156,7 @@ sub processCreateAction {
     my $self = shift;
     my $event = shift;
 
-    unless (defined($event->{name}) and $event->{name} ne '' and
+    unless (defined($event->{summary}) and $event->{summary} ne '' and
         defined($event->{time}) and $event->{time} =~ /^\d+$/o and $event->{time} > 0 and
         defined($event->{jobs}) and ref($event->{jobs}) eq 'ARRAY' and scalar(@{$event->{jobs}}) > 0 and
         (not defined($event->{props}) or ref($event->{props}) eq 'HASH')
@@ -167,16 +167,16 @@ sub processCreateAction {
 
     my $id = $self->getNextDelayedWorkId();
     my $delayedWork = {
-        name  => $event->{name},
-        time  => $event->{time},
-        jobs  => $event->{jobs},
-        props => $event->{props} || {}
+        summary => $event->{summary},
+        time    => $event->{time},
+        jobs    => $event->{jobs},
+        props   => $event->{props} || {}
     };
 
     $delayedWork->{props}->{author} ||= DELAY_AUTHOR_UNKNOWN;
     $delayedWork->{props}->{time} = time();
 
-    $self->debug('Create delayed work \'' . $id . '\' with name \'' . $delayedWork->{name} . '\', time \'' .
+    $self->debug('Create delayed work \'' . $id . '\' with summary \'' . $delayedWork->{summary} . '\', time \'' .
         formatDateTime($delayedWork->{time}) . '\', jobs ' . encode_json($delayedWork->{jobs}) . ' and props ' .
         encode_json($delayedWork->{props}));
 
@@ -186,7 +186,7 @@ sub processCreateAction {
 
     $self->sendEvent(EVENT_CREATE_DELAYED_WORK, {
         id        => $id,
-        name      => $delayedWork->{name},
+        summary   => $delayedWork->{summary},
         delayTime => $delayedWork->{time},
         workJobs  => $delayedWork->{jobs},
         props     => $delayedWork->{props}
@@ -208,7 +208,7 @@ sub processUpdateAction {
     my $self = shift;
     my $event = shift;
 
-    unless (defined($event->{id}) and defined($event->{name}) and $event->{name} ne '' and
+    unless (defined($event->{id}) and defined($event->{summary}) and $event->{summary} ne '' and
         defined($event->{time}) and $event->{time} =~ /^\d+$/o and $event->{time} > 0 and
         defined($event->{jobs}) and ref($event->{jobs}) eq 'ARRAY' and scalar(@{$event->{jobs}}) > 0 and
         (not defined($event->{props}) or ref($event->{props}) eq 'HASH')
@@ -224,16 +224,16 @@ sub processUpdateAction {
     }
 
     my $delayedWork = {
-        name  => $event->{name},
-        time  => $event->{time},
-        jobs  => $event->{jobs},
-        props => $event->{props} || {}
+        summary => $event->{summary},
+        time    => $event->{time},
+        jobs    => $event->{jobs},
+        props   => $event->{props} || {}
     };
 
     $delayedWork->{props}->{author} ||= DELAY_AUTHOR_UNKNOWN;
     $delayedWork->{props}->{time} = time();
 
-    $self->debug('Update delayed work \'' . $id . '\' with name \'' . $delayedWork->{name} . '\', time \'' .
+    $self->debug('Update delayed work \'' . $id . '\' with summary \'' . $delayedWork->{summary} . '\', time \'' .
         formatDateTime($delayedWork->{time}) . '\', jobs ' . encode_json($delayedWork->{jobs}) . ' and props ' .
         encode_json($delayedWork->{props})
     );
@@ -244,7 +244,7 @@ sub processUpdateAction {
 
     $self->sendEvent(EVENT_UPDATE_DELAYED_WORK, {
         id        => $id,
-        name      => $delayedWork->{name},
+        summary   => $delayedWork->{summary},
         delayTime => $delayedWork->{time},
         workJobs  => $delayedWork->{jobs},
         props     => $delayedWork->{props}
@@ -293,7 +293,7 @@ sub processDeleteAction {
 
     $self->sendEvent(EVENT_DELETE_DELAYED_WORK, {
         id        => $id,
-        name      => $delayedWork->{name},
+        summary   => $delayedWork->{summary},
         delayTime => $delayedWork->{time},
         workJobs  => $delayedWork->{jobs},
         props     => $props
@@ -367,7 +367,7 @@ sub process {
 
     $self->sendEvent(EVENT_PROCESS_DELAYED_WORK, {
         id        => $id,
-        name      => $delayedWork->{name},
+        summary   => $delayedWork->{summary},
         delayTime => $delayedWork->{time},
         workJobs  => $delayedWork->{jobs},
         props     => $delayedWork->{props}

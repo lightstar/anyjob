@@ -9,7 +9,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  08.12.2018
+# Last update:  12.12.2018
 #
 
 use strict;
@@ -256,7 +256,7 @@ sub checkJobParamType {
 # Check delay data used to delay jobs.
 #
 # Arguments:
-#     delay - hash with delay data. It should contain 'name' field with string delayed work name,
+#     delay - hash with delay data. It should contain 'summary' field with string delayed work summary,
 #             optional 'time' field with integer delay time in unix timestamp format and optional 'id' field with
 #             integer delayed work id.
 # Returns:
@@ -270,8 +270,8 @@ sub checkDelay {
         return 'wrong delay data';
     }
 
-    unless (defined($delay->{name}) and $delay->{name} ne '') {
-        return 'wrong delayed work name';
+    unless (defined($delay->{summary}) and $delay->{summary} ne '') {
+        return 'wrong delayed work summary';
     }
 
     if (defined($delay->{time}) and ($delay->{time} !~ /^\d+$/o or $delay->{time} <= 0)) {
@@ -363,7 +363,7 @@ sub createJobs {
 # and delaying fails if there are any errors.
 #
 # Arguments:
-#     delay - hash with delay data. It should contain 'name' field with delayed work name, 'time' field with
+#     delay - hash with delay data. It should contain 'summary' field with delayed work summary, 'time' field with
 #             integer delay time in unix timestamp format and optional 'id' field with integer delayed work id.
 #             If 'id' field is specified, already existing delayed work will be updated.
 #     jobs  - array of hashes with job information. I.e.:
@@ -383,6 +383,7 @@ sub delayJobs {
     my $delay = shift;
     my $jobs = shift;
     my $props = shift;
+    $props ||= {};
 
     my $error = $self->checkDelay($delay);
     if (defined($error)) {
@@ -397,6 +398,15 @@ sub delayJobs {
 
     my @delayedJobs;
     foreach my $job (@$preparedJobs) {
+        foreach my $innerJob (@{$job->{jobs}}) {
+            foreach my $name (keys(%{$innerJob->{props}})) {
+                unless (exists($props->{$name})) {
+                    $props->{$name} = $innerJob->{props}->{$name};
+                }
+            }
+            $innerJob->{props}->{delayed} = 1;
+        }
+
         unless ($job->{isJobSet}) {
             push @delayedJobs, $job->{jobs}->[0];
         } else {
@@ -410,9 +420,9 @@ sub delayJobs {
     }
 
     if (defined($delay->{id})) {
-        $self->updateDelayedWork($delay->{id}, $delay->{name}, $delay->{time}, \@delayedJobs, $props);
+        $self->updateDelayedWork($delay->{id}, $delay->{summary}, $delay->{time}, \@delayedJobs, $props);
     } else {
-        $self->createDelayedWork($delay->{name}, $delay->{time}, \@delayedJobs, $props);
+        $self->createDelayedWork($delay->{summary}, $delay->{time}, \@delayedJobs, $props);
     }
 
     return undef;
@@ -547,20 +557,20 @@ sub createJobSet {
 # Almost nothing is checked here so better use higher level method 'delayJobs' instead.
 #
 # Arguments:
-#     name  - string delayed work name.
-#     time  - integer delay time in unix timestamp format.
-#     jobs  - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
-#             individual job.
-#     props - optional hash with delayed work properties.
+#     summary - string delayed work summary.
+#     time    - integer delay time in unix timestamp format.
+#     jobs    - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
+#               individual job.
+#     props   - optional hash with delayed work properties.
 #
 sub createDelayedWork {
     my $self = shift;
-    my $name = shift;
+    my $summary = shift;
     my $time = shift;
     my $jobs = shift;
     my $props = shift;
 
-    unless (defined($name) and $name ne '' and defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
+    unless (defined($summary) and $summary ne '' and defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
         defined($time) and $time =~ /^\d+$/o and $time > 0 and
         (not defined($props) or ref($props) eq 'HASH')
     ) {
@@ -569,11 +579,11 @@ sub createDelayedWork {
     }
 
     $self->redis->rpush('anyjob:delayq', encode_json({
-        action => 'create',
-        name   => $name,
-        time   => $time,
-        jobs   => $jobs,
-        props  => $props
+        action  => 'create',
+        summary => $summary,
+        time    => $time,
+        jobs    => $jobs,
+        props   => $props
     }));
 }
 
@@ -582,22 +592,22 @@ sub createDelayedWork {
 # Almost nothing is checked here so better use higher level method 'delayJobs' instead.
 #
 # Arguments:
-#     id   - integer delayed work id to update.
-#     name - string delayed work name.
-#     time - integer delay time in unix timestamp format.
-#     jobs - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
-#            individual job.
+#     id      - integer delayed work id to update.
+#     summary - string delayed work summary.
+#     time    - integer delay time in unix timestamp format.
+#     jobs    - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
+#               individual job.
 #     props - optional hash with delayed work properties.
 #
 sub updateDelayedWork {
     my $self = shift;
     my $id = shift;
-    my $name = shift;
+    my $summary = shift;
     my $time = shift;
     my $jobs = shift;
     my $props = shift;
 
-    unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and defined($name) and $name ne '' and
+    unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and defined($summary) and $summary ne '' and
         defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
         defined($time) and $time =~ /^\d+$/o and $time > 0 and
         (not defined($props) or ref($props) eq 'HASH')
@@ -607,12 +617,12 @@ sub updateDelayedWork {
     }
 
     $self->redis->rpush('anyjob:delayq', encode_json({
-        action => 'update',
-        id     => $id,
-        name   => $name,
-        time   => $time,
-        jobs   => $jobs,
-        props  => $props
+        action  => 'update',
+        id      => $id,
+        summary => $summary,
+        time    => $time,
+        jobs    => $jobs,
+        props   => $props
     }));
 }
 
