@@ -79,7 +79,7 @@ sub receiveServiceEvent {
     my $self = shift;
     my $event = shift;
 
-    unless ($event->{type} eq EVENT_GET_DELAYED_WORKS) {
+    unless ($event->{event} eq EVENT_GET_DELAYED_WORKS) {
         return;
     }
 
@@ -136,12 +136,13 @@ sub delayJob {
         observer     => 'slack',
         response_url => $responseUrl
     });
+
     if (defined($error)) {
         $self->debug('Delaying failed: ' . $error);
         return 'Error: ' . $error;
     }
 
-    return 'Job delayed';
+    return exists($delay->{id}) ? 'Delayed work updated' : 'Job delayed';
 }
 
 ###############################################################################
@@ -167,7 +168,7 @@ sub deleteDelayedWork {
         response_url => $responseUrl
     });
 
-    return 'Delete request is sent';
+    return 'Delayed work removed';
 }
 
 ###############################################################################

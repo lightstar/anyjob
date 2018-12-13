@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Console;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  12.12.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -118,7 +118,7 @@ sub delayJob {
         return 'Error: ' . $error;
     }
 
-    return 'Job delayed';
+    return exists($delay->{id}) ? 'Delayed work updated' : 'Job delayed';
 }
 
 ###############################################################################

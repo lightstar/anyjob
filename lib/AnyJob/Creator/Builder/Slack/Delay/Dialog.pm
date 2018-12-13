@@ -86,7 +86,7 @@ sub receiveServiceEvent {
     my $self = shift;
     my $event = shift;
 
-    unless ($event->{type} eq EVENT_GET_DELAYED_WORKS) {
+    unless ($event->{event} eq EVENT_GET_DELAYED_WORKS) {
         return;
     }
 
@@ -106,7 +106,7 @@ sub receiveServiceEvent {
             $response = 'Error: access denied';
         } elsif ($action eq DELAY_ACTION_UPDATE) {
             $response = $self->createAndShowDialog($build->{delay}, $build->{job}, $build->{userId},
-                $build->{responseUrl}, $build->{triggerId}, $build->{userName});
+                $build->{responseUrl}, $build->{trigger}, $build->{userName});
         }
     }
 
@@ -190,11 +190,13 @@ sub dialogSubmission {
         observer     => 'slack',
         response_url => $build->{responseUrl}
     });
+
     if (defined($error)) {
         $self->debug('Delaying failed: ' . $error);
         $self->sendResponse({ text => 'Error: ' . $error }, $build->{responseUrl});
     } else {
-        $self->sendResponse({ text => 'Job delayed' }, $build->{responseUrl});
+        my $response = exists($build->{delay}->{id}) ? 'Delayed work updated' : 'Job delayed';
+        $self->sendResponse({ text => $response }, $build->{responseUrl});
     }
 
     return undef;
