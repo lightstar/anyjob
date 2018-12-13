@@ -5,7 +5,7 @@ package AnyJob::Constants::Delay;
 #
 # Author:       LightStar
 # Created:      29.05.2018
-# Last update:  08.12.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -35,9 +35,10 @@ use constant DELAY_ACTION_DELETE => 'delete';
 use constant DELAY_ACTION_GET => 'get';
 
 ###############################################################################
-# Array with all supported delay actions.
-#
-use constant DELAY_ALL_ACTIONS => [ DELAY_ACTION_CREATE, DELAY_ACTION_UPDATE, DELAY_ACTION_DELETE, DELAY_ACTION_GET ];
+# Hash with all supported delay actions.
+# Each key here is string action name and values are always equal to '1'.
+use constant DELAY_ALL_ACTIONS => { map {$_ => 1} (DELAY_ACTION_CREATE, DELAY_ACTION_UPDATE, DELAY_ACTION_DELETE,
+    DELAY_ACTION_GET) };
 
 ###############################################################################
 # Hash with actions which need to be written explicitly in command string.

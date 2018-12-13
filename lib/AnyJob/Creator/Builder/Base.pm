@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Base;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  21.12.2017
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -153,6 +153,21 @@ sub cleanBuild {
 sub getNextBuildId {
     my $self = shift;
     return $self->{parent}->redis->incr('anyjob:build:id');
+}
+
+###############################################################################
+# Abstract method which will be called when new service event arrives.
+# Should be implemented in descendats.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub receiveServiceEvent {
+    my $self = shift;
+    my $event = shift;
+
+    require Carp;
+    Carp::confess('Need to be implemented in descendant');
 }
 
 1;

@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Web;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  01.03.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -230,7 +230,6 @@ sub receivePrivateEvent {
     $self->parent->setBusy(1);
     if ($self->eventFilter($event) and defined(my $user = $event->{props}->{author})) {
         if (exists($self->{connsByUser}->{$user})) {
-            $self->parent->stripInternalPropsFromEvent($event);
             $self->{connsByUser}->{$user}->send($event);
         }
     }

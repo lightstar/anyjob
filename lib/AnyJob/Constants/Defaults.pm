@@ -5,7 +5,7 @@ package AnyJob::Constants::Defaults;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  12.12.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -170,11 +170,6 @@ use constant DEFAULT_WORKER_PREFIX => 'AnyJob::Worker::Job';
 use constant DEFAULT_WORKER_METHOD => 'run';
 
 ###############################################################################
-# Default list of creator internal properties.
-#
-use constant DEFAULT_INTERNAL_PROPS => 'creator,author,observer,response_url,delayed';
-
-###############################################################################
 # Default slack api url.
 #
 use constant DEFAULT_SLACK_API => 'https://slack.com/api/';
@@ -211,10 +206,9 @@ our @EXPORT = qw(
     DEFAULT_WORKER_PREFIX
     DEFAULT_WORKER_CONTEXT_PREFIX
     DEFAULT_WORKER_METHOD
-    DEFAULT_INTERNAL_PROPS
     DEFAULT_SLACK_API
     injectPathIntoConstant
-    );
+);
 
 sub injectPathIntoConstant {
     my $value = shift;

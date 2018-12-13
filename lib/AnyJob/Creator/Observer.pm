@@ -7,7 +7,7 @@ package AnyJob::Creator::Observer;
 #
 # Author:       LightStar
 # Created:      16.02.2018
-# Last update:  16.02.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -55,7 +55,7 @@ sub new {
 
     $self->{queues} = [ map {'anyjob:observerq:private:' . $_} @{$self->{names}} ];
     $self->{addonsByQueues} = { map {'anyjob:observerq:private:' . $_ => $self->{addonsByNames}->{$_}}
-        keys (%{$self->{addonsByNames}}) };
+        keys(%{$self->{addonsByNames}}) };
 
     my $redisServer = $self->config->redis || DEFAULT_REDIS;
     my ($redisHost, $redisPort) = split(':', $redisServer);
@@ -119,27 +119,31 @@ sub observe {
 
     weaken($self);
     $self->{redis}->blpop(@{$self->{queues}}, 0, sub {
-            my $reply = shift;
-            my $error = shift;
+        my $reply = shift;
+        my $error = shift;
 
-            if (defined($error) or not defined($self)) {
-                return;
-            }
+        if (defined($error) or not defined($self)) {
+            return;
+        }
 
-            my ($queue, $event) = @$reply;
-            if (defined($queue) and defined($event)) {
-                utf8::encode($event);
-                eval {
-                    $event = decode_json($event);
-                };
-                if ($@) {
-                    $self->error('Can\'t decode event: ' . $event);
+        my ($queue, $event) = @$reply;
+        if (defined($queue) and defined($event)) {
+            utf8::encode($event);
+            eval {
+                $event = decode_json($event);
+            };
+            if ($@) {
+                $self->error('Can\'t decode event: ' . $event);
+            } else {
+                if (exists($event->{props}->{service})) {
+                    $self->{addonsByQueues}->{$queue}->receiveServiceEvent($event);
                 } else {
                     $self->{addonsByQueues}->{$queue}->receivePrivateEvent($event);
                 }
             }
-            $self->observe();
-        });
+        }
+        $self->observe();
+    });
 }
 
 ###############################################################################

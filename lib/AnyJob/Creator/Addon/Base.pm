@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  08.12.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -278,6 +278,7 @@ sub checkJobAccess {
 # Arguments:
 #     user  - string user name.
 #     delay - hash with data about delay operation this user wishes to perform.
+#     job   - optional hash with delayed job data or undef.
 # Returns:
 #     0/1 flag. If set, user is permitted to perform this operation, otherwise - not.
 #
@@ -285,12 +286,81 @@ sub checkDelayAccess {
     my $self = shift;
     my $user = shift;
     my $delay = shift;
+    my $job = shift;
 
     my $delayAccess = $self->config->getDelayAccess();
     my $userAccess = $self->getUserAccess($user);
-
     my $action = $delay->{action};
-    return (exists($delayAccess->{$action}) and $delayAccess->{$action}->hasAccess($userAccess)) ? 1 : 0;
+
+    if (exists($delayAccess->{$action}) and not $delayAccess->{$action}->hasAccess($userAccess)) {
+        return 0;
+    }
+
+    if (defined($job)) {
+        my $jobDelayAccess = $self->config->getJobDelayAccess($job->{type});
+        if (exists($jobDelayAccess->{$action}) and not $jobDelayAccess->{$action}->hasAccess($userAccess)) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+###############################################################################
+# Check if specified user has access to some delay operation with delayed work.
+#
+# Arguments:
+#     user   - string user name.
+#     action - string delay action this user wishes to perform.
+#     work   - hash with delayed work data.
+# Returns:
+#     0/1 flag. If set, user is permitted to perform this operation, otherwise - not.
+#
+sub checkDelayedWorkAccess {
+    my $self = shift;
+    my $user = shift;
+    my $action = shift;
+    my $work = shift;
+
+    my %types;
+    foreach my $job (@{$work->{jobs}}) {
+        if (exists($job->{jobs})) {
+            foreach my $innerJob (@{$job->{jobs}}) {
+                $types{$innerJob->{type}}++;
+            }
+        } else {
+            $types{$job->{type}}++;
+        }
+    }
+
+    my $userAccess = $self->getUserAccess($user);
+
+    foreach my $type (keys(%types)) {
+        unless ($self->config->getJobAccess($type)->hasAccess($userAccess)) {
+            return 0;
+        }
+
+        my $jobDelayAccess = $self->config->getJobDelayAccess($type);
+        if (exists($jobDelayAccess->{$action}) and not $jobDelayAccess->{$action}->hasAccess($userAccess)) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+###############################################################################
+# Abstract method which will be called by AnyJob::Creator::Observer when new service event arrives.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub receiveServiceEvent {
+    my $self = shift;
+    my $event = shift;
+
+    require Carp;
+    Carp::confess('Need to be implemented in descendant');
 }
 
 ###############################################################################

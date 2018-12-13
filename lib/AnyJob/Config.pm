@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  08.12.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -18,7 +18,7 @@ use File::Basename;
 
 use AnyJob::Constants::Defaults qw(
     DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_WORKER_DAEMON_EXEC DEFAULT_TEMPLATES_PATH
-    DEFAULT_INTERNAL_PROPS injectPathIntoConstant
+    injectPathIntoConstant
 );
 use AnyJob::Constants::Delay qw(DELAY_ALL_ACTIONS);
 use AnyJob::Access::Resource;
@@ -138,6 +138,8 @@ sub getAllNodes {
 # It signifies access needed to create this job.
 # Values of 'nodes.access' field are hashes where keys are node names and values are instances of
 # AnyJob::Access::Resource class too. They signify access needed to create job on corresponding nodes.
+# Field 'delayAccess' is hash where keys are delay action names and values are again instances of
+# AnyJob::Access::Resource class. They signify accesses needed to perform specified delay actions with this job.
 # Field 'props' here is optional and exists only if properties for this job are overriden.
 #
 # Returns:
@@ -150,6 +152,7 @@ sub getAllNodes {
 #             access    => { 'node1' => ..., 'node2' => ..., ... },
 #         },
 #         access => ...,
+#         delayAccess => { action1 => ..., action2 => ... },
 #         label => '...',
 #         group => '...',
 #         params => [ { name => 'param1', ... }, { name => 'param2', ... }, ... ],
@@ -182,18 +185,19 @@ sub getAllJobs {
 
             my $props = $self->getJobProps($type);
             push @jobs, {
-                type   => $type,
-                nodes  => {
+                type        => $type,
+                nodes       => {
                     available => $nodes,
                     default   => $defaultNodes,
                     access    => $self->getJobNodesAccess($type)
                 },
-                access => $self->getJobAccess($type),
-                label  => $self->{data}->{$section}->{label} || $type,
-                group  => $self->{data}->{$section}->{group} || '',
-                params => $self->getJobParams($type),
+                access      => $self->getJobAccess($type),
+                delayAccess => $self->getJobDelayAccess($type),
+                label       => $self->{data}->{$section}->{label} || $type,
+                group       => $self->{data}->{$section}->{group} || '',
+                params      => $self->getJobParams($type),
                 (defined($props) ? (props => $props) : ()),
-                sort   => $self->{data}->{$section}->{sort} || 0
+                sort        => $self->{data}->{$section}->{sort} || 0
             };
         }
     }
@@ -542,6 +546,49 @@ sub getJobAccess {
 
     $self->{jobAccess}->{$type} = AnyJob::Access::Resource->new(input => $config->{access});
     return $self->{jobAccess}->{$type};
+}
+
+###############################################################################
+# Get hash where keys are string delay actions and values are corresponding AnyJob::Access::Resource objects which
+# represents access to performing specified action with job of specified type.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     hash where keys are string delay actions and values are corresponding AnyJob::Access::Resource objects.
+#
+sub getJobDelayAccess {
+    my $self = shift;
+    my $type = shift;
+
+    if (exists($self->{jobDelayAccess}->{$type})) {
+        return $self->{jobDelayAccess}->{$type};
+    }
+
+    my $delayAccess = {};
+
+    my $config = $self->getJobConfig($type);
+    if (defined($config) and exists($config->{delay_access})) {
+        eval {
+            $delayAccess = decode_json($config->{delay_access});
+        };
+        if ($@ or ref($delayAccess) ne 'HASH') {
+            require Carp;
+            Carp::confess('Wrong delay access of job \'' . $type . '\': ' . $config->{delay_access});
+        }
+    }
+
+    $self->{jobDelayAccess} ||= {};
+    $self->{jobDelayAccess}->{$type} = {};
+
+    foreach my $action (keys(%$delayAccess)) {
+        if (exists(DELAY_ALL_ACTIONS()->{$action})) {
+            $self->{jobDelayAccess}->{$type}->{$action} =
+                AnyJob::Access::Resource->new(input => $delayAccess->{$action});
+        }
+    }
+
+    return $self->{jobDelayAccess}->{$type};
 }
 
 ###############################################################################
@@ -925,29 +972,6 @@ sub getProps {
 }
 
 ###############################################################################
-# Get array of strings with names of internal job properties which are legal but can't be set by creator's clients,
-# only by creator itself.
-#
-# Returns:
-#     array of strings with names of properties.
-#
-sub getInternalProps {
-    my $self = shift;
-
-    if (exists($self->{internalProps})) {
-        return $self->{internalProps};
-    }
-
-    $self->{internalProps} = [];
-
-    my $config = $self->section('creator') || {};
-    my $internalProps = defined($config->{internal_props}) ? $config->{internal_props} : DEFAULT_INTERNAL_PROPS;
-
-    $self->{internalProps} = [ split(/\s*,\s*/, $internalProps) ];
-    return $self->{internalProps};
-}
-
-###############################################################################
 # Get hash with access groups. Each element of that hash is an array with accesses and groups.
 # Details see in documentation.
 #
@@ -1016,13 +1040,10 @@ sub getDelayAccess {
     }
 
     $self->{delayAccess} = {};
-    foreach my $action (@{DELAY_ALL_ACTIONS()}) {
-        if (exists($delayAccess->{$action})) {
-            if ($delayAccess->{$action} ne '') {
-                $self->{delayAccess}->{$action} = AnyJob::Access::Resource->new(input => $delayAccess->{$action});
-            } else {
-                $self->{delayAccess}->{$action} = $AnyJob::Access::Resource::ACCESS_ANY;
-            }
+
+    foreach my $action (keys(%$delayAccess)) {
+        if (exists(DELAY_ALL_ACTIONS()->{$action})) {
+            $self->{delayAccess}->{$action} = AnyJob::Access::Resource->new(input => $delayAccess->{$action});
         }
     }
 

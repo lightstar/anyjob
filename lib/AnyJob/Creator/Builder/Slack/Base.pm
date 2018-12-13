@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Base;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  19.02.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -71,15 +71,15 @@ sub sendResponse {
 
     weaken($self);
     http_post($url, encode_json($response), headers => {
-            'Content-Type' => 'application/json; charset=utf-8'
-        }, sub {
-            my ($body, $headers) = @_;
-            if (defined($self) and $headers->{Status} !~ /^2/) {
-                $self->parent->setBusy(1);
-                $self->error('Slack request failed, url: ' . $url . ', response: ' . $body);
-                $self->parent->setBusy(0);
-            }
-        });
+        'Content-Type' => 'application/json; charset=utf-8'
+    }, sub {
+        my ($body, $headers) = @_;
+        if (defined($self) and $headers->{Status} !~ /^2/) {
+            $self->parent->setBusy(1);
+            $self->error('Slack request failed, url: ' . $url . ', response: ' . $body);
+            $self->parent->setBusy(0);
+        }
+    });
 }
 
 ###############################################################################
@@ -113,32 +113,32 @@ sub callApiMethod {
 
     weaken($self);
     http_post($url, encode_json($data), headers => {
-            'Content-Type' => 'application/json; charset=utf-8',
-            Authorization  => 'Bearer ' . $config->{api_token}
-        }, sub {
-            my ($body, $headers) = @_;
-            if (defined($self)) {
-                my $result;
-                $self->parent->setBusy(1);
-                if ($headers->{Status} !~ /^2/) {
+        'Content-Type' => 'application/json; charset=utf-8',
+        Authorization  => 'Bearer ' . $config->{api_token}
+    }, sub {
+        my ($body, $headers) = @_;
+        if (defined($self)) {
+            my $result;
+            $self->parent->setBusy(1);
+            if ($headers->{Status} !~ /^2/) {
+                $self->error('Slack method failed, url: ' . $url . ', response: ' . $body);
+            } else {
+                my $response;
+                eval {
+                    $response = decode_json($body);
+                };
+                if ($@ or not $response->{ok}) {
                     $self->error('Slack method failed, url: ' . $url . ', response: ' . $body);
                 } else {
-                    my $response;
-                    eval {
-                        $response = decode_json($body);
-                    };
-                    if ($@ or not $response->{ok}) {
-                        $self->error('Slack method failed, url: ' . $url . ', response: ' . $body);
-                    } else {
-                        $result = $response;
-                    }
+                    $result = $response;
                 }
-                if (defined($callback)) {
-                    $callback->($result);
-                }
-                $self->parent->setBusy(0);
             }
-        });
+            if (defined($callback)) {
+                $callback->($result);
+            }
+            $self->parent->setBusy(0);
+        }
+    });
 }
 
 ###############################################################################
@@ -157,9 +157,49 @@ sub showDialog {
     my $callback = shift;
 
     $self->callApiMethod('dialog.open', {
-            trigger_id => $triggerId,
-            dialog     => $dialog
-        }, $callback);
+        trigger_id => $triggerId,
+        dialog     => $dialog
+    }, $callback);
+}
+
+###############################################################################
+# Create build and initiate service command 'get delayed works' to get delayed work user wishes to update or delete.
+# Later on builder will receive service event 'get delayed works' and process it to continue operation.
+#
+# Arguments:
+#     delay       - hash with delay data.
+#     job         - hash with job data.
+#     userId      - string user id.
+#     responseUrl - string response url.
+#     triggerId   - string trigger id.
+#     userName    - string user name.
+#
+sub createGetDelayedWorkBuild {
+    my $self = shift;
+    my $delay = shift;
+    my $job = shift;
+    my $userId = shift;
+    my $responseUrl = shift;
+    my $triggerId = shift;
+    my $userName = shift;
+
+    my $params = {
+        type        => 'slack_delay',
+        userId      => $userId,
+        userName    => $userName,
+        job         => $job,
+        delay       => $delay,
+        trigger     => $triggerId,
+        responseUrl => $responseUrl
+    };
+
+    my $id = $self->getNextBuildId();
+    $self->redis->zadd('anyjob:builds', time() + $self->getCleanTimeout(), $id);
+    $self->redis->set('anyjob:build:' . $id, encode_json($params));
+
+    $self->parent->getDelayedWorks('slack', $delay->{id}, {
+        service => $self->name . ':' . $id
+    });
 }
 
 ###############################################################################

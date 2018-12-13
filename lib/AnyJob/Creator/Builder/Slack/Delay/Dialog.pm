@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Delay::Dialog;
 #
 # Author:       LightStar
 # Created:      09.12.2018
-# Last update:  09.12.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -14,6 +14,9 @@ use warnings;
 use utf8;
 
 use JSON::XS;
+
+use AnyJob::Constants::Events qw(EVENT_GET_DELAYED_WORKS);
+use AnyJob::Constants::Delay;
 
 use base 'AnyJob::Creator::Builder::Slack::Dialog';
 
@@ -51,7 +54,7 @@ sub command {
     }
 
     unless ($self->parentAddon->checkJobAccess($userId, $job) and
-        $self->parentAddon->checkDelayAccess($userId, $delay)
+        $self->parentAddon->checkDelayAccess($userId, $delay, $job)
     ) {
         return 'Error: access denied';
     }
@@ -59,6 +62,82 @@ sub command {
     if (defined(my $parseErrors = $self->checkParseErrors($errors))) {
         return $parseErrors;
     }
+
+    if ($delay->{action} eq DELAY_ACTION_UPDATE) {
+        $self->createGetDelayedWorkBuild($delay, $job, $userId, $responseUrl, $triggerId, $userName);
+        return undef;
+    }
+
+    my $error = $self->createAndShowDialog($delay, $job, $userId, $responseUrl, $triggerId, $userName);
+    if (defined($error)) {
+        return $error;
+    }
+
+    return undef;
+}
+
+###############################################################################
+# Method which will be called when new service event arrives. Continue update operation here.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub receiveServiceEvent {
+    my $self = shift;
+    my $event = shift;
+
+    unless ($event->{type} eq EVENT_GET_DELAYED_WORKS) {
+        return;
+    }
+
+    my ($id, $build);
+    (undef, $id) = split(/:/, $event->{props}->{service});
+    unless (defined($id) and defined($build = $self->getBuild($id))) {
+        return;
+    }
+    my $response = undef;
+    if (scalar(@{$event->{works}}) != 1) {
+        $response = 'Error: delayed work not found';
+    } else {
+        my $action = $build->{delay}->{action};
+        my $work = $event->{works}->[0];
+
+        unless ($self->parentAddon->checkDelayedWorkAccess($build->{userId}, $action, $work)) {
+            $response = 'Error: access denied';
+        } elsif ($action eq DELAY_ACTION_UPDATE) {
+            $response = $self->createAndShowDialog($build->{delay}, $build->{job}, $build->{userId},
+                $build->{responseUrl}, $build->{triggerId}, $build->{userName});
+        }
+    }
+
+    $self->cleanBuild($id);
+
+    if (defined($response)) {
+        $self->sendResponse({ text => $response }, $build->{responseUrl});
+    }
+}
+
+###############################################################################
+# Create dialog and show it.
+#
+# Arguments:
+#     delay       - hash with delay data.
+#     job         - hash with job data.
+#     userId      - string user id.
+#     responseUrl - string response url.
+#     triggerId   - string trigger id.
+#     userName    - string user name.
+# Returns:
+#     string error to show to user or undef.
+#
+sub createAndShowDialog {
+    my $self = shift;
+    my $delay = shift;
+    my $job = shift;
+    my $userId = shift;
+    my $responseUrl = shift;
+    my $triggerId = shift;
+    my $userName = shift;
 
     my ($dialog, $id, $error) = $self->createDialogAndBuild($userId, $responseUrl, $triggerId, $userName,
         $job, { delay => $delay });

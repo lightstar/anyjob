@@ -186,16 +186,12 @@ Creator configuration section is named 'creator'. Below are all recognizible key
 props                 - JSON array of objects describing all properties that can be set by creator user. All fields for
                         every that object are the same as for job parameters (see below about job configuration).
                         Default: '[]'.
-internal_props        - list of internal properties names separated by comma. Those names are not set by user but by
-                        creator itself. Default: 'creator,author,observer,response_url,delayed'.
 access_groups         - JSON hash with access groups used to access jobs, jobs nodes, jobs parameters and properties.
                         Each hash key here is group name, and value is array of strings with provided accesses.
                         Look for details about what accesses and access groups are in access.txt documentation file.
 delay_access          - JSON hash with accesses needed to perform operations with delayed works. Each hash key here
                         is one of operation name ('create', 'update', 'delete', 'get'), and value is string with
-                        accesses needed to perform this operation. By default nobody has access to any operation so
-                        you must explicitly define all required accesses (which could be empty strings if no accesses
-                        are required, but of course this is not secure).
+                        accesses needed to perform this operation. By default everyone has access to any operation.
 
 8. Node configuration sections.
 
@@ -297,6 +293,10 @@ default_nodes         - list of node names separated by comma on which this job 
 access                - string with accesses required to create this job.
 nodes_access          - JSON hash where keys are node names and values are strings with accesses needed to create job
                         on these nodes. Missing nodes here means no required access.
+delay_access          - JSON hash with accesses needed to perform operations with delayed works containing this job.
+                        Each hash key here is one of operation name ('create', 'update', 'delete', 'get'), and value
+                        is string with accesses needed to perform this operation. By default everyone has access to
+                        any operation (user will also need general create access for this job anyway).
 label                 - short text description of this job. By default job type itself is used.
 group                 - optional group name for this job. Used to organize jobs and simplify selecting them in creator.
 worker                - optional worker name for this job to use configuration from. If this worker run as daemon then

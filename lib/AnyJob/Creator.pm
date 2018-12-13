@@ -9,7 +9,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  12.12.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -679,26 +679,6 @@ sub getDelayedWorks {
         (defined($id) ? (id => $id) : ()),
         (defined($props) ? (props => $props) : ())
     }));
-}
-
-###############################################################################
-# Strip all configured internal properties from provided event.
-#
-# Arguments:
-#     event - hash with event data. Details about what event data can contain see in documentation.
-#
-sub stripInternalPropsFromEvent {
-    my $self = shift;
-    my $event = shift;
-
-    foreach my $name (@{$self->config->getInternalProps()}) {
-        delete $event->{props}->{$name};
-        if (exists($event->{jobs})) {
-            foreach my $job (@{$event->{jobs}}) {
-                delete $job->{props}->{$name};
-            }
-        }
-    }
 }
 
 1;

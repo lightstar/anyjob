@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Simple;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  08.12.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -47,9 +47,8 @@ sub command {
         return 'Error: access denied';
     }
 
-    $errors = [ grep {$_->{type} eq 'error'} @$errors ];
-    if (scalar(@$errors) > 0) {
-        return 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors);
+    if (defined(my $parseErrors = $self->checkParseErrors($errors))) {
+        return $parseErrors;
     }
 
     $self->debug('Create jobs using slack app simple build by user \'' . $userId . '\' (\'' . $userName .
@@ -69,6 +68,25 @@ sub command {
     return 'Job created';
 }
 
+###############################################################################
+# Check errors returned by AnyJob::Creator::Parser module and return error string if they are unrecoverable.
+#
+# Arguments:
+#     errors - array with parse errors.
+# Returns:
+#     string error to show to user or undef.
+#
+sub checkParseErrors {
+    my $self = shift;
+    my $errors = shift;
+
+    $errors = [ grep {$_->{type} eq 'error'} @$errors ];
+    if (scalar(@$errors) > 0) {
+        return 'Error' . (scalar(@$errors) > 1 ? 's' : '') . ': ' . join(', ', map {$_->{text}} @$errors);
+    }
+
+    return undef;
+}
 
 ###############################################################################
 # Dialog submission is not supported in this builder.

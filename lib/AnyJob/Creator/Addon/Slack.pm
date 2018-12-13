@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  08.12.2018
+# Last update:  13.12.2018
 #
 
 use strict;
@@ -17,7 +17,8 @@ use AnyEvent::HTTP;
 use Template;
 use Scalar::Util qw(weaken);
 
-use AnyJob::Constants::Events qw(EVENT_TYPE_JOB);
+use AnyJob::Constants::Events qw(EVENT_TYPE_JOB EVENT_GET_DELAYED_WORKS);
+use AnyJob::Constants::Delay;
 use AnyJob::Utils qw(getModuleName requireModule);
 use AnyJob::Events qw(getEventType);
 use AnyJob::DateTime qw(formatDateTime);
@@ -209,6 +210,28 @@ sub generateBuildersByCommand {
 }
 
 ###############################################################################
+# Method which will be called by AnyJob::Creator::Observer when new service event arrives.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub receiveServiceEvent {
+    my $self = shift;
+    my $event = shift;
+
+    $self->parent->setBusy(1);
+
+    my ($name) = split(/:/, $event->{props}->{service});
+
+    my $builder = $self->getBuilder($name);
+    if (defined($builder)) {
+        $builder->receiveServiceEvent($event);
+    }
+
+    $self->parent->setBusy(0);
+}
+
+###############################################################################
 # Method which will be called by AnyJob::Creator::Observer when new private event arrives.
 #
 # Arguments:
@@ -219,8 +242,8 @@ sub receivePrivateEvent {
     my $event = shift;
 
     $self->parent->setBusy(1);
+
     if ($self->eventFilter($event) and defined(my $url = $event->{props}->{response_url})) {
-        $self->parent->stripInternalPropsFromEvent($event);
         my $payload = $self->getEventPayload($event);
 
         weaken($self);
@@ -235,6 +258,7 @@ sub receivePrivateEvent {
             }
         });
     }
+
     $self->parent->setBusy(0);
 }
 
@@ -268,7 +292,8 @@ sub getEventPayload {
 
 ###############################################################################
 # Prepare private observer event for further processing.
-# Inject 'job' (hash with job configuration if this is job-related event) and format times.
+# Inject 'job' (hash with job configuration if this is job-related event), check access to incoming delayed works
+# and format times.
 #
 # Arguments:
 #     event  - hash with event data.
@@ -282,7 +307,12 @@ sub preprocessEvent {
         $event->{job} = $self->config->getJobConfig($event->{type});
     }
 
-    if ($event->{works}) {
+    if (exists($event->{works})) {
+        if ($event->{event} eq EVENT_GET_DELAYED_WORKS and exists($event->{props}->{user})) {
+            my $user = $event->{props}->{user};
+            $event->{works} = [ grep {$self->checkDelayedWorkAccess($user, DELAY_ACTION_GET, $_)} @{$event->{works}} ];
+        }
+
         foreach my $work (@{$event->{works}}) {
             if (exists($work->{time})) {
                 $work->{time} = formatDateTime($work->{time});
