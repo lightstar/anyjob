@@ -336,8 +336,6 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
 specific one).
 {
     "event": "getDelayedWorks",
-    "time": <integer unix timestamp>,
-    "node": "<string node name>",
     "works": [
         {
             "id": <integer delayed work id>,
@@ -384,6 +382,17 @@ specific one).
         },
         ...
     ],
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    }
+}
+
+15. 'Status' event. It is sent after some operations as reply to signify success or error.
+{
+    "event": "status",
+    "success": 0/1,
+    "message": "...",
     "props": {
         "<string property name>": "<string property value>",
         ...

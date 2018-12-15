@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  12.12.2018
+# Last update:  15.12.2018
 #
 
 use strict;
@@ -169,6 +169,7 @@ sub processCreateAction {
     my $delayedWork = {
         summary => $event->{summary},
         time    => $event->{time},
+        update  => 1,
         jobs    => $event->{jobs},
         props   => $event->{props} || {}
     };
@@ -218,14 +219,23 @@ sub processUpdateAction {
     }
 
     my $id = $event->{id};
-    unless (defined($self->getDelayedWork($id))) {
+    my $oldDelayedWork = $self->getDelayedWork($id);
+    unless (defined($oldDelayedWork)) {
         $self->error('No delayed work with id \'' . $id . '\' to update');
+        $self->sendStatusEvent($event, 0, 'Error: delayed work not found');
+        return;
+    }
+
+    if (exists($event->{props}->{check_update}) and $event->{props}->{check_update} != $oldDelayedWork->{update}) {
+        $self->error('Update count for delayed work with id \'' . $id . '\' was changed');
+        $self->sendStatusEvent($event, 0, 'Error: update count was changed');
         return;
     }
 
     my $delayedWork = {
         summary => $event->{summary},
         time    => $event->{time},
+        update  => $oldDelayedWork->{update} + 1,
         jobs    => $event->{jobs},
         props   => $event->{props} || {}
     };
@@ -234,13 +244,15 @@ sub processUpdateAction {
     $delayedWork->{props}->{time} = time();
 
     $self->debug('Update delayed work \'' . $id . '\' with summary \'' . $delayedWork->{summary} . '\', time \'' .
-        formatDateTime($delayedWork->{time}) . '\', jobs ' . encode_json($delayedWork->{jobs}) . ' and props ' .
-        encode_json($delayedWork->{props})
+        formatDateTime($delayedWork->{time}) . '\', update count \'' . $delayedWork->{update} . '\', jobs ' .
+        encode_json($delayedWork->{jobs}) . ' and props ' . encode_json($delayedWork->{props})
     );
 
     my $time = $self->getNextTime($delayedWork);
     $self->redis->set('anyjob:delayed:' . $id, encode_json($delayedWork));
     $self->redis->zadd('anyjob:delayed', $time, $id);
+
+    $self->sendStatusEvent($event, 1, 'Delayed work updated');
 
     $self->sendEvent(EVENT_UPDATE_DELAYED_WORK, {
         id        => $id,
@@ -278,6 +290,13 @@ sub processDeleteAction {
     my $delayedWork = $self->getDelayedWork($id);
     unless (defined($delayedWork)) {
         $self->error('No delayed work with id \'' . $id . '\' to delete');
+        $self->sendStatusEvent($event, 0, 'Error: delayed work not found');
+        return;
+    }
+
+    if (exists($event->{props}->{check_update}) and $event->{props}->{check_update} != $delayedWork->{update}) {
+        $self->error('Update count for delayed work with id \'' . $id . '\' was changed');
+        $self->sendStatusEvent($event, 0, 'Error: update count was changed');
         return;
     }
 
@@ -290,6 +309,8 @@ sub processDeleteAction {
         my @keys = keys(%{$event->{props}});
         @{$props}{@keys} = @{$event->{props}}{@keys};
     }
+
+    $self->sendStatusEvent($event, 1, 'Delayed work removed');
 
     $self->sendEvent(EVENT_DELETE_DELAYED_WORK, {
         id        => $id,
@@ -342,6 +363,35 @@ sub processGetAction {
         event => EVENT_GET_DELAYED_WORKS,
         works => \@delayedWorksArray,
         props => $event->{props} || {}
+    }));
+}
+
+###############################################################################
+# Send status event to private observer.
+#
+# Arguments:
+#     event   - hash with processing event data.
+#     success - 0/1 flag. If set, operation was successfull, otherwise - not.
+#     message - status message to send.
+#
+sub sendStatusEvent {
+    my $self = shift;
+    my $event = shift;
+    my $success = shift;
+    my $message = shift;
+
+    unless (exists($event->{props}->{status_service}) and exists($event->{props}->{observer})) {
+        return;
+    }
+
+    my $props = { %{$event->{props}} };
+    $props->{service} = $props->{status_service};
+
+    $self->redis->rpush('anyjob:observerq:private:' . $event->{props}->{observer}, encode_json({
+        event   => EVENT_STATUS,
+        success => $success ? 1 : 0,
+        message => $message,
+        props   => $props
     }));
 }
 

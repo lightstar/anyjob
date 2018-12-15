@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      29.11.2017
- * Last update:  06.12.2018
+ * Last update:  15.12.2018
  */
 
 /**
@@ -23,6 +23,7 @@ var EVENT_UPDATE_DELAYED_WORK = 'updateDelayedWork';
 var EVENT_DELETE_DELAYED_WORK = 'deleteDelayedWork';
 var EVENT_PROCESS_DELAYED_WORK = 'processDelayedWork';
 var EVENT_GET_DELAYED_WORKS = 'getDelayedWorks';
+var EVENT_STATUS = 'status';
 
 /**
  * Minimal delay in milliseconds between appearings of new events in observer.

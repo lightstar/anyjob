@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  27.11.2018
+ * Last update:  15.12.2018
  */
 
 app.directive('observer', function ($timeout) {
@@ -69,6 +69,8 @@ app.directive('observer', function ($timeout) {
                         event.class = 'text-primary';
                         break;
                     case EVENT_CREATE_JOBSET:
+                    case EVENT_CREATE_DELAYED_WORK:
+                    case EVENT_UPDATE_DELAYED_WORK:
                         event.class = 'text-primary';
                         break;
                     case EVENT_PROGRESS:
@@ -77,6 +79,7 @@ app.directive('observer', function ($timeout) {
                         event.class = 'text-info';
                         break;
                     case EVENT_PROGRESS_JOBSET:
+                    case EVENT_PROCESS_DELAYED_WORK:
                         event.class = 'text-info';
                         break;
                     case EVENT_FINISH:
@@ -91,9 +94,11 @@ app.directive('observer', function ($timeout) {
                         event.class = 'text-danger';
                         break;
                     case EVENT_CLEAN_JOBSET:
+                    case EVENT_DELETE_DELAYED_WORK:
                         event.class = 'text-danger';
                         break;
-                    case EVENT_DELAYED_WORKS:
+                    case EVENT_GET_DELAYED_WORKS:
+                    case EVENT_STATUS:
                         event.class = 'text-info';
                         break;
                     default:

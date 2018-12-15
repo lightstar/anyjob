@@ -5,7 +5,7 @@ package AnyJob::Events;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  27.11.2018
+# Last update:  15.12.2018
 #
 
 use strict;
@@ -23,7 +23,7 @@ our @EXPORT_OK = qw(
     getAllEventsHash
     isValidEvent
     getEventType
-    );
+);
 
 ###############################################################################
 # All valid events with their names and types.
@@ -84,6 +84,10 @@ my @EVENTS = (
     {
         event => EVENT_GET_DELAYED_WORKS,
         type  => EVENT_TYPE_DELAYED_WORK
+    },
+    {
+        event => EVENT_STATUS,
+        type  => EVENT_TYPE_STATUS
     }
 );
 

@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Delay::Dialog;
 #
 # Author:       LightStar
 # Created:      09.12.2018
-# Last update:  13.12.2018
+# Last update:  15.12.2018
 #
 
 use strict;
@@ -15,7 +15,7 @@ use utf8;
 
 use JSON::XS;
 
-use AnyJob::Constants::Events qw(EVENT_GET_DELAYED_WORKS);
+use AnyJob::Constants::Events qw(EVENT_STATUS EVENT_GET_DELAYED_WORKS);
 use AnyJob::Constants::Delay;
 
 use base 'AnyJob::Creator::Builder::Slack::Dialog';
@@ -77,7 +77,7 @@ sub command {
 }
 
 ###############################################################################
-# Method which will be called when new service event arrives. Continue update operation here.
+# Method which will be called when new service event arrives.
 #
 # Arguments:
 #     event - hash with event data.
@@ -86,9 +86,22 @@ sub receiveServiceEvent {
     my $self = shift;
     my $event = shift;
 
-    unless ($event->{event} eq EVENT_GET_DELAYED_WORKS) {
-        return;
+    if ($event->{event} eq EVENT_STATUS) {
+        $self->sendResponse({ text => $event->{message} }, $event->{props}->{response_url});
+    } elsif ($event->{event} eq EVENT_GET_DELAYED_WORKS) {
+        $self->continueDelayedWorkAction($event);
     }
+}
+
+###############################################################################
+# Continue update operation.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub continueDelayedWorkAction {
+    my $self = shift;
+    my $event = shift;
 
     my ($id, $build);
     (undef, $id) = split(/:/, $event->{props}->{service});
@@ -106,7 +119,7 @@ sub receiveServiceEvent {
             $response = 'Error: access denied';
         } elsif ($action eq DELAY_ACTION_UPDATE) {
             $response = $self->createAndShowDialog($build->{delay}, $build->{job}, $build->{userId},
-                $build->{responseUrl}, $build->{trigger}, $build->{userName});
+                $build->{responseUrl}, $build->{trigger}, $build->{userName}, $work->{update});
         }
     }
 
@@ -127,6 +140,7 @@ sub receiveServiceEvent {
 #     responseUrl - string response url.
 #     triggerId   - string trigger id.
 #     userName    - string user name.
+#     updateCount - update count which must be checked for permanence before updating.
 # Returns:
 #     string error to show to user or undef.
 #
@@ -138,9 +152,13 @@ sub createAndShowDialog {
     my $responseUrl = shift;
     my $triggerId = shift;
     my $userName = shift;
+    my $updateCount = shift;
 
-    my ($dialog, $id, $error) = $self->createDialogAndBuild($userId, $responseUrl, $triggerId, $userName,
-        $job, { delay => $delay });
+    my ($dialog, $id, $error) = $self->createDialogAndBuild($userId, $responseUrl, $triggerId, $userName, $job, {
+        delay => $delay,
+        ((exists($delay->{id}) and defined($updateCount)) ? (checkUpdate => $updateCount) : ())
+    });
+
     if (defined($error)) {
         return $error;
     }
@@ -184,17 +202,24 @@ sub dialogSubmission {
 
     $self->debug('Delay jobs using slack app dialog build: ' . encode_json($build));
 
-    my $error = $self->parent->delayJobs($build->{delay}, [ $build->{job} ], {
+    my $props = {
         creator      => 'slack',
         author       => $build->{userName},
         observer     => 'slack',
         response_url => $build->{responseUrl}
-    });
+    };
+
+    if (exists($build->{delay}->{id}) and exists($build->{updateCount})) {
+        $props->{check_update} = $build->{updateCount};
+        $props->{status_service} = $self->name;
+    }
+
+    my $error = $self->parent->delayJobs($build->{delay}, [ $build->{job} ], $props);
 
     if (defined($error)) {
         $self->debug('Delaying failed: ' . $error);
         $self->sendResponse({ text => 'Error: ' . $error }, $build->{responseUrl});
-    } else {
+    } elsif (not exists($build->{delay}->{id}) or not exists($build->{updateCount})) {
         my $response = exists($build->{delay}->{id}) ? 'Delayed work updated' : 'Job delayed';
         $self->sendResponse({ text => $response }, $build->{responseUrl});
     }
