@@ -1,0 +1,4 @@
+Here are all options recognized by anyjob controllers in 'opts' field. For now only delay controller supports them.
+
+check_update      - integer update count which must be checked by delay controller before update or delete operation.
+status_service    - string service data which must be sent as 'service' property in status event.

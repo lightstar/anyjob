@@ -5,7 +5,7 @@ package AnyJob::Controller::Node;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  20.06.2018
+# Last update:  16.12.2018
 #
 
 use strict;
@@ -116,6 +116,7 @@ sub getSignalQueues {
 # There can be three types of events.
 # 1. 'Create job' event. Sent by creator component or by global controller as part of creating jobset.
 # Integer 'jobset' field is optional here. If provided, this job is part of jobset.
+# Fields 'params' and 'props' are optional too.
 # {
 #     type => '...',
 #     jobset => ...,

@@ -139,6 +139,7 @@ AnyJob может применяться как для упрощения авт
    - [doc/access.txt](doc/access.txt) - доступы к задачам, а также к узлам, параметрам и свойствам задач.
    - [doc/event.txt](doc/event.txt) - события и наблюдатели.
    - [doc/props.txt](doc/props.txt) - свойства (*properties*) задач и наборов задач.
+   - [doc/opts.txt](doc/opts.txt) - опции (*options*) операций с отложенными работами.
    - [doc/redis.txt](doc/redis.txt) - используемые ключи *redis*.
    - [doc/semaphore.txt](doc/semaphore.txt) - семафоры.
 

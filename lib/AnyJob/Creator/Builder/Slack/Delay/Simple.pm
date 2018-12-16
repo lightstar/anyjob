@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Delay::Simple;
 #
 # Author:       LightStar
 # Created:      06.12.2018
-# Last update:  15.12.2018
+# Last update:  16.12.2018
 #
 
 use strict;
@@ -147,19 +147,20 @@ sub delayJob {
     my $userName = shift;
     my $updateCount = shift;
 
-    my $props = {
+    my $opts = undef;
+    if (exists($delay->{id}) and defined($updateCount)) {
+        $opts = {
+            check_update   => $updateCount,
+            status_service => $self->name
+        };
+    }
+
+    my $error = $self->parent->delayJobs($delay, [ $job ], {
         creator      => 'slack',
         author       => $userName,
         observer     => 'slack',
         response_url => $responseUrl
-    };
-
-    if (exists($delay->{id}) and defined($updateCount)) {
-        $props->{check_update} = $updateCount;
-        $props->{status_service} = $self->name;
-    }
-
-    my $error = $self->parent->delayJobs($delay, [ $job ], $props);
+    }, $opts);
 
     if (defined($error)) {
         $self->debug('Delaying failed: ' . $error);
@@ -191,19 +192,20 @@ sub deleteDelayedWork {
     my $userName = shift;
     my $updateCount = shift;
 
-    my $props = {
+    my $opts = undef;
+    if (defined($updateCount)) {
+        $opts = {
+            check_update   => $updateCount,
+            status_service => $self->name
+        };
+    }
+
+    $self->parent->deleteDelayedWork($delay->{id}, {
         creator      => 'slack',
         author       => $userName,
         observer     => 'slack',
         response_url => $responseUrl
-    };
-
-    if (defined($updateCount)) {
-        $props->{check_update} = $updateCount;
-        $props->{status_service} = $self->name;
-    }
-
-    $self->parent->deleteDelayedWork($delay->{id}, $props);
+    }, $opts);
 
     if (defined($updateCount)) {
         return undef;

@@ -6,7 +6,7 @@ package AnyJob::Controller::Global;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  20.06.2018
+# Last update:  16.12.2018
 #
 
 use strict;
@@ -100,7 +100,7 @@ sub getSignalQueues {
 # It also can process events with only one job inside redirecting it to queue of the right node (for that
 # it must contain string 'node' field).
 # There can be two types of events.
-# 1. 'Create jobset' event. Sent by creator component. Field 'type' is optional here.
+# 1. 'Create jobset' event. Sent by creator component. Fields 'type' and 'props' are optional here.
 # {
 #     type => '...'
 #     jobs => [ {

@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Delay::Dialog;
 #
 # Author:       LightStar
 # Created:      09.12.2018
-# Last update:  15.12.2018
+# Last update:  16.12.2018
 #
 
 use strict;
@@ -202,19 +202,20 @@ sub dialogSubmission {
 
     $self->debug('Delay jobs using slack app dialog build: ' . encode_json($build));
 
-    my $props = {
+    my $opts = undef;
+    if (exists($build->{delay}->{id}) and defined($build->{updateCount})) {
+        $opts = {
+            check_update   => $build->{updateCount},
+            status_service => $self->name
+        };
+    }
+
+    my $error = $self->parent->delayJobs($build->{delay}, [ $build->{job} ], {
         creator      => 'slack',
         author       => $build->{userName},
         observer     => 'slack',
         response_url => $build->{responseUrl}
-    };
-
-    if (exists($build->{delay}->{id}) and exists($build->{updateCount})) {
-        $props->{check_update} = $build->{updateCount};
-        $props->{status_service} = $self->name;
-    }
-
-    my $error = $self->parent->delayJobs($build->{delay}, [ $build->{job} ], $props);
+    }, $opts);
 
     if (defined($error)) {
         $self->debug('Delaying failed: ' . $error);

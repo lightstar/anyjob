@@ -9,7 +9,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  13.12.2018
+# Last update:  16.12.2018
 #
 
 use strict;
@@ -331,8 +331,7 @@ sub parse {
 #                params => { 'param1' => '...', 'param2' => '...', ... },
 #                props => { 'prop1' => '...', 'prop2' => '...', ... }
 #             }, ...]
-#     props - hash with properties injected into all jobs if any.
-#
+#     props - optional hash with properties injected into all jobs.
 # Returns:
 #     string error message or undef if there are no any errors.
 #
@@ -373,8 +372,8 @@ sub createJobs {
 #                params => { 'param1' => '...', 'param2' => '...', ... },
 #                props => { 'prop1' => '...', 'prop2' => '...', ... }
 #             }, ...]
-#     props - hash with properties injected into all jobs if any.
-#
+#     props - optional hash with properties injected into all jobs.
+#     opts  -  optional hash with operation options.
 # Returns:
 #     string error message or undef if there are no any errors.
 #
@@ -383,7 +382,7 @@ sub delayJobs {
     my $delay = shift;
     my $jobs = shift;
     my $props = shift;
-    $props ||= {};
+    my $opts = shift;
 
     my $error = $self->checkDelay($delay);
     if (defined($error)) {
@@ -420,9 +419,9 @@ sub delayJobs {
     }
 
     if (defined($delay->{id})) {
-        $self->updateDelayedWork($delay->{id}, $delay->{summary}, $delay->{time}, \@delayedJobs, $props);
+        $self->updateDelayedWork($delay->{id}, $delay->{summary}, $delay->{time}, \@delayedJobs, $props, $opts);
     } else {
-        $self->createDelayedWork($delay->{summary}, $delay->{time}, \@delayedJobs, $props);
+        $self->createDelayedWork($delay->{summary}, $delay->{time}, \@delayedJobs, $props, $opts);
     }
 
     return undef;
@@ -445,8 +444,7 @@ sub delayJobs {
 #                params => { 'param1' => '...', 'param2' => '...', ... },
 #                props => { 'prop1' => '...', 'prop2' => '...', ... }
 #             }, ...]
-#     props - hash with properties injected into all jobs if any.
-#
+#     props - optional hash with properties injected into all jobs.
 # Returns:
 #     array of hashes with prepared jobs or undef in case of any error.
 #     string error message or undef if there are no any errors.
@@ -501,24 +499,25 @@ sub prepareJobs {
 # Almost nothing is checked here so better use higher level method 'createJobs' instead.
 #
 # Arguments:
-#     job - hash with job data. It should contain string fields 'type', 'node' and inner hashes 'params' and 'props'.
+#     job - hash with job data. It should contain string fields 'type', 'node' and optional inner hashes 'params' and
+#           'props'.
 #
 sub createJob {
     my $self = shift;
     my $job = shift;
 
     unless (defined($job->{type}) and defined($job->{node}) and $job->{type} ne '' and $job->{node} ne '' and
-        defined($job->{params}) and ref($job->{params}) eq 'HASH' and defined($job->{props}) and
-        ref($job->{props}) eq 'HASH'
+        (not defined($job->{params}) or ref($job->{params}) eq 'HASH') and
+        (not defined($job->{props}) or ref($job->{props}) eq 'HASH')
     ) {
         $self->error('Called createJob with wrong parameters');
         return;
     }
 
     $self->redis->rpush('anyjob:queue:' . $job->{node}, encode_json({
-        type   => $job->{type},
-        params => $job->{params},
-        props  => $job->{props}
+        type => $job->{type},
+        (defined($job->{params}) ? (params => $job->{params}) : ()),
+        (defined($job->{props}) ? (props => $job->{props}) : ())
     }));
 }
 
@@ -537,9 +536,10 @@ sub createJobSet {
     my $type = shift;
     my $jobs = shift;
     my $props = shift;
-    $props ||= {};
 
-    unless (defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and ref($props) eq 'HASH') {
+    unless (defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
+        (not defined($props) or ref($props) eq 'HASH')
+    ) {
         $self->error('Called createJobSet with wrong parameters');
         return;
     }
@@ -547,8 +547,8 @@ sub createJobSet {
     $self->redis->rpush('anyjob:queue', encode_json({
         (defined($type) ? (type => $type) : ()),
         jobset => 1,
-        props  => $props,
-        jobs   => $jobs
+        jobs   => $jobs,
+        (defined($props) ? (props => $props) : ())
     }));
 }
 
@@ -562,6 +562,7 @@ sub createJobSet {
 #     jobs    - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
 #               individual job.
 #     props   - optional hash with delayed work properties.
+#     opts    - optional hash with operation options.
 #
 sub createDelayedWork {
     my $self = shift;
@@ -569,10 +570,11 @@ sub createDelayedWork {
     my $time = shift;
     my $jobs = shift;
     my $props = shift;
+    my $opts = shift;
 
     unless (defined($summary) and $summary ne '' and defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
-        defined($time) and $time =~ /^\d+$/o and $time > 0 and
-        (not defined($props) or ref($props) eq 'HASH')
+        defined($time) and $time =~ /^\d+$/o and $time > 0 and (not defined($props) or ref($props) eq 'HASH') and
+        (not defined($opts) or ref($opts) eq 'HASH')
     ) {
         $self->error('Called createDelayedWork with wrong parameters');
         return;
@@ -583,7 +585,8 @@ sub createDelayedWork {
         summary => $summary,
         time    => $time,
         jobs    => $jobs,
-        props   => $props
+        (defined($props) ? (props => $props) : ()),
+        (defined($opts) ? (opts => $opts) : ())
     }));
 }
 
@@ -597,7 +600,8 @@ sub createDelayedWork {
 #     time    - integer delay time in unix timestamp format.
 #     jobs    - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
 #               individual job.
-#     props - optional hash with delayed work properties.
+#     props   - optional hash with delayed work properties.
+#     opts    - optional hash with operation options.
 #
 sub updateDelayedWork {
     my $self = shift;
@@ -606,11 +610,12 @@ sub updateDelayedWork {
     my $time = shift;
     my $jobs = shift;
     my $props = shift;
+    my $opts = shift;
 
     unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and defined($summary) and $summary ne '' and
         defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
         defined($time) and $time =~ /^\d+$/o and $time > 0 and
-        (not defined($props) or ref($props) eq 'HASH')
+        (not defined($props) or ref($props) eq 'HASH') and (not defined($opts) or ref($opts) eq 'HASH')
     ) {
         $self->error('Called updateDelayedWork with wrong parameters');
         return;
@@ -622,7 +627,8 @@ sub updateDelayedWork {
         summary => $summary,
         time    => $time,
         jobs    => $jobs,
-        props   => $props
+        (defined($props) ? (props => $props) : ()),
+        (defined($opts) ? (opts => $opts) : ())
     }));
 }
 
@@ -633,13 +639,17 @@ sub updateDelayedWork {
 #     id    - integer delayed work id to delete.
 #     props - optional hash with some properties or undef. If exists, all of them will be injected into finally
 #             generated 'delete delayed work' event.
+#     opts  - optional hash with operation options.
 #
 sub deleteDelayedWork {
     my $self = shift;
     my $id = shift;
     my $props = shift;
+    my $opts = shift;
 
-    unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and (not defined($props) or ref($props) eq 'HASH')) {
+    unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and (not defined($props) or ref($props) eq 'HASH') and
+        (not defined($opts) or ref($opts) eq 'HASH')
+    ) {
         $self->error('Called deleteDelayedWork with wrong parameters');
         return;
     }
@@ -647,7 +657,8 @@ sub deleteDelayedWork {
     $self->redis->rpush('anyjob:delayq', encode_json({
         action => 'delete',
         id     => $id,
-        (defined($props) ? (props => $props) : ())
+        (defined($props) ? (props => $props) : ()),
+        (defined($opts) ? (opts => $opts) : ())
     }));
 }
 
@@ -659,15 +670,17 @@ sub deleteDelayedWork {
 #     id       - optional integer delayed work id to get. If not provided, all delayed works are retrieved.
 #     props    - optional hash with some properties or undef. If exists, all of them will be sent back with
 #                generated 'get delayed works' event.
+#     opts     - optional hash with operation options.
 #
 sub getDelayedWorks {
     my $self = shift;
     my $observer = shift;
     my $id = shift;
     my $props = shift;
+    my $opts = shift;
 
     unless (defined($observer) and (not defined($id) or ($id =~ /^\d+$/o and $id > 0)) and
-        (not defined($props) or ref($props) eq 'HASH')
+        (not defined($props) or ref($props) eq 'HASH') and (not defined($opts) or ref($opts) eq 'HASH')
     ) {
         $self->error('Called getDelayedWorks with wrong parameters');
         return;
@@ -677,7 +690,8 @@ sub getDelayedWorks {
         action   => 'get',
         observer => $observer,
         (defined($id) ? (id => $id) : ()),
-        (defined($props) ? (props => $props) : ())
+        (defined($props) ? (props => $props) : ()),
+        (defined($opts) ? (opts => $opts) : ())
     }));
 }
 

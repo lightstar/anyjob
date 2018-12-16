@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  15.12.2018
+# Last update:  16.12.2018
 #
 
 use strict;
@@ -67,6 +67,7 @@ sub getProcessDelay {
 # Field 'time' is integer time in unix timestamp format identifying when to run provided jobs.
 # Field 'jobs' is array of hashes where each element is either jobset with inner jobs or just one individual job.
 # Field 'props' is optional hash with arbitrary properties binded to work.
+# Field 'opts' is optional hash with options impacting the operation.
 # {
 #     action => 'create',
 #     summary => '...',
@@ -84,7 +85,8 @@ sub getProcessDelay {
 #         },
 #         ...
 #     ],
-#     props => { prop1 => '...', prop2 => '...', ... }
+#     props => { prop1 => '...', prop2 => '...', ... },
+#     opts => { opt1 => '...', opt2 => '...', ... }
 # }
 # 2. 'Update delayed work' event. Field 'id' here is id of updated delayed work. All other fields are identical to
 # 'create delayed work' event.
@@ -106,24 +108,28 @@ sub getProcessDelay {
 #         },
 #         ...
 #     ],
-#     props => {...}
+#     props => {...},
+#     opts => {...}
 # }
 # 3. 'Delete delayed work' event. Field 'id' here is id of deleted delayed work.
 # Field 'props' is optional hash with some properties which will be injected into work properties in the final
-# delete event.
+# delete event and field 'opts' is optional hash with additional options impacting the operation.
 # {
 #     action => 'delete',
 #     id => ...,
-#     props => '...'
+#     props => {...},
+#     opts => {...}
 # }
 # 4. 'Get delayed works' event. Field 'observer' here is name of private observer where event with response will be
 #  sent. Field 'id' is optional and it is id of retrieved delayed work. If no id is given, then all delayed works are
-# retrieved. Field 'props' is optional hash with some properties which will be sent to observer with response event.
+# retrieved. Field 'props' is optional hash with some properties which will be sent to observer with response event and
+# field 'opts' is optional hash with additional options impacting the operation.
 # {
 #     action => 'get',
 #     observer => '...',
 #     id => ...,
-#     props => {...}
+#     props => {...},
+#     opts => {...}
 # }
 #
 sub processEvent {
@@ -155,15 +161,6 @@ sub processEvent {
 sub processCreateAction {
     my $self = shift;
     my $event = shift;
-
-    unless (defined($event->{summary}) and $event->{summary} ne '' and
-        defined($event->{time}) and $event->{time} =~ /^\d+$/o and $event->{time} > 0 and
-        defined($event->{jobs}) and ref($event->{jobs}) eq 'ARRAY' and scalar(@{$event->{jobs}}) > 0 and
-        (not defined($event->{props}) or ref($event->{props}) eq 'HASH')
-    ) {
-        $self->error('Wrong create delayed work event: ' . encode_json($event));
-        return;
-    }
 
     my $id = $self->getNextDelayedWorkId();
     my $delayedWork = {
@@ -209,15 +206,6 @@ sub processUpdateAction {
     my $self = shift;
     my $event = shift;
 
-    unless (defined($event->{id}) and defined($event->{summary}) and $event->{summary} ne '' and
-        defined($event->{time}) and $event->{time} =~ /^\d+$/o and $event->{time} > 0 and
-        defined($event->{jobs}) and ref($event->{jobs}) eq 'ARRAY' and scalar(@{$event->{jobs}}) > 0 and
-        (not defined($event->{props}) or ref($event->{props}) eq 'HASH')
-    ) {
-        $self->error('Wrong update delayed work event: ' . encode_json($event));
-        return;
-    }
-
     my $id = $event->{id};
     my $oldDelayedWork = $self->getDelayedWork($id);
     unless (defined($oldDelayedWork)) {
@@ -226,7 +214,7 @@ sub processUpdateAction {
         return;
     }
 
-    if (exists($event->{props}->{check_update}) and $event->{props}->{check_update} != $oldDelayedWork->{update}) {
+    if (exists($event->{opts}->{check_update}) and $event->{opts}->{check_update} != $oldDelayedWork->{update}) {
         $self->error('Update count for delayed work with id \'' . $id . '\' was changed');
         $self->sendStatusEvent($event, 0, 'Error: update count was changed');
         return;
@@ -281,11 +269,6 @@ sub processDeleteAction {
     my $self = shift;
     my $event = shift;
 
-    unless (defined($event->{id}) and (not defined($event->{props}) or ref($event->{props}) eq 'HASH')) {
-        $self->error('Wrong delete delayed work event: ' . encode_json($event));
-        return;
-    }
-
     my $id = $event->{id};
     my $delayedWork = $self->getDelayedWork($id);
     unless (defined($delayedWork)) {
@@ -294,7 +277,7 @@ sub processDeleteAction {
         return;
     }
 
-    if (exists($event->{props}->{check_update}) and $event->{props}->{check_update} != $delayedWork->{update}) {
+    if (exists($event->{opts}->{check_update}) and $event->{opts}->{check_update} != $delayedWork->{update}) {
         $self->error('Update count for delayed work with id \'' . $id . '\' was changed');
         $self->sendStatusEvent($event, 0, 'Error: update count was changed');
         return;
@@ -332,8 +315,8 @@ sub processGetAction {
     my $self = shift;
     my $event = shift;
 
-    unless (defined($event->{observer}) and (not defined($event->{props}) or ref($event->{props}) eq 'HASH')) {
-        $self->error('Wrong get delayed works event: ' . encode_json($event));
+    unless (defined($event->{observer}) and $event->{observer} ne '') {
+        $self->error('No observer in get delayed works event: ' . encode_json($event));
         return;
     }
 
@@ -380,12 +363,12 @@ sub sendStatusEvent {
     my $success = shift;
     my $message = shift;
 
-    unless (exists($event->{props}->{status_service}) and exists($event->{props}->{observer})) {
+    unless (exists($event->{opts}->{status_service}) and exists($event->{props}->{observer})) {
         return;
     }
 
     my $props = { %{$event->{props}} };
-    $props->{service} = $props->{status_service};
+    $props->{service} = $event->{opts}->{status_service};
 
     $self->redis->rpush('anyjob:observerq:private:' . $event->{props}->{observer}, encode_json({
         event   => EVENT_STATUS,

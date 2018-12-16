@@ -7,8 +7,6 @@ response_url      - url where slack private events should go. Default: none.
 delayed           - 0/1 flag. If set, this job or jobset is created using delayed work. Default: 0.
 service           - string service data. If exists, this event is service event which is not derived to user but
                     handled in some special way. Default: none.
-check_update      - integer update count which must be checked by delay controller before update or delete operation.
-status_service    - string service data which must be sent as 'service' property in status event.
 silent            - 0/1 flag. If set, events related to this job or jobset will not be processed by global observers.
                     By default corresponding setting in job configuration is used.
 nomail            - 0/1 flag. If set, events related to this job or jobset will not be processed by mail global

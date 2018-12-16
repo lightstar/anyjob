@@ -118,6 +118,7 @@ classes (*AnyJob::Worker::Job::Base* and *AnyJob::Worker::Context::Base*) are av
    - [doc/access.txt](doc/access.txt) - accesses to jobs, jobs nodes, jobs parameters and jobs properties.
    - [doc/event.txt](doc/event.txt) - events and observers.
    - [doc/props.txt](doc/props.txt) - properties of jobs and jobsets.
+   - [doc/opts.txt](doc/opts.txt) - options of delay operations.
    - [doc/redis.txt](doc/redis.txt) - keys used in *redis*.
    - [doc/semaphore.txt](doc/semaphore.txt) - semaphores.
 
