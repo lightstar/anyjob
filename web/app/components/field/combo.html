@@ -3,7 +3,7 @@ Template for 'field' directive used when parameter type is 'combo'.
 
 Author:       LightStar
 Created:      29.11.2017
-Last update:  14.12.2017
+Last update:  19.12.2018
 -->
 
 <label for="id-{{id}}">{{label}}:</label>
@@ -11,5 +11,5 @@ Last update:  14.12.2017
         data-ng-model="values[name]"
         data-ng-options="item.value as item.label for item in options"
         data-ng-change="change()">
-    <option value="">--none--</option>
+  <option value="">--none--</option>
 </select>

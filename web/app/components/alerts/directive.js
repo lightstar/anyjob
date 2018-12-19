@@ -11,7 +11,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  13.12.2017
+ * Last update:  19.12.2018
  */
 
 app.directive('alerts', function () {
@@ -38,7 +38,7 @@ app.directive('alerts', function () {
              *                          By default - 'info'.
              * @param persist {boolean} if true, alert will stay infinitely, otherwise - disappear after timeout.
              */
-            $scope.control.add = function(msg, type, persist) {
+            $scope.control.add = function (msg, type, persist) {
                 $scope.alerts.push({msg: msg, type: type || 'info', persist: persist || false});
             };
 
@@ -47,7 +47,7 @@ app.directive('alerts', function () {
              *
              * @param index {int} index in alerts array.
              */
-            $scope.close = function(index) {
+            $scope.close = function (index) {
                 $scope.alerts.splice(index, 1);
             };
         },

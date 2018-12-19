@@ -3,18 +3,18 @@ Template for creator controller.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  14.12.2017
+Last update:  19.12.2018
 -->
 
 <div data-alerts data-control="rootAlerts"></div>
 
 <div data-ng-if="!config || config.jobs.length === 0">
-    <h4>Loading...</h4>
+  <h4>Loading...</h4>
 </div>
 
 <div data-ng-if="config && config.jobs.length > 0">
-    <div data-observer data-config="config" data-control="control"></div>
+  <div data-observer data-config="config" data-control="control"></div>
 
-    <div data-jobs data-config="config" data-control="control" data-label="Create" data-action="create()"
-     data-result="jobs"></div>
+  <div data-jobs data-config="config" data-control="control" data-label="Create" data-action="create()"
+       data-result="jobs"></div>
 </div>

@@ -3,37 +3,37 @@ Template for 'jobs' directive.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  14.12.2017
+Last update:  19.12.2018
 -->
 
 <form>
-    <div class="panel-group" role="tablist">
-        <div class="panel panel-default panel-job" data-ng-repeat="job in jobs">
-            <div class="panel-heading" role="tab">
-                    <span role="button" data-ng-click="job.isCollapsed = !job.isCollapsed">
-                        {{(job.proto === undefined || job.proto === null) ? 'New job' : job.proto.label}}
-                    </span>
-                <span class="pull-right glyphicon glyphicon-minus-sign text-danger" role="button"
-                      data-ng-click="remove($index)"></span>
-            </div>
+  <div class="panel-group" role="tablist">
+    <div class="panel panel-default panel-job" data-ng-repeat="job in jobs">
+      <div class="panel-heading" role="tab">
+        <span role="button" data-ng-click="job.isCollapsed = !job.isCollapsed">
+          {{(job.proto === undefined || job.proto === null) ? 'New job' : job.proto.label}}
+        </span>
+        <span class="pull-right glyphicon glyphicon-minus-sign text-danger" role="button"
+              data-ng-click="remove($index)"></span>
+      </div>
 
-            <div class="panel-collapse collapse" role="tabpanel" data-uib-collapse="job.isCollapsed"
-                 data-expanding="collapse($index)">
-                <div class="panel-body">
-                    <div data-job data-config="config" data-result="job" data-valid-changed="validate()"></div>
-                </div>
-            </div>
+      <div class="panel-collapse collapse" role="tabpanel" data-uib-collapse="job.isCollapsed"
+           data-expanding="collapse($index)">
+        <div class="panel-body">
+          <div data-job data-config="config" data-result="job" data-valid-changed="validate()"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <div class="pull-right" style="padding-right: 16px;">
+      <span class="glyphicon glyphicon-plus-sign text-success" role="button"
+            data-ng-click="add()"></span>
     </div>
 
-    <div class="form-group">
-        <div class="pull-right" style="padding-right: 16px;">
-                <span class="glyphicon glyphicon-plus-sign text-success" role="button"
-                      data-ng-click="add()"></span>
-        </div>
-
-        <div class="pull-left">
-            <button class="btn btn-default" data-ng-click="action()" data-ng-disabled="!isValid">{{label}}</button>
-        </div>
+    <div class="pull-left">
+      <button class="btn btn-default" data-ng-click="action()" data-ng-disabled="!isValid">{{label}}</button>
     </div>
+  </div>
 </form>

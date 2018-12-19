@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  13.12.2017
+ * Last update:  19.12.2018
  */
 
 app.service('creatorService',
@@ -40,6 +40,8 @@ app.service('creatorService',
             };
         }
 
+        var socket = null;
+
         /**
          * Instantiate websocket object or just return previously instantiated one.
          * Library 'ReconnectingWebSocket' object is used which will automatically try to reconnect on any errors.
@@ -48,7 +50,6 @@ app.service('creatorService',
          *                        credentials.
          * @return {ReconnectingWebSocket} websocket object.
          */
-        var socket = null;
         function getWebSocket(auth) {
             if (socket !== null) {
                 return socket;

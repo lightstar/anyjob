@@ -3,14 +3,14 @@
  *
  * Author:       LightStar
  * Created:      13.11.2017
- * Last update:  12.12.2017
+ * Last update:  19.12.2018
  */
 
 /**
  * Transition to change opacity of job panel so it is gradually appearing on the page.
  */
 .panel-job {
-    transition: opacity 0.5s linear;
+  transition: opacity 0.5s linear;
 }
 
 /**
@@ -21,10 +21,10 @@
 .panel-job.ng-enter,
 .panel-job.ng-enter-prepare,
 .panel-job.ng-leave.ng-leave-active {
-    opacity: 0;
+  opacity: 0;
 }
 
 .panel-job.ng-enter.ng-enter-active,
 .panel-job.ng-leave {
-    opacity: 1
+  opacity: 1
 }

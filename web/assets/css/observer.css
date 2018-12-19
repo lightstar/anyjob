@@ -3,14 +3,14 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  12.12.2017
+ * Last update:  19.12.2018
  */
 
 /**
  * Transition to change opacity of observer panel so it is gradually appearing on the page.
  */
 .panel-observer {
-    transition: opacity 0.5s linear;
+  transition: opacity 0.5s linear;
 }
 
 /**
@@ -18,39 +18,39 @@
  * animation to work.
  */
 .panel-observer.ng-hide {
-    opacity: 0;
+  opacity: 0;
 }
 
 /**
  * Observer body should have fixed height and height transition so it is slides in when appearing.
  */
 .panel-observer .panel-body {
-    padding: 0;
-    overflow: auto;
-    height: 150px;
-    transition: height 0.5s linear;
+  padding: 0;
+  overflow: auto;
+  height: 150px;
+  transition: height 0.5s linear;
 }
 
 /**
  * When observer will receive enough events it will have this class which set bigger height.
  */
 .panel-observer .panel-body.big {
-    height: 250px;
+  height: 250px;
 }
 
 /**
  * Transition to change opacity of new event block so it is gradually appearing in the observer panel.
  */
 .panel-observer .event {
-    transition: opacity 0.5s linear;
-    padding: 10px 15px;
+  transition: opacity 0.5s linear;
+  padding: 10px 15px;
 }
 
 /**
  * Slightly change color of event block when mouse pointer is over it.
  */
 .panel-observer .event:hover {
-    background-color: #f5f5f5;
+  background-color: #f5f5f5;
 }
 
 /**
@@ -60,9 +60,9 @@
  */
 .panel-observer .event.ng-enter,
 .panel-observer .event.ng-enter-prepare {
-    opacity: 0;
+  opacity: 0;
 }
 
 .panel-observer .event.ng-enter.ng-enter-active {
-    opacity: 1
+  opacity: 1
 }

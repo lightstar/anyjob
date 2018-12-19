@@ -3,10 +3,10 @@ Template for 'alerts' directive.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  14.12.2017
+Last update:  19.12.2018
 -->
 
 <div data-uib-alert data-ng-repeat="alert in alerts" data-ng-class="'alert alert-' + alert.type"
      data-close="close($index)" data-dismiss-on-timeout="{{alert.persist ? 1000000000 : timeout}}">
-    {{alert.msg}}
+  {{alert.msg}}
 </div>

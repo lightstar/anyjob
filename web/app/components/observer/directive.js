@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  15.12.2018
+ * Last update:  19.12.2018
  */
 
 app.directive('observer', function ($timeout) {
@@ -48,7 +48,7 @@ app.directive('observer', function ($timeout) {
                     $scope.isCollapsed = false;
                 }, 0);
 
-                if ($scope.events.length >=  OBSERVER_BIG_MIN_EVENTS) {
+                if ($scope.events.length >= OBSERVER_BIG_MIN_EVENTS) {
                     $scope.bigClass = 'big';
                 }
 
@@ -60,10 +60,10 @@ app.directive('observer', function ($timeout) {
              *
              * @param {object} event - received event data.
              */
-            var preprocessEvent = function(event) {
+            var preprocessEvent = function (event) {
                 event.$index = index++;
 
-                switch(event.event) {
+                switch (event.event) {
                     case EVENT_CREATE:
                         event.job = $scope.config.jobsByType[event.type];
                         event.class = 'text-primary';

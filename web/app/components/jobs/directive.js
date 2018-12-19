@@ -12,7 +12,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  13.12.2017
+ * Last update:  19.12.2018
  */
 
 app.directive('jobs', function () {
@@ -34,7 +34,7 @@ app.directive('jobs', function () {
              * Add new empty job.
              */
             $scope.add = function () {
-                $scope.collapse();
+                $scope.collapse(-1);
                 $scope.jobs.push({isCollapsed: false});
                 if ($scope.isValid) {
                     $scope.isValid = false;
@@ -69,10 +69,10 @@ app.directive('jobs', function () {
             /**
              * Validate all jobs. Scope 'isValid' boolean property is set to true if all jobs are valid.
              */
-            $scope.validate = function() {
+            $scope.validate = function () {
                 var isValid = true;
 
-                angular.forEach($scope.jobs, function(job) {
+                angular.forEach($scope.jobs, function (job) {
                     if (!job.isValid) {
                         isValid = false;
                     }
@@ -84,7 +84,7 @@ app.directive('jobs', function () {
             /**
              * Reset jobs array to its initial state.
              */
-            $scope.control.reset = function() {
+            $scope.control.reset = function () {
                 $scope.jobs.splice(0, $scope.jobs.length);
                 $scope.add();
             };

@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      09.11.2017
- * Last update:  12.12.2017
+ * Last update:  19.12.2018
  */
 
 /**
@@ -45,7 +45,7 @@ function deleteEmptyFields() {
  * @return {string} error string.
  */
 function serverError(data, status) {
-    if (typeof(data) === 'object' && data !== null) {
+    if (typeof (data) === 'object' && data !== null) {
         if (data.message) {
             return data.message;
         } else if (data.error) {
@@ -55,7 +55,7 @@ function serverError(data, status) {
         }
     }
 
-    if (typeof(data) === 'string' && data !== '') {
+    if (typeof (data) === 'string' && data !== '') {
         return data + ' (' + status + ')';
     }
 
