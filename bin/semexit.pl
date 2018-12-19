@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ###############################################################################
-# Script used to force exit from some semaphore by some client. It accepts following arguments:
+# Tool used to force exit from some semaphore by some client. It accepts following arguments:
 # semaphore name, client name and optional flag 'r' to exit by reading client.
 #
 # Author:       LightStar
@@ -15,7 +15,7 @@ use warnings;
 use utf8;
 
 use AnyJob::Constants::Defaults qw(DEFAULT_ANYJOB_PATH);
-use AnyJob::Daemon;
+use AnyJob::Tool;
 
 ###############################################################################
 # Inline directory used by 'Inline' perl module.
@@ -25,16 +25,24 @@ BEGIN {
 }
 
 if (scalar(@ARGV) < 2) {
-    print 'Usage: ' . $0 . ' <semaphore> <client> [r]' . "\n";
+    print 'Usage: semexit <semaphore> <client> [r]' . "\n";
     exit(1);
 }
 
+my $tool = AnyJob::Tool->new();
+
 if (scalar(@ARGV) > 2 and $ARGV[2] eq 'r') {
-    AnyJob::Daemon->new()->getSemaphoreEngine()->getSemaphore($ARGV[0])->exitRead($ARGV[1]);
-    print 'Reading client \'' . $ARGV[1] . '\' exited from semaphore \'' . $ARGV[0] . '\'' . "\n";
+    unless ($tool->getSemaphore($ARGV[0])->exitRead($ARGV[1])) {
+        print 'Reading client \'' . $ARGV[1] . '\' is not holding semaphore \'' . $ARGV[0] . '\'' . "\n";
+    } else {
+        print 'Reading client \'' . $ARGV[1] . '\' exited from semaphore \'' . $ARGV[0] . '\'' . "\n";
+    }
 } else {
-    AnyJob::Daemon->new()->getSemaphoreEngine()->getSemaphore($ARGV[0])->exit($ARGV[1]);
-    print 'Client \'' . $ARGV[1] . '\' exited from semaphore \'' . $ARGV[0] . '\'' . "\n";
+    unless ($tool->getSemaphore($ARGV[0])->exit($ARGV[1])) {
+        print 'Client \'' . $ARGV[1] . '\' is not holding semaphore \'' . $ARGV[0] . '\'' . "\n";
+    } else {
+        print 'Client \'' . $ARGV[1] . '\' exited from semaphore \'' . $ARGV[0] . '\'' . "\n";
+    }
 }
 
 exit(0);

@@ -1,0 +1,16 @@
+#!/bin/sh
+
+###############################################################################
+# Tool 'semexit.pl' runner.
+# Use environment variables (such as ANYJOB_PATH, ANYJOB_LIB, ANYJOB_CONF, etc) to tweak default settings.
+# See documentation for further details.
+#
+# Author:       LightStar
+# Created:      19.12.2018
+# Last update:  19.12.2018
+
+SEMEXIT=${ANYJOB_PATH:-"/opt/anyjob"}"/bin/semexit.pl"
+NODE=${ANYJOB_NODE:-$(cat ${ANYJOB_PATH:-"/opt/anyjob"}/NODE)}
+
+export PERL_INLINE_DIRECTORY=${ANYJOB_PATH:-"/opt/anyjob"}"/.inline"
+LANG=en_US.UTF-8 ANYJOB_NODE="$NODE" $SEMEXIT "$@"
