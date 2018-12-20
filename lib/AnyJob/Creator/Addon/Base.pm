@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  13.12.2018
+# Last update:  20.12.2018
 #
 
 use strict;
@@ -130,6 +130,7 @@ sub getUserJobs {
 
         my $jobCopy = { %$job };
         delete $jobCopy->{access};
+        delete $jobCopy->{delayAccess};
 
         my $nodesAccess = $job->{nodes}->{access};
         my $nodes = [ grep {not exists($nodesAccess->{$_}) or $nodesAccess->{$_}->hasAccess($userAccess)}
@@ -141,6 +142,17 @@ sub getUserJobs {
             available => $nodes,
             default   => $defaultNodes
         };
+
+        my %delayRestricted;
+        foreach my $action (keys(%{$job->{delayAccess}})) {
+            unless ($job->{delayAccess}->{$action}->hasAccess($userAccess)) {
+                $delayRestricted{$action} = 1;
+            }
+        }
+
+        if (scalar(%delayRestricted) != 0) {
+            $jobCopy->{delayRestricted} = \%delayRestricted;
+        }
 
         $jobCopy->{params} = [];
         foreach my $param (@{$job->{params}}) {
