@@ -15,8 +15,9 @@ Last update:  24.12.2018
   </div>
 
   <div class="form-group" style="margin-left: 8px;">
+    <label for="time-{{id}}" class="sr-only">Delay time</label>
     <div class="input-group">
-      <input type="text" class="form-control"
+      <input id="time-{{id}}" type="text" class="form-control"
              data-ng-model="date.date" data-ng-model-options="{ allowInvalid: true }" data-ng-change="date.change()"
              data-uib-datepicker-popup="dd-MM-yyyy HH:mm:ss" data-is-open="date.opened"
              data-datepicker-options="date.options">

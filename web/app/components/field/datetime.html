@@ -3,11 +3,11 @@ Template for 'field' directive used when parameter type is 'datetime'.
 
 Author:       LightStar
 Created:      21.02.2018
-Last update:  19.12.2018
+Last update:  24.12.2018
 -->
 
 <label for="id-{{id}}">{{label}}:</label>
-<p class="input-group">
+<div class="input-group">
   <input id="id-{{id}}" type="text" class="form-control"
          data-ng-model="date.date" data-ng-model-options="{ allowInvalid: true }" data-ng-change="date.change()"
          data-uib-datepicker-popup="dd-MM-yyyy HH:mm:ss" data-is-open="date.opened"
@@ -17,4 +17,4 @@ Last update:  19.12.2018
       <i class="glyphicon glyphicon-calendar"></i>
     </button>
   </span>
-</p>
+</div>

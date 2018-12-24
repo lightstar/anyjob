@@ -28,6 +28,7 @@ app.directive('submit', function () {
         },
 
         link: function ($scope) {
+            $scope.id = guidGenerator();
             $scope.delay.isValid = true;
 
             var label = $scope.label;
