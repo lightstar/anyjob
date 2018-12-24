@@ -3,7 +3,7 @@ Template for creator controller.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  19.12.2018
+Last update:  24.12.2018
 -->
 
 <div data-alerts data-control="rootAlerts"></div>
@@ -15,6 +15,6 @@ Last update:  19.12.2018
 <div data-ng-if="config && config.jobs.length > 0">
   <div data-observer data-config="config" data-control="control"></div>
 
-  <div data-jobs data-config="config" data-control="control" data-label="Create" data-action="create()"
-       data-result="jobs"></div>
+  <div data-jobs data-config="config" data-control="control" data-label="Create" data-action="processJobs()"
+       data-delay="delay" data-result="jobs"></div>
 </div>

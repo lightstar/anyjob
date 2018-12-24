@@ -8,11 +8,12 @@
  *             to its initial state.
  *   label   - string label for action button.
  *   action  - function called when action button is clicked.
+ *   delay   - model object where delay data will be stored. Also it contains delay button label.
  *   jobs    - model array of objects where result will be stored.
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  19.12.2018
+ * Last update:  24.12.2018
  */
 
 app.directive('jobs', function () {
@@ -23,12 +24,14 @@ app.directive('jobs', function () {
             control: '=control',
             label: '@label',
             action: '&action',
+            delay: '=delay',
             jobs: '=result'
         },
 
         link: function ($scope) {
             $scope.id = guidGenerator();
-            $scope.isValid = false;
+            $scope.flags = {isValid: false};
+            $scope.submitControl = {reset: null};
 
             /**
              * Add new empty job.
@@ -36,8 +39,8 @@ app.directive('jobs', function () {
             $scope.add = function () {
                 $scope.collapse(-1);
                 $scope.jobs.push({isCollapsed: false});
-                if ($scope.isValid) {
-                    $scope.isValid = false;
+                if ($scope.flags.isValid) {
+                    $scope.flags.isValid = false;
                 }
             };
 
@@ -78,14 +81,17 @@ app.directive('jobs', function () {
                     }
                 });
 
-                $scope.isValid = isValid;
+                $scope.flags.isValid = isValid;
             };
 
             /**
-             * Reset jobs array to its initial state.
+             * Reset jobs array and submit component to its initial state.
              */
             $scope.control.reset = function () {
                 $scope.jobs.splice(0, $scope.jobs.length);
+                if ($scope.submitControl.reset !== null) {
+                    $scope.submitControl.reset();
+                }
                 $scope.add();
             };
 

@@ -5,13 +5,16 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  20.12.2018
+# Last update:  24.12.2018
 #
 
 use strict;
 use warnings;
 use utf8;
 
+use AnyJob::Constants::Delay qw(DELAY_ACTION_GET);
+use AnyJob::Constants::Events qw(EVENT_GET_DELAYED_WORKS);
+use AnyJob::DateTime qw(formatDateTime);
 use AnyJob::EventFilter;
 use AnyJob::Access::User;
 
@@ -285,12 +288,11 @@ sub checkJobAccess {
 }
 
 ###############################################################################
-# Check if specified user has access to some delay operation.
+# Check if specified user has access to specified delay operation.
 #
 # Arguments:
 #     user  - string user name.
 #     delay - hash with data about delay operation this user wishes to perform.
-#     job   - optional hash with delayed job data or undef.
 # Returns:
 #     0/1 flag. If set, user is permitted to perform this operation, otherwise - not.
 #
@@ -298,7 +300,6 @@ sub checkDelayAccess {
     my $self = shift;
     my $user = shift;
     my $delay = shift;
-    my $job = shift;
 
     my $delayAccess = $self->config->getDelayAccess();
     my $userAccess = $self->getUserAccess($user);
@@ -308,11 +309,31 @@ sub checkDelayAccess {
         return 0;
     }
 
-    if (defined($job)) {
-        my $jobDelayAccess = $self->config->getJobDelayAccess($job->{type});
-        if (exists($jobDelayAccess->{$action}) and not $jobDelayAccess->{$action}->hasAccess($userAccess)) {
-            return 0;
-        }
+    return 1;
+}
+
+###############################################################################
+# Check if specified user has access to specified delay operation with specified job.
+#
+# Arguments:
+#     user  - string user name.
+#     delay - hash with data about delay operation this user wishes to perform.
+#     job   - hash with job data.
+# Returns:
+#     0/1 flag. If set, user is permitted to perform this operation, otherwise - not.
+#
+sub checkJobDelayAccess {
+    my $self = shift;
+    my $user = shift;
+    my $delay = shift;
+    my $job = shift;
+
+    my $userAccess = $self->getUserAccess($user);
+    my $jobDelayAccess = $self->config->getJobDelayAccess($job->{type});
+    my $action = $delay->{action};
+
+    if (exists($jobDelayAccess->{$action}) and not $jobDelayAccess->{$action}->hasAccess($userAccess)) {
+        return 0;
     }
 
     return 1;
@@ -359,6 +380,33 @@ sub checkDelayedWorkAccess {
     }
 
     return 1;
+}
+
+###############################################################################
+# Prepare delayed works in private observer event for further processing. Check access to them and format times.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub preprocessDelayedWorks {
+    my $self = shift;
+    my $event = shift;
+
+    if (exists($event->{works})) {
+        if ($event->{event} eq EVENT_GET_DELAYED_WORKS and exists($event->{props}->{user})) {
+            my $user = $event->{props}->{user};
+            $event->{works} = [ grep {$self->checkDelayedWorkAccess($user, DELAY_ACTION_GET, $_)} @{$event->{works}} ];
+        }
+
+        foreach my $work (@{$event->{works}}) {
+            if (exists($work->{time})) {
+                $work->{time} = formatDateTime($work->{time});
+            }
+            if (exists($work->{props}->{time})) {
+                $work->{props}->{time} = formatDateTime($work->{props}->{time});
+            }
+        }
+    }
 }
 
 ###############################################################################

@@ -13,16 +13,18 @@
         ({{event.node}}<span data-ng-if="event.redirect"> -> {{event.redirect}}</span>).
     </span>
 
-    <span data-ng-if="event.event === 'create'">
-        Created.
+    <span data-ng-if="event.summary">
+        Delayed work ({{event.summary}}).
     </span>
 
-    <span data-ng-if="event.event === 'redirect'">
-        Redirected.
-    </span>
-
-    <span data-ng-if="event.event === 'clean'">
-        Cleaned.
+    <span data-ng-switch="event.event">
+        <span data-ng-switch-when="create">Created.</span>
+        <span data-ng-switch-when="redirect">Redirected.</span>
+        <span data-ng-switch-when="clean">Cleaned.</span>
+        <span data-ng-switch-when="createDelayedWork">Created.</span>
+        <span data-ng-switch-when="updateDelayedWork">Updated.</span>
+        <span data-ng-switch-when="processDelayedWork">Processed.</span>
+        <span data-ng-switch-when="deleteDelayedWork">Deleted.</span>
     </span>
 
     <span data-ng-if="event.event === 'progress' || event.event === 'progressJobSet'">

@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  19.12.2018
+ * Last update:  24.12.2018
  */
 
 app.service('creatorService',
@@ -19,6 +19,24 @@ app.service('creatorService',
          */
         function create(jobs, callback) {
             $http.post('create', jobs)
+                .then(function (response) {
+                    callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
+                }, function (response) {
+                    callback(serverError(response.data, response.status));
+                });
+        }
+
+        /**
+         * Delay jobs.
+         *
+         * @param {object}   delay    - object with delay data.
+         * @param {array}    jobs     - array of objects with job data to delay.
+         * @param {function} callback - function which will be called when operation completes. It will receive
+         *                              one argument containing string error message or empty string if there were
+         *                              no errors.
+         */
+        function delay(delay, jobs, callback) {
+            $http.post('delay', { delay: delay, jobs: jobs })
                 .then(function (response) {
                     callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
                 }, function (response) {
@@ -65,6 +83,7 @@ app.service('creatorService',
 
         return {
             create: create,
+            delay: delay,
             observe: observe
         }
     }

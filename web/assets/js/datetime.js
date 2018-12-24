@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      21.02.2018
- * Last update:  27.02.2018
+ * Last update:  24.12.2018
  */
 
 /**
@@ -193,4 +193,29 @@ function isValidTime(hour, minute, second) {
  */
 function isLeapYear(year) {
     return ((year % 4 === 0) && ((year % 100 !== 0) || (year % 400 === 0)));
+}
+
+/**
+ * Generate special context used for angularjs datepicker ui widget. Field 'date' inside it will be changed
+ * automatically by angularjs.
+ *
+ * @param {string} date     - string initial date. Could be null.
+ * @param {Function} change - function called when date is changed.
+ * @return {object} context object.
+ */
+function dateContext(date, change) {
+    var context = {
+        date: parseDateTime(date),
+        opened: false,
+        options: {
+            maxDate: new Date(2100, 11, 31),
+            minDate: new Date(1900, 0, 1)
+        },
+        open: function () {
+            context.opened = true;
+        },
+        change: change
+    };
+
+    return context;
 }

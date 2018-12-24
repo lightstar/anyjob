@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Delay::Simple;
 #
 # Author:       LightStar
 # Created:      06.12.2018
-# Last update:  16.12.2018
+# Last update:  24.12.2018
 #
 
 use strict;
@@ -47,10 +47,16 @@ sub command {
         return 'Error: ' . (scalar(@$errors) > 0 ? $errors->[0]->{text} : 'unknown error');
     }
 
-    if ((defined($job) and not $self->parentAddon->checkJobAccess($userId, $job)) or
-        not $self->parentAddon->checkDelayAccess($userId, $delay, $job)
-    ) {
+    unless ($self->parentAddon->checkDelayAccess($userId, $delay)) {
         return 'Error: access denied';
+    }
+
+    if (defined($job)) {
+        unless ($self->parentAddon->checkJobAccess($userId, $job) and
+            $self->parentAddon->checkJobDelayAccess($userId, $delay, $job)
+        ) {
+            return 'Error: access denied';
+        }
     }
 
     if (defined(my $parseErrors = $self->checkParseErrors($errors))) {

@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  13.12.2018
+# Last update:  24.12.2018
 #
 
 use strict;
@@ -292,11 +292,10 @@ sub getEventPayload {
 
 ###############################################################################
 # Prepare private observer event for further processing.
-# Inject 'job' (hash with job configuration if this is job-related event), check access to incoming delayed works
-# and format times.
+# Inject 'job' (hash with job configuration if this is job-related event) and preprocess delayed works if any.
 #
 # Arguments:
-#     event  - hash with event data.
+#     event - hash with event data.
 #
 sub preprocessEvent {
     my $self = shift;
@@ -307,21 +306,7 @@ sub preprocessEvent {
         $event->{job} = $self->config->getJobConfig($event->{type});
     }
 
-    if (exists($event->{works})) {
-        if ($event->{event} eq EVENT_GET_DELAYED_WORKS and exists($event->{props}->{user})) {
-            my $user = $event->{props}->{user};
-            $event->{works} = [ grep {$self->checkDelayedWorkAccess($user, DELAY_ACTION_GET, $_)} @{$event->{works}} ];
-        }
-
-        foreach my $work (@{$event->{works}}) {
-            if (exists($work->{time})) {
-                $work->{time} = formatDateTime($work->{time});
-            }
-            if (exists($work->{props}->{time})) {
-                $work->{props}->{time} = formatDateTime($work->{props}->{time});
-            }
-        }
-    }
+    $self->preprocessDelayedWorks($event);
 }
 
 1;

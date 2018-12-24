@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  19.12.2018
+ * Last update:  24.12.2018
  */
 
 app.directive('observer', function ($timeout) {
@@ -59,8 +59,13 @@ app.directive('observer', function ($timeout) {
              * Preprocess received event data. Inject '$index', 'job' and 'class' properties into it.
              *
              * @param {object} event - received event data.
+             * @return {boolean} process/skip flag. If true, event must be processed, otherwise it must be skipped.
              */
             var preprocessEvent = function (event) {
+                if (event.event === EVENT_GET_DELAYED_WORKS || event.event === EVENT_STATUS) {
+                    return false;
+                }
+
                 event.$index = index++;
 
                 switch (event.event) {
@@ -97,13 +102,11 @@ app.directive('observer', function ($timeout) {
                     case EVENT_DELETE_DELAYED_WORK:
                         event.class = 'text-danger';
                         break;
-                    case EVENT_GET_DELAYED_WORKS:
-                    case EVENT_STATUS:
-                        event.class = 'text-info';
-                        break;
                     default:
                         event.class = '';
                 }
+
+                return true;
             };
 
             /**
@@ -113,7 +116,10 @@ app.directive('observer', function ($timeout) {
              * @param {object} event - received event data.
              */
             $scope.control.event = function (event) {
-                preprocessEvent(event);
+                if (!preprocessEvent(event)) {
+                    return;
+                }
+
                 delayedEvents.push(event);
                 if (timeoutPromise === null) {
                     pushEvent();

@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Web;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  13.12.2018
+# Last update:  24.12.2018
 #
 
 use strict;
@@ -74,6 +74,31 @@ sub checkJobsAccess {
 
     foreach my $job (@$jobs) {
         unless ($self->checkJobAccess($user, $job)) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+###############################################################################
+# Check if given user is allowed to perform specific delay operation with specified jobs.
+#
+# Arguments:
+#     user  - string user login.
+#     delay - hash with delay data.
+#     jobs  - array of hashes with jobs that this user wishes to delay.
+# Returns:
+#     0/1 flag. If set, access is permitted.
+#
+sub checkJobsDelayAccess {
+    my $self = shift;
+    my $user = shift;
+    my $delay = shift;
+    my $jobs = shift;
+
+    foreach my $job (@$jobs) {
+        unless ($self->checkJobDelayAccess($user, $delay, $job)) {
             return 0;
         }
     }
@@ -230,10 +255,24 @@ sub receivePrivateEvent {
     $self->parent->setBusy(1);
     if ($self->eventFilter($event) and defined(my $user = $event->{props}->{author})) {
         if (exists($self->{connsByUser}->{$user})) {
+            $self->preprocessEvent($event);
             $self->{connsByUser}->{$user}->send($event);
         }
     }
     $self->parent->setBusy(0);
+}
+
+###############################################################################
+# Prepare private observer event for further processing. Preprocess delayed works here if any.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub preprocessEvent {
+    my $self = shift;
+    my $event = shift;
+
+    $self->preprocessDelayedWorks($event);
 }
 
 ###############################################################################
