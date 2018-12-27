@@ -1,0 +1,22 @@
+<!--
+Template for 'delaySummaryDialog' component.
+
+Author:       LightStar
+Created:      27.12.2018
+Last update:  27.12.2018
+-->
+
+<div class="modal-body">
+  <form>
+    <div class="form-group" data-ng-class="{'has-error': $ctrl.summary === ''}">
+      <label for="id-{{$ctrl.id}}">Delay work summary:</label>
+      <input id="id-{{$ctrl.id}}" type="text" class="form-control" data-ng-model="$ctrl.summary" data-focus
+             data-enter="$ctrl.ok()">
+      <span class="help-block" data-ng-show="$ctrl.summary === ''">Summary must not be empty</span>
+    </div>
+  </form>
+</div>
+<div class="modal-footer">
+  <button class="btn btn-primary" type="button" ng-click="$ctrl.ok()">OK</button>
+  <button class="btn btn-warning" type="button" ng-click="$ctrl.cancel()">Cancel</button>
+</div>

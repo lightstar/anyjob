@@ -3,7 +3,7 @@ Template for 'jobs' directive.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  24.12.2018
+Last update:  27.12.2018
 -->
 
 <form>
@@ -20,7 +20,8 @@ Last update:  24.12.2018
       <div class="panel-collapse collapse" role="tabpanel" data-uib-collapse="job.isCollapsed"
            data-expanding="collapse($index)">
         <div class="panel-body">
-          <div data-job data-config="config" data-result="job" data-valid-changed="validate()"></div>
+          <div data-job data-config="config" data-result="job" data-valid-changed="validate()"
+               data-proto-changed="jobsChanged()"></div>
         </div>
       </div>
     </div>

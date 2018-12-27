@@ -13,7 +13,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  24.12.2018
+ * Last update:  27.12.2018
  */
 
 app.directive('jobs', function () {
@@ -31,7 +31,7 @@ app.directive('jobs', function () {
         link: function ($scope) {
             $scope.id = guidGenerator();
             $scope.flags = {isValid: false};
-            $scope.submitControl = {reset: null};
+            $scope.submitControl = {reset: EMPTY_FN, jobsChanged: EMPTY_FN};
 
             /**
              * Add new empty job.
@@ -42,6 +42,7 @@ app.directive('jobs', function () {
                 if ($scope.flags.isValid) {
                     $scope.flags.isValid = false;
                 }
+                $scope.submitControl.jobsChanged($scope.jobs);
             };
 
             /**
@@ -67,6 +68,7 @@ app.directive('jobs', function () {
                     $scope.jobs.splice(index, 1);
                 }
                 $scope.validate();
+                $scope.submitControl.jobsChanged($scope.jobs);
             };
 
             /**
@@ -85,13 +87,18 @@ app.directive('jobs', function () {
             };
 
             /**
+             * Callback called when jobs structure is changed (i.e. some job was added, removed or changed type).
+             */
+            $scope.jobsChanged = function () {
+                $scope.submitControl.jobsChanged($scope.jobs);
+            };
+
+            /**
              * Reset jobs array and submit component to its initial state.
              */
             $scope.control.reset = function () {
                 $scope.jobs.splice(0, $scope.jobs.length);
-                if ($scope.submitControl.reset !== null) {
-                    $scope.submitControl.reset();
-                }
+                $scope.submitControl.reset();
                 $scope.add();
             };
 

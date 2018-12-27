@@ -6,7 +6,7 @@ package AnyJob::Creator::App::Web;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  24.02.2018
+# Last update:  27.12.2018
 #
 
 use strict;
@@ -72,12 +72,13 @@ get '/config' => http_basic_auth required => sub {
     my ($user, $pass) = http_basic_auth_login;
     my $web = creator->addon('web');
     return {
-        jobs     => $web->getUserJobs($user),
-        props    => $web->getUserProps($user),
-        observer => {
+        jobs            => $web->getUserJobs($user),
+        props           => $web->getUserProps($user),
+        delayRestricted => $web->getUserDelayRestricted($user),
+        observer        => {
             eventTemplate => $web->getEventTemplate(),
         },
-        auth     => {
+        auth            => {
             user => $user,
             pass => $pass
         }

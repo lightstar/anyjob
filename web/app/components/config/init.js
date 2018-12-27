@@ -5,14 +5,15 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  27.02.2018
+ * Last update:  27.12.2018
  */
 
 app.run(function ($http, $rootScope) {
-        function init(jobs, props, observer, auth, error) {
+        function init(jobs, props, delayRestricted, observer, auth, error) {
             var config = {
                 jobs: jobs,
                 props: props,
+                delayRestricted: delayRestricted,
                 observer: observer,
                 auth: auth,
                 error: error,
@@ -42,12 +43,14 @@ app.run(function ($http, $rootScope) {
             $rootScope.config = config;
         }
 
-        init([], [], {eventTemplate: ''}, {user: '', pass: ''}, '');
+        init([], [], {},{eventTemplate: ''}, {user: '', pass: ''}, '');
         $http.get('config')
             .then(function (response) {
-                init(response.data.jobs, response.data.props, response.data.observer, response.data.auth, '');
+                init(response.data.jobs, response.data.props, response.data.delayRestricted, response.data.observer,
+                    response.data.auth, '');
             }, function (response) {
-                init([], [], {eventTemplate: ''}, {user: '', pass: ''}, serverError(response.data, response.status));
+                init([], [], {}, {eventTemplate: ''}, {user: '', pass: ''},
+                    serverError(response.data, response.status));
                 $rootScope.alert('Error: ' + $rootScope.config.error, 'danger', true);
             });
     }

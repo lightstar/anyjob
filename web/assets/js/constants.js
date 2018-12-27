@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      29.11.2017
- * Last update:  15.12.2018
+ * Last update:  27.12.2018
  */
 
 /**
@@ -34,3 +34,17 @@ var OBSERVER_EVENT_MIN_DELAY = 1000;
  * Minimal total count of events for observer panel to take 'big' class.
  */
 var OBSERVER_BIG_MIN_EVENTS = 5;
+
+/**
+ * Delay action types.
+ */
+var DELAY_ACTION_CREATE = 'create';
+var DELAY_ACTION_UPDATE = 'update';
+var DELAY_ACTION_DELETE = 'delete';
+var DELAY_ACTION_GET = 'get';
+
+/**
+ * Empty function.
+ */
+var EMPTY_FN = function () {
+};

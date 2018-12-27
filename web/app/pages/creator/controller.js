@@ -5,23 +5,24 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  24.12.2018
+ * Last update:  27.12.2018
  */
 
-app.controller('creatorController', function ($scope, $http, $compile, creatorService) {
+app.controller('creatorController', function ($scope, $http, $compile, $uibModal, creatorService) {
     $scope.jobs = [];
     $scope.delay = {
-        label: "Delay"
+        label: 'Delay'
     };
     $scope.events = [];
-    $scope.control = {reset: null, event: null};
+    $scope.control = {reset: EMPTY_FN, event: EMPTY_FN};
 
     /**
      * Prepare jobs for processing.
      *
-     * @return {array} array of objects with prepared jobs data.
+     * @param {Function} callback - callback function which will be called with prepared array of job data objects as
+     *                              argument.
      */
-    function prepareJobs() {
+    function prepareJobs(callback) {
         var jobs = [];
 
         angular.forEach($scope.jobs, function (job) {
@@ -44,23 +45,36 @@ app.controller('creatorController', function ($scope, $http, $compile, creatorSe
             });
         });
 
-        return jobs;
+        callback(jobs);
     }
 
     /**
      * Prepare delay data for processing.
      *
-     * @return {object} object with prepared delay data.
+     * @param {array} jobs        - array of hashes with prepared job data.
+     * @param {Function} callback - callback function which will be called with prepared delay data object as argument.
+     *                              If user denies operation, resulting object will be null.
      */
-    function prepareDelay() {
+    function prepareDelay(jobs, callback) {
         var delay = {};
 
         if ($scope.delay.time !== undefined && $scope.delay.time !== null) {
             delay.time = $scope.delay.time;
-            delay.summary = 'summary';
         }
 
-        return delay;
+        $uibModal.open({
+            component: 'delaySummaryDialog',
+            resolve: {
+                summary: function () {
+                    return jobs[0].type;
+                }
+            }
+        }).result.then(function (summary) {
+            delay.summary = summary;
+            callback(delay);
+        }, function () {
+            callback(null);
+        });
     }
 
     var isWaiting = false;
@@ -72,12 +86,9 @@ app.controller('creatorController', function ($scope, $http, $compile, creatorSe
         if (isWaiting) {
             return;
         }
-
         isWaiting = true;
-        var jobs = prepareJobs();
-        var delay = prepareDelay();
 
-        var callback = function(message, error) {
+        var callback = function (message, error) {
             if (error !== '') {
                 $scope.alert('Error: ' + error, 'danger', true);
             } else {
@@ -87,23 +98,31 @@ app.controller('creatorController', function ($scope, $http, $compile, creatorSe
             isWaiting = false;
         };
 
+        prepareJobs(function (jobs) {
+            prepareDelay(jobs, function (delay) {
+                if (delay === null) {
+                    isWaiting = false;
+                    return;
+                }
 
-        if (delay.time !== undefined) {
-            creatorService.delay(delay, jobs, function (error) {
-                callback(jobs.length > 1 ? 'Jobs delayed' : 'Job delayed', error);
+                if (delay.time !== undefined) {
+                    creatorService.delay(delay, jobs, function (error) {
+                        callback(jobs.length > 1 ? 'Jobs delayed' : 'Job delayed', error);
+                    });
+                } else {
+                    creatorService.create(jobs, function (error) {
+                        callback(jobs.length > 1 ? 'Jobs created' : 'Job created', error);
+                    });
+                }
             });
-        } else {
-            creatorService.create(jobs, function (error) {
-                callback(jobs.length > 1 ? 'Jobs created' : 'Job created', error);
-            });
-        }
+        });
     };
 
     /**
      * Observing begins only after config is loaded and observer panel initialized.
      */
     $scope.$watchGroup(['config.auth', 'control.event'], function () {
-        if ($scope.config.auth.user === '' || $scope.control.event === null) {
+        if ($scope.config.auth.user === '' || $scope.control.event !== EMPTY_FN) {
             return;
         }
 

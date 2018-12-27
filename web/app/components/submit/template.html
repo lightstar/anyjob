@@ -3,7 +3,7 @@ Template for 'submit' directive.
 
 Author:       LightStar
 Created:      21.12.2018
-Last update:  24.12.2018
+Last update:  27.12.2018
 -->
 
 <div class="form-inline">
@@ -14,19 +14,19 @@ Last update:  24.12.2018
     <p class="help-text">&nbsp;</p>
   </div>
 
-  <div class="form-group" style="margin-left: 8px;">
-    <label for="time-{{id}}" class="sr-only">Delay time</label>
+  <div class="form-group" data-ng-class="{'has-error': !delay.isValid}" style="margin-left: 4px;"
+       data-ng-if="!delay.isRestricted">
+    <label for="time-{{id}}" class="sr-only">Delay time:</label>
     <div class="input-group">
       <input id="time-{{id}}" type="text" class="form-control"
-             data-ng-model="date.date" data-ng-model-options="{ allowInvalid: true }" data-ng-change="date.change()"
-             data-uib-datepicker-popup="dd-MM-yyyy HH:mm:ss" data-is-open="date.opened"
-             data-datepicker-options="date.options">
+             data-ng-model="date.date" data-ng-change="date.change()" data-uib-datepicker-popup="dd-MM-yyyy HH:mm:ss"
+             data-is-open="date.opened" data-datepicker-options="date.options">
 
       <span class="input-group-btn">
-            <button type="button" class="btn btn-default" data-ng-click="date.open()">
-              <i class="glyphicon glyphicon-calendar"></i>
-            </button>
-          </span>
+        <button type="button" class="btn btn-default" data-ng-click="date.open()">
+          <i class="glyphicon glyphicon-calendar"></i>
+        </button>
+      </span>
     </div>
     <p class="help-text">&nbsp;</p>
   </div>

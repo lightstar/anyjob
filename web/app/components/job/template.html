@@ -3,7 +3,7 @@ Template for 'job' directive.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  19.12.2018
+Last update:  27.12.2018
 -->
 
 <div class="form-group" data-ng-if="config.groups.length > 0">
@@ -11,7 +11,7 @@ Last update:  19.12.2018
   <select id="group-{{id}}" class="form-control"
           data-ng-model="job.group"
           data-ng-options="group for group in config.groups"
-          data-ng-change="job.proto = null; reset()">
+          data-ng-change="job.proto = null; reset(); protoChanged()">
     <option value="">--no group--</option>
   </select>
 </div>
@@ -20,7 +20,7 @@ Last update:  19.12.2018
   <select id="job-{{id}}" class="form-control"
           data-ng-model="job.proto"
           data-ng-options="jobProto.label for jobProto in config.jobsByGroup[job.group] track by jobProto.type"
-          data-ng-change="reset()">
+          data-ng-change="reset(); protoChanged()">
     <option value="">--choose job--</option>
   </select>
 </div>

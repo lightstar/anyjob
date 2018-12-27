@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  24.12.2018
+# Last update:  27.12.2018
 #
 
 use strict;
@@ -217,6 +217,37 @@ sub getUserProps {
 }
 
 ###############################################################################
+# Retrieve delay restriction information for specified user.
+#
+# Arguments:
+#     user - string user name.
+# Returns:
+#     hash where keys are names of restricted actions and values are always equal to 1.
+#
+sub getUserDelayRestricted {
+    my $self = shift;
+    my $user = shift;
+
+    if (exists($self->{userDelayRestricted}->{$user})) {
+        return $self->{userDelayRestricted}->{$user};
+    }
+
+    my $userAccess = $self->getUserAccess($user);
+    my $delayAccess = $self->config->getDelayAccess();
+
+    my %delayRestricted;
+    foreach my $action (keys(%{$delayAccess})) {
+        unless ($delayAccess->{$action}->hasAccess($userAccess)) {
+            $delayRestricted{$action} = 1;
+        }
+    }
+
+    $self->{userDelayRestricted}->{$user} = \%delayRestricted;
+
+    return $self->{userDelayRestricted}->{$user};
+}
+
+###############################################################################
 # Retrieve instance of AnyJob::Access:User class which represents access given to specified user.
 #
 # Arguments:
@@ -301,11 +332,8 @@ sub checkDelayAccess {
     my $user = shift;
     my $delay = shift;
 
-    my $delayAccess = $self->config->getDelayAccess();
-    my $userAccess = $self->getUserAccess($user);
-    my $action = $delay->{action};
-
-    if (exists($delayAccess->{$action}) and not $delayAccess->{$action}->hasAccess($userAccess)) {
+    my $delayRestricted = $self->getUserDelayRestricted($user);
+    if (exists($delayRestricted->{$delay->{action}})) {
         return 0;
     }
 

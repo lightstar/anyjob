@@ -4,12 +4,13 @@
  * It has attributes:
  *   config        - config object.
  *   job           - model object where result job will be stored.
+ *   protoChanged  - function called when job prototype changes.
  *   validChanged  - function called when job validation state changes.
  *                   Validation state is stored in 'isValid' property of job object.
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  27.02.2018
+ * Last update:  27.12.2018
  */
 
 app.directive('job', function () {
@@ -18,6 +19,7 @@ app.directive('job', function () {
         scope: {
             config: '<config',
             job: '=result',
+            protoChanged: '&protoChanged',
             validChanged: '&validChanged'
         },
 
