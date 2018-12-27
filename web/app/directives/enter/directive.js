@@ -9,12 +9,12 @@
  */
 
 app.directive('enter', function () {
-    return function (scope, element, attrs) {
+    return function ($scope, element, attrs) {
         element.bind('keydown keypress', function (event) {
-            var key = typeof event.which === "undefined" ? event.keyCode : event.which;
+            var key = event.which === undefined ? event.keyCode : event.which;
             if (key === 13) {
-                scope.$apply(function () {
-                    scope.$eval(attrs.enter);
+                $scope.$apply(function () {
+                    $scope.$eval(attrs.enter);
                 });
                 event.preventDefault();
             }

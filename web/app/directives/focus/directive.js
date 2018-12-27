@@ -10,9 +10,9 @@
  */
 
 app.directive('focus', function () {
-    return function (scope, element, attr) {
-        scope.$on('focus', function (event, name) {
-            if (name === attr.id) {
+    return function ($scope, element, attrs) {
+        $scope.$on('focus', function (event, name) {
+            if (name === attrs.id) {
                 element[0].focus();
             }
         });
