@@ -3,7 +3,7 @@ Template for creator controller.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  24.12.2018
+Last update:  06.01.2019
 -->
 
 <div data-alerts data-control="rootAlerts"></div>
@@ -13,8 +13,21 @@ Last update:  24.12.2018
 </div>
 
 <div data-ng-if="config && config.jobs.length > 0">
-  <div data-observer data-config="config" data-control="control"></div>
+  <div data-observer data-config="config" data-add-event-listener="addEventListener(callback)"></div>
 
   <div data-jobs data-config="config" data-control="control" data-label="Create" data-action="processJobs()"
-       data-delay="delay" data-result="jobs"></div>
+       data-delay="delay" data-result="jobs" data-ng-show="isJobsMode()"></div>
+
+  <div data-ng-if="!config.delayRestricted.get">
+    <div data-delayed-works data-config="config" data-error="error(message)"
+         data-add-event-listener="addEventListener(callback)" data-ng-show="isDelayedWorksMode()"></div>
+
+    <a href role="button" data-ng-if="isJobsMode()" data-ng-click="goToDelayedWorksMode()">
+      Show delayed works
+    </a>
+
+    <a href role="button" data-ng-if="isDelayedWorksMode()" data-ng-click="goToJobsMode()">
+      &lt;&lt; Back
+    </a>
+  </div>
 </div>

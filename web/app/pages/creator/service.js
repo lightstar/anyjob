@@ -1,9 +1,10 @@
 /**
- * Define creator service used to create and observe jobs by communicating with server.
+ * Define creator service used to create, delay and observe jobs by communicating with server.
+ * Also operations with delayed works are supported.
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  24.12.2018
+ * Last update:  06.01.2019
  */
 
 app.service('creatorService',
@@ -36,7 +37,41 @@ app.service('creatorService',
          *                              no errors.
          */
         function delay(delay, jobs, callback) {
-            $http.post('delay', { delay: delay, jobs: jobs })
+            $http.post('delay', {delay: delay, jobs: jobs})
+                .then(function (response) {
+                    callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
+                }, function (response) {
+                    callback(serverError(response.data, response.status));
+                });
+        }
+
+        /**
+         * Send 'get delayed works' request. Result will come as 'get delayed works' event in private observer.
+         *
+         * @param {object}   delay    - object with delay data.
+         * @param {function} callback - function which will be called when operation completes. It will receive
+         *                              one argument containing string error message or empty string if there were
+         *                              no errors.
+         */
+        function getDelayedWorks(delay, callback) {
+            $http.post('get_delayed_works', delay)
+                .then(function (response) {
+                    callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
+                }, function (response) {
+                    callback(serverError(response.data, response.status));
+                });
+        }
+
+        /**
+         * Send 'delete delayed work' request.
+         *
+         * @param {object}   delay    - object with delay data.
+         * @param {function} callback - function which will be called when operation completes. It will receive
+         *                              one argument containing string error message or empty string if there were
+         *                              no errors.
+         */
+        function deleteDelayedWork(delay, callback) {
+            $http.post('delete_delayed_work', delay)
                 .then(function (response) {
                     callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
                 }, function (response) {
@@ -84,6 +119,8 @@ app.service('creatorService',
         return {
             create: create,
             delay: delay,
+            getDelayedWorks: getDelayedWorks,
+            deleteDelayedWork: deleteDelayedWork,
             observe: observe
         }
     }

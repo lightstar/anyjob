@@ -1,11 +1,15 @@
 /**
  * Define creator page controller. Its main job is to let user describe what jobs he/she wants to create and than
- * send request to server to actually create them.
- * In parallel observing is launched so all private events happening with created jobs are immediately shown.
+ * send request to server to actually create or delay them.
+ *
+ * In parallel observing is launched so all private events happening with created jobs and delayed works are
+ * immediately shown.
+ *
+ * Also additional mode is available used to display all existing delayed works and perform operations with them.
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  27.12.2018
+ * Last update:  06.01.2019
  */
 
 app.controller('creatorController', function ($scope, $http, $compile, $uibModal, creatorService) {
@@ -13,8 +17,51 @@ app.controller('creatorController', function ($scope, $http, $compile, $uibModal
     $scope.delay = {
         label: 'Delay'
     };
-    $scope.events = [];
-    $scope.control = {reset: EMPTY_FN, event: EMPTY_FN};
+    $scope.eventListeners = [];
+    $scope.control = {reset: EMPTY_FN};
+
+    $scope.mode = CREATOR_MODE_JOBS;
+
+    /**
+     * Change mode to 'delayed works'.
+     */
+    $scope.goToDelayedWorksMode = function () {
+        $scope.mode = CREATOR_MODE_DELAYED_WORKS;
+    };
+
+    /**
+     * Change mode to 'create/delay jobs'.
+     */
+    $scope.goToJobsMode = function () {
+        $scope.mode = CREATOR_MODE_JOBS;
+    };
+
+    /**
+     * Determine if current mode is 'delayed works'.
+     *
+     * @return {boolean} true if current mode is 'delayed works'.
+     */
+    $scope.isDelayedWorksMode = function () {
+        return $scope.mode === CREATOR_MODE_DELAYED_WORKS;
+    };
+
+    /**
+     * Determine if current mode is 'delayed works'.
+     *
+     * @return {boolean} true if current mode is 'create/delay jobs'.
+     */
+    $scope.isJobsMode = function () {
+        return $scope.mode === CREATOR_MODE_JOBS;
+    };
+
+    /**
+     * Show error message.
+     *
+     * @param {string} message - error message.
+     */
+    $scope.error = function (message) {
+        $scope.alert('Error: ' + message, 'danger', true);
+    };
 
     /**
      * Prepare jobs for processing.
@@ -56,14 +103,17 @@ app.controller('creatorController', function ($scope, $http, $compile, $uibModal
      *                              If user denies operation, resulting object will be null.
      */
     function prepareDelay(jobs, callback) {
-        var delay = {};
-
-        if ($scope.delay.time !== undefined && $scope.delay.time !== null) {
-            delay.time = $scope.delay.time;
+        if ($scope.delay.time === undefined || $scope.delay.time === null) {
+            callback({});
+            return;
         }
 
+        var delay = {
+            time: $scope.delay.time
+        };
+
         $uibModal.open({
-            component: 'delaySummaryDialog',
+            component: 'summaryDialog',
             resolve: {
                 summary: function () {
                     return jobs[0].type;
@@ -90,7 +140,7 @@ app.controller('creatorController', function ($scope, $http, $compile, $uibModal
 
         var callback = function (message, error) {
             if (error !== '') {
-                $scope.alert('Error: ' + error, 'danger', true);
+                $scope.error(error);
             } else {
                 $scope.alert(message, 'success');
                 $scope.control.reset();
@@ -119,17 +169,26 @@ app.controller('creatorController', function ($scope, $http, $compile, $uibModal
     };
 
     /**
-     * Observing begins only after config is loaded and observer panel initialized.
+     * Observing begins only after config is loaded and observer panel with delayed works are initialized.
      */
-    $scope.$watchGroup(['config.auth', 'control.event'], function () {
-        if ($scope.config.auth.user === '' || $scope.control.event !== EMPTY_FN) {
+    function tryObserve() {
+        if ($scope.config.auth.user === '' || $scope.eventListeners.length === 2) {
             return;
         }
 
         creatorService.observe($scope.config.auth, function (event) {
             $scope.$apply(function () {
-                $scope.control.event(event);
+                angular.forEach($scope.eventListeners, function (callback) {
+                    callback(event);
+                });
             });
         });
-    });
+    }
+
+    $scope.addEventListener = function (callback) {
+        $scope.eventListeners.push(callback);
+        tryObserve();
+    };
+
+    $scope.$watch('config.auth', tryObserve);
 });

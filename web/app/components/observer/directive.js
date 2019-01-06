@@ -3,13 +3,13 @@
  * configured template. This panel is initially hidden and shows when first event is received.
  * User can collapse observer panel but it automatically expands on next event.
  * Directive has attributes:
- *   config  - config object.
- *   control - control object where property 'event' will be created with function used to receive new event.
- *             It takes object with event data as argument.
+ *   config           - config object.
+ *   addEventListener - function used to add event listener which will receive new events.
+ *                      That listener takes object with event data as argument.
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  24.12.2018
+ * Last update:  06.01.2019
  */
 
 app.directive('observer', function ($timeout) {
@@ -17,7 +17,7 @@ app.directive('observer', function ($timeout) {
         restrict: 'A',
         scope: {
             config: '<config',
-            control: '=control'
+            addEventListener: '&addEventListener'
         },
 
         link: function ($scope) {
@@ -30,12 +30,35 @@ app.directive('observer', function ($timeout) {
             var timeoutPromise = null;
             var index = 0;
 
+            var eventClasses = {};
+            eventClasses[EVENT_CREATE] = 'text-primary';
+            eventClasses[EVENT_CREATE_JOBSET] = 'text-primary';
+            eventClasses[EVENT_CREATE_DELAYED_WORK] = 'text-primary';
+            eventClasses[EVENT_UPDATE_DELAYED_WORK] = 'text-primary';
+            eventClasses[EVENT_PROGRESS] = 'text-info';
+            eventClasses[EVENT_REDIRECT] = 'text-info';
+            eventClasses[EVENT_PROGRESS_JOBSET] = 'text-info';
+            eventClasses[EVENT_PROCESS_DELAYED_WORK] = 'text-info';
+            eventClasses[EVENT_FINISH] = function (event) {
+                return event.success ? 'text-success' : 'text-danger';
+            };
+            eventClasses[EVENT_FINISH_JOBSET] = 'text-success';
+            eventClasses[EVENT_CLEAN] = 'text-danger';
+            eventClasses[EVENT_CLEAN_JOBSET] = 'text-danger';
+            eventClasses[EVENT_DELETE_DELAYED_WORK] = 'text-danger';
+
+            var jobEvents = {};
+            angular.forEach([EVENT_CREATE, EVENT_PROGRESS, EVENT_REDIRECT, EVENT_FINISH, EVENT_CLEAN],
+                function (event) {
+                    jobEvents[event] = true;
+                });
+
             /**
              * Push one of received events stored in 'delayedEvents' array into scope 'events' array so it shows
              * in the observer panel.
              * That pushing cannot occur faster than with interval defined in 'OBSERVER_EVENT_MIN_DELAY' constant.
              */
-            var pushEvent = function () {
+            function pushEvent() {
                 timeoutPromise = null;
                 if (delayedEvents.length === 0) {
                     return;
@@ -53,7 +76,7 @@ app.directive('observer', function ($timeout) {
                 }
 
                 timeoutPromise = $timeout(pushEvent, OBSERVER_EVENT_MIN_DELAY);
-            };
+            }
 
             /**
              * Preprocess received event data. Inject '$index', 'job' and 'class' properties into it.
@@ -61,53 +84,20 @@ app.directive('observer', function ($timeout) {
              * @param {object} event - received event data.
              * @return {boolean} process/skip flag. If true, event must be processed, otherwise it must be skipped.
              */
-            var preprocessEvent = function (event) {
-                if (event.event === EVENT_GET_DELAYED_WORKS || event.event === EVENT_STATUS) {
+            function preprocessEvent(event) {
+                var eventClass = eventClasses[event.event];
+                if (eventClass === undefined) {
                     return false;
                 }
 
                 event.$index = index++;
-
-                switch (event.event) {
-                    case EVENT_CREATE:
-                        event.job = $scope.config.jobsByType[event.type];
-                        event.class = 'text-primary';
-                        break;
-                    case EVENT_CREATE_JOBSET:
-                    case EVENT_CREATE_DELAYED_WORK:
-                    case EVENT_UPDATE_DELAYED_WORK:
-                        event.class = 'text-primary';
-                        break;
-                    case EVENT_PROGRESS:
-                    case EVENT_REDIRECT:
-                        event.job = $scope.config.jobsByType[event.type];
-                        event.class = 'text-info';
-                        break;
-                    case EVENT_PROGRESS_JOBSET:
-                    case EVENT_PROCESS_DELAYED_WORK:
-                        event.class = 'text-info';
-                        break;
-                    case EVENT_FINISH:
-                        event.job = $scope.config.jobsByType[event.type];
-                        event.class = event.success ? 'text-success' : 'text-danger';
-                        break;
-                    case EVENT_FINISH_JOBSET:
-                        event.class = 'text-success';
-                        break;
-                    case EVENT_CLEAN:
-                        event.job = $scope.config.jobsByType[event.type];
-                        event.class = 'text-danger';
-                        break;
-                    case EVENT_CLEAN_JOBSET:
-                    case EVENT_DELETE_DELAYED_WORK:
-                        event.class = 'text-danger';
-                        break;
-                    default:
-                        event.class = '';
+                event.class = typeof eventClass === 'function' ? eventClass(event) : eventClass;
+                if (jobEvents[event.event]) {
+                    event.job = $scope.config.jobsByType[event.type];
                 }
 
                 return true;
-            };
+            }
 
             /**
              * Receive new event. Events are not shown immediately but with some short interval
@@ -115,7 +105,7 @@ app.directive('observer', function ($timeout) {
              *
              * @param {object} event - received event data.
              */
-            $scope.control.event = function (event) {
+            function receiveEvent(event) {
                 if (!preprocessEvent(event)) {
                     return;
                 }
@@ -124,7 +114,11 @@ app.directive('observer', function ($timeout) {
                 if (timeoutPromise === null) {
                     pushEvent();
                 }
-            };
+            }
+
+            $scope.addEventListener({
+                callback: receiveEvent
+            });
         },
 
         templateUrl: 'app/components/observer/template.html'

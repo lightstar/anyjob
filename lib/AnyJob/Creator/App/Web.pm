@@ -6,7 +6,7 @@ package AnyJob::Creator::App::Web;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  27.12.2018
+# Last update:  06.01.2019
 #
 
 use strict;
@@ -128,6 +128,9 @@ post '/create' => http_basic_auth required => sub {
     };
 };
 
+###############################################################################
+# Handle 'delay jobs' request.
+#
 post '/delay' => http_basic_auth required => sub {
     # Hack required because of strange bug in Dancer2.
     # In theory serializer in request object should be set automatically but it doesn't.
@@ -135,12 +138,19 @@ post '/delay' => http_basic_auth required => sub {
     my $data = request->data;
     my $delay = $data->{delay};
     my $jobs = $data->{jobs};
+    $delay->{action} = defined($delay->{id}) ? DELAY_ACTION_UPDATE : DELAY_ACTION_CREATE;
 
     my $web = creator->addon('web');
     $web->preprocessJobs($jobs);
-    $delay->{action} = DELAY_ACTION_CREATE;
 
     my ($user) = http_basic_auth_login;
+
+    if (defined($delay->{id}) and $delay->{id} !~ /^\d+$/) {
+        return {
+            success => 0,
+            error   => 'wrong delayed work id'
+        };
+    }
 
     unless ($web->checkJobsAccess($user, $jobs) and $web->checkDelayAccess($user, $delay) and
         $web->checkJobsDelayAccess($user, $delay, $jobs)
@@ -168,6 +178,92 @@ post '/delay' => http_basic_auth required => sub {
             error   => $error
         };
     }
+
+    return {
+        success => 1
+    };
+};
+
+###############################################################################
+# Handle 'delete delayed work' request.
+#
+post '/delete_delayed_work' => http_basic_auth required => sub {
+    # Hack required because of strange bug in Dancer2.
+    # In theory serializer in request object should be set automatically but it doesn't.
+    request->{serializer} = app->config->{serializer};
+    my $delay = request->data;
+    $delay->{action} = DELAY_ACTION_DELETE;
+
+    my $web = creator->addon('web');
+
+    my ($user) = http_basic_auth_login;
+
+    unless (defined($delay->{id}) and $delay->{id} =~ /^\d+$/) {
+        return {
+            success => 0,
+            error   => 'wrong delayed work id'
+        };
+    }
+
+    unless ($web->checkDelayAccess($user, $delay)) {
+        return {
+            success => 0,
+            error   => 'access denied'
+        };
+    }
+
+    debug('Delete delayed work using web app by user \'' . $user . ', delay data: ' . encode_json($delay));
+
+    my $observer = $web->hasIndividualObserver($user) ? 'u' . $user : 'web';
+    creator->deleteDelayedWork($delay->{id}, {
+        creator      => 'web',
+        author       => $user,
+        observer     => $observer,
+    });
+
+    return {
+        success => 1
+    };
+};
+
+###############################################################################
+# Handle 'get delayed works' request.
+#
+post '/get_delayed_works' => http_basic_auth required => sub {
+    # Hack required because of strange bug in Dancer2.
+    # In theory serializer in request object should be set automatically but it doesn't.
+    request->{serializer} = app->config->{serializer};
+    my $delay = request->data;
+
+    $delay ||= {};
+    $delay->{action} = DELAY_ACTION_GET;
+
+    my $web = creator->addon('web');
+
+    my ($user) = http_basic_auth_login;
+
+    if (defined($delay->{id}) and $delay->{id} !~ /^\d+$/) {
+        return {
+            success => 0,
+            error   => 'wrong delayed work id'
+        };
+    }
+
+    unless ($web->checkDelayAccess($user, $delay)) {
+        return {
+            success => 0,
+            error   => 'access denied'
+        };
+    }
+
+    debug('Get delayed works using web app by user \'' . $user . ', delay data: ' . encode_json($delay));
+
+    my $observer = $web->hasIndividualObserver($user) ? 'u' . $user : 'web';
+    creator->getDelayedWorks($observer, $delay->{id}, {
+        creator => 'web',
+        author  => $user,
+        user    => $user
+    });
 
     return {
         success => 1

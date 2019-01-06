@@ -1,0 +1,15 @@
+<!--
+Template for 'confirmDialog' component.
+
+Author:       LightStar
+Created:      06.01.2019
+Last update:  06.01.2019
+-->
+
+<div class="modal-body">
+  {{$ctrl.text}}
+</div>
+<div class="modal-footer">
+  <button id="yes-{{$ctrl.id}}" class="btn btn-primary" type="button" ng-click="$ctrl.onYes()" data-focus>Yes</button>
+  <button class="btn btn-warning" type="button" ng-click="$ctrl.onNo()">No</button>
+</div>

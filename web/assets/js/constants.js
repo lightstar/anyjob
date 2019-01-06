@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      29.11.2017
- * Last update:  27.12.2018
+ * Last update:  06.01.2019
  */
 
 /**
@@ -48,3 +48,9 @@ var DELAY_ACTION_GET = 'get';
  */
 var EMPTY_FN = function () {
 };
+
+/**
+ * Creator page modes.
+ */
+var CREATOR_MODE_JOBS = 1;
+var CREATOR_MODE_DELAYED_WORKS = 2;

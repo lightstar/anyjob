@@ -1,8 +1,8 @@
 /**
- * Define 'delaySummaryDialog' component used to input summary name via modal dialog.
+ * Define 'summaryDialog' component used to input summary name via modal dialog.
  * Usage:
  *     $uibModal.open({
-           component: 'delaySummaryDialog',
+           component: 'summaryDialog',
            resolve: {
                summary: function() {
                    return '...';
@@ -12,10 +12,10 @@
  *
  * Author:       LightStar
  * Created:      27.12.2018
- * Last update:  27.12.2018
+ * Last update:  06.01.2019
  */
 
-app.component('delaySummaryDialog', {
+app.component('summaryDialog', {
     bindings: {
         resolve: '<',
         close: '&',
@@ -37,7 +37,7 @@ app.component('delaySummaryDialog', {
         /**
          * Callback function called when user clicks 'Ok' button.
          */
-        $ctrl.ok = function () {
+        $ctrl.onOk = function () {
             if ($ctrl.summary !== '') {
                 $ctrl.close({$value: $ctrl.summary});
             }
@@ -46,10 +46,10 @@ app.component('delaySummaryDialog', {
         /**
          * Callback function called when user clicks 'Cancel' button.
          */
-        $ctrl.cancel = function () {
+        $ctrl.onCancel = function () {
             $ctrl.dismiss({$value: null});
         };
     },
 
-    templateUrl: 'app/components/delay/summary_dialog/template.html'
+    templateUrl: 'app/components/dialog/summary/template.html'
 });
