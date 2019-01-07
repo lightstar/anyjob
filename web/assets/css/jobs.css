@@ -42,7 +42,7 @@
  *
  * Negative margin here is to compensate left border spacing of the underlying inner container with 'table' display.
  */
-.submit-job-container {
+.submit-container {
   width: calc(100% - 1em - 16px);
   margin-left: -4px;
 }
@@ -51,13 +51,13 @@
  * Group with 'Create/Delay' button and input field for delay time. Display 'table' is used here to make input field
  * width responsive to the viewport width.
  */
-.submit-job-group {
+.submit-group {
   display: table;
   border-spacing: 4px 0;
 }
 
-.btn-submit-job,
-.submit-job-delay {
+.btn-submit,
+.submit-delay-time {
   display: table-cell;
   vertical-align: top;
 }
@@ -66,6 +66,6 @@
  * Inner group with datepicker button is using display 'table' too under the hood, so we must reset border spacing to
  * display it correctly.
  */
-.submit-job-time-group {
+.submit-delay-time-group {
   border-spacing: 0;
 }

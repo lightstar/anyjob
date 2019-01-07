@@ -6,15 +6,15 @@ Created:      21.12.2018
 Last update:  07.01.2019
 -->
 
-<div class="submit-job-group">
-  <button class="btn btn-default btn-submit-job" data-ng-click="action()"
+<div class="submit-group">
+  <button class="btn btn-default btn-submit" data-ng-click="action()"
           data-ng-disabled="!flags.isValid || !delay.isValid">
     {{label}}
   </button>
 
-  <div class="submit-job-delay" data-ng-class="{'has-error': !delay.isValid}" data-ng-if="!delay.isRestricted">
+  <div class="submit-delay-time" data-ng-class="{'has-error': !delay.isValid}" data-ng-if="!delay.isRestricted">
     <label for="time-{{id}}" class="sr-only">Delay time:</label>
-    <div class="input-group submit-job-time-group">
+    <div class="input-group submit-delay-time-group">
       <input id="time-{{id}}" type="text" class="form-control"
              data-ng-model="date.date" data-ng-change="date.change()" data-uib-datepicker-popup="dd-MM-yyyy HH:mm:ss"
              data-is-open="date.opened" data-datepicker-options="date.options">
