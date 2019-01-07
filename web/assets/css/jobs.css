@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      13.11.2017
- * Last update:  19.12.2018
+ * Last update:  07.01.2019
  */
 
 /**
@@ -27,4 +27,45 @@
 .panel-job.ng-enter.ng-enter-active,
 .panel-job.ng-leave {
   opacity: 1
+}
+
+/**
+ * Align icon with 'plus' sign with 'minus' sign icons above.
+ */
+.add-job-icon {
+  margin-right: 16px;
+}
+
+/**
+ * Container with submit form elements is floated to the left and is on the same line with 'plus' sign, and it should
+ * not overlap it.
+ *
+ * Negative margin here is to compensate left border spacing of the underlying inner container with 'table' display.
+ */
+.submit-job-container {
+  width: calc(100% - 1em - 16px);
+  margin-left: -4px;
+}
+
+/**
+ * Group with 'Create/Delay' button and input field for delay time. Display 'table' is used here to make input field
+ * width responsive to the viewport width.
+ */
+.submit-job-group {
+  display: table;
+  border-spacing: 4px 0;
+}
+
+.btn-submit-job,
+.submit-job-delay {
+  display: table-cell;
+  vertical-align: top;
+}
+
+/**
+ * Inner group with datepicker button is using display 'table' too under the hood, so we must reset border spacing to
+ * display it correctly.
+ */
+.submit-job-time-group {
+  border-spacing: 0;
 }

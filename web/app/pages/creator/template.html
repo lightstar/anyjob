@@ -3,7 +3,7 @@ Template for creator controller.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  06.01.2019
+Last update:  07.01.2019
 -->
 
 <div data-alerts data-control="rootAlerts"></div>
@@ -22,12 +22,14 @@ Last update:  06.01.2019
     <div data-delayed-works data-config="config" data-error="error(message)"
          data-add-event-listener="addEventListener(callback)" data-ng-show="isDelayedWorksMode()"></div>
 
-    <a href role="button" data-ng-if="isJobsMode()" data-ng-click="goToDelayedWorksMode()">
-      Show delayed works
-    </a>
+    <div class="bottom-nav-buttons">
+      <a href role="button" data-ng-if="isJobsMode()" data-ng-click="goToDelayedWorksMode()">
+        Show delayed works
+      </a>
 
-    <a href role="button" data-ng-if="isDelayedWorksMode()" data-ng-click="goToJobsMode()">
-      &lt;&lt; Back
-    </a>
+      <a href role="button" data-ng-if="isDelayedWorksMode()" data-ng-click="goToJobsMode()">
+        &lt;&lt; Back
+      </a>
+    </div>
   </div>
 </div>

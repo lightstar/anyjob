@@ -3,14 +3,14 @@ Template for 'delayedWorks' directive.
 
 Author:       LightStar
 Created:      06.01.2019
-Last update:  06.01.2019
+Last update:  07.01.2019
 -->
 
 <h3>Delayed works</h3>
 
-<p class="text-muted" data-ng-if="works.length === 0">
+<div class="text-muted" data-ng-if="works.length === 0">
   No delayed works.
-</p>
+</div>
 
 <table class="table table-bordered table-striped" data-ng-if="works.length > 0">
   <thead>
@@ -28,7 +28,7 @@ Last update:  06.01.2019
     <td>{{work.summary}}</td>
     <td>{{work.time}}</td>
     <td>{{work.props.author}} at {{work.props.time}}</td>
-    <td class="text-nowrap" style="width: 1%;">
+    <td class="text-nowrap table-cell-actions">
       <span class="glyphicon glyphicon-pencil text-info" role="button"
             data-ng-click="edit(work.id)" data-ng-if="!config.delayRestricted.edit"></span>
       <span class="glyphicon glyphicon-remove-circle text-danger" role="button"

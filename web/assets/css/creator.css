@@ -1,0 +1,35 @@
+/**
+ * Stylesheet related to creator page.
+ *
+ * Author:       LightStar
+ * Created:      07.01.2019
+ * Last update:  07.01.2019
+ */
+
+/**
+ * Some space at the bottom of the page.
+ */
+.container {
+  margin-bottom: 15px;
+}
+
+/**
+ * Some space above the bottom navigation buttons-links.
+ */
+.bottom-nav-buttons {
+  margin-top: 15px;
+}
+
+/**
+ * Conform table bottom margin with other similar margins so spacing looks the same in different modes.
+ */
+.table {
+  margin-bottom: 15px;
+}
+
+/**
+ * Table cell with action icons should be as thin as possible.
+ */
+.table-cell-actions {
+  width: 1%;
+}
