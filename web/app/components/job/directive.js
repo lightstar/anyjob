@@ -10,7 +10,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  27.12.2018
+ * Last update:  08.01.2019
  */
 
 app.directive('job', function () {
@@ -92,7 +92,7 @@ app.directive('job', function () {
              */
             var setDefaultNodes = function () {
                 angular.forEach($scope.job.proto.nodes.available, function (node) {
-                    if ($scope.job.proto.nodes.default[node]) {
+                    if ($scope.job.proto.nodes['default'][node]) {
                         $scope.job.nodes[node] = true;
                     }
                 });
@@ -106,11 +106,11 @@ app.directive('job', function () {
              */
             var setDefaultParams = function (protoParams, jobParams) {
                 angular.forEach(protoParams, function (param) {
-                    if (param.default !== undefined) {
+                    if (param['default'] !== undefined) {
                         if (param.type === 'flag') {
-                            jobParams[param.name] = !!param.default; // Used to cast integer value into boolean one.
+                            jobParams[param.name] = !!param['default']; // Used to cast integer value into boolean one.
                         } else {
-                            jobParams[param.name] = param.default;
+                            jobParams[param.name] = param['default'];
                         }
                     }
                 });

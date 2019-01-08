@@ -6,10 +6,10 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  13.12.2017
+ * Last update:  08.01.2019
  */
 
-app.run(function ($rootScope) {
+app.run(['$rootScope', function ($rootScope) {
     $rootScope.rootAlerts = {add: null};
 
     var delayedAlerts = [];
@@ -39,4 +39,4 @@ app.run(function ($rootScope) {
             delayedAlerts.splice(0, delayedAlerts.length);
         }
     });
-});
+}]);

@@ -3,7 +3,7 @@ Template for 'delayedWorks' directive.
 
 Author:       LightStar
 Created:      06.01.2019
-Last update:  07.01.2019
+Last update:  08.01.2019
 -->
 
 <h3>Delayed works</h3>
@@ -30,9 +30,9 @@ Last update:  07.01.2019
     <td>{{work.props.author}} at {{work.props.time}}</td>
     <td class="text-nowrap table-cell-actions">
       <span class="glyphicon glyphicon-pencil text-info" role="button"
-            data-ng-click="edit(work.id)" data-ng-if="!config.delayRestricted.edit"></span>
+            data-ng-click="editDelayedWork(work.id)" data-ng-if="!config.delayRestricted.edit"></span>
       <span class="glyphicon glyphicon-remove-circle text-danger" role="button"
-            data-ng-click="delete(work.id)" data-ng-if="!config.delayRestricted.delete"></span>
+            data-ng-click="deleteDelayedWork(work.id)" data-ng-if="!config.delayRestricted.delete"></span>
     </td>
   </tr>
   </tbody>

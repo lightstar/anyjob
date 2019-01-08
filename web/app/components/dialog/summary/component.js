@@ -12,7 +12,7 @@
  *
  * Author:       LightStar
  * Created:      27.12.2018
- * Last update:  06.01.2019
+ * Last update:  08.01.2019
  */
 
 app.component('summaryDialog', {
@@ -22,7 +22,7 @@ app.component('summaryDialog', {
         dismiss: '&'
     },
 
-    controller: function (focus) {
+    controller: ['focus', function (focus) {
         var $ctrl = this;
 
         /**
@@ -49,7 +49,7 @@ app.component('summaryDialog', {
         $ctrl.onCancel = function () {
             $ctrl.dismiss({$value: null});
         };
-    },
+    }],
 
     templateUrl: 'app/components/dialog/summary/template.html'
 });

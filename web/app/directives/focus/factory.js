@@ -4,13 +4,13 @@
  *
  * Author:       LightStar
  * Created:      27.12.2018
- * Last update:  27.12.2018
+ * Last update:  08.01.2019
  */
 
-app.factory('focus', function ($rootScope, $timeout) {
+app.factory('focus', ['$rootScope', '$timeout', function ($rootScope, $timeout) {
     return function (id) {
         $timeout(function () {
             $rootScope.$broadcast('focus', id);
         });
     }
-});
+}]);

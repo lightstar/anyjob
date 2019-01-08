@@ -4,12 +4,10 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  06.01.2019
+ * Last update:  08.01.2019
  */
 
-app.service('creatorService',
-    function ($http) {
-
+app.service('creatorService', ['$http', function ($http) {
         /**
          * Create jobs.
          *
@@ -123,5 +121,5 @@ app.service('creatorService',
             deleteDelayedWork: deleteDelayedWork,
             observe: observe
         }
-    }
+    }]
 );

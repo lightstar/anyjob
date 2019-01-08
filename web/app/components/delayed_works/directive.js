@@ -9,10 +9,10 @@
  *
  * Author:       LightStar
  * Created:      06.01.2019
- * Last update:  06.01.2019
+ * Last update:  08.01.2019
  */
 
-app.directive('delayedWorks', function ($uibModal, creatorService) {
+app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModal, creatorService) {
     return {
         restrict: 'A',
         scope: {
@@ -51,7 +51,7 @@ app.directive('delayedWorks', function ($uibModal, creatorService) {
              *
              * @param {int} id - delayed work id.
              */
-            $scope.delete = function (id) {
+            $scope.deleteDelayedWork = function (id) {
                 $uibModal.open({
                     component: 'confirmDialog'
                 }).result.then(function () {
@@ -64,7 +64,7 @@ app.directive('delayedWorks', function ($uibModal, creatorService) {
              *
              * @param {int} id - delayed work id.
              */
-            $scope.edit = function (id) {
+            $scope.editDelayedWork = function (id) {
             };
 
             /**
@@ -102,4 +102,4 @@ app.directive('delayedWorks', function ($uibModal, creatorService) {
 
         templateUrl: 'app/components/delayed_works/template.html'
     };
-});
+}]);

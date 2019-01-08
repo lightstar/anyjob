@@ -4,10 +4,10 @@
  *
  * Author:       LightStar
  * Created:      09.11.2017
- * Last update:  12.12.2017
+ * Last update:  08.01.2019
  */
 
-app.config(function ($routeProvider) {
+app.config(['$routeProvider', function ($routeProvider) {
     $routeProvider
         .when('/creator', {
             templateUrl: 'app/pages/creator/template.html',
@@ -16,4 +16,4 @@ app.config(function ($routeProvider) {
         .otherwise({
             redirectTo: '/creator'
         });
-});
+}]);

@@ -9,10 +9,10 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  06.01.2019
+ * Last update:  08.01.2019
  */
 
-app.directive('observer', function ($timeout) {
+app.directive('observer', ['$timeout', function ($timeout) {
     return {
         restrict: 'A',
         scope: {
@@ -123,12 +123,12 @@ app.directive('observer', function ($timeout) {
 
         templateUrl: 'app/components/observer/template.html'
     };
-});
+}]);
 
 /**
  * Helper internal directive 'observer-event' used to dynamically compile configured event template.
  */
-app.directive('observerEvent', function ($compile) {
+app.directive('observerEvent', ['$compile', function ($compile) {
     return {
         restrict: 'A',
 
@@ -137,4 +137,4 @@ app.directive('observerEvent', function ($compile) {
             $compile(element.contents())($scope);
         }
     };
-});
+}]);
