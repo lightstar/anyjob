@@ -19,12 +19,12 @@ app.run(['$http', '$rootScope', function ($http, $rootScope) {
             error: error,
             groups: [],
             jobsByType: {},
-            jobsByGroup: {null: []}
+            jobsByGroup: {'': []}
         };
 
         angular.forEach(config.jobs, function (job) {
             if (job.group === undefined || job.group === '') {
-                job.group = null;
+                job.group = '';
             }
 
             if (job.props === undefined) {

@@ -91,7 +91,7 @@ app.directive('observer', ['$timeout', function ($timeout) {
                 }
 
                 event.$index = index++;
-                event.class = typeof eventClass === 'function' ? eventClass(event) : eventClass;
+                event['class'] = typeof eventClass === 'function' ? eventClass(event) : eventClass;
                 if (jobEvents[event.event]) {
                     event.job = $scope.config.jobsByType[event.type];
                 }
