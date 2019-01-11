@@ -1,16 +1,16 @@
 /**
- * Stylesheet related to job panel.
+ * Stylesheet related to jobs panel.
  *
  * Author:       LightStar
  * Created:      13.11.2017
- * Last update:  07.01.2019
+ * Last update:  11.01.2019
  */
 
 /**
  * Transition to change opacity of job panel so it is gradually appearing on the page.
  */
 .panel-job {
-  transition: opacity 0.5s linear;
+  transition: opacity 0.5s ease-out;
 }
 
 /**
@@ -26,7 +26,7 @@
 
 .panel-job.ng-enter.ng-enter-active,
 .panel-job.ng-leave {
-  opacity: 1
+  opacity: 1;
 }
 
 /**
@@ -68,4 +68,90 @@
  */
 .submit-delay-time-group {
   border-spacing: 0;
+}
+
+/**
+ * Adjust margins of block with 'access denied' message.
+ */
+.submit-access-denied {
+  margin-left: 4px;
+}
+
+.submit-access-denied .help-block {
+  margin-bottom: 0;
+}
+
+/**
+ * Delayed work header animation.
+ * Animation of 'max-height' instead of 'height' is not so nice but no other easy solution exists here.
+ */
+.update-delayed-work-header {
+  overflow: hidden;
+  transition: max-height 0.5s ease-out;
+}
+
+.update-delayed-work-header.ng-enter,
+.update-delayed-work-header.ng-enter-prepare,
+.update-delayed-work-header.ng-leave.ng-leave-active {
+  max-height: 0;
+}
+
+.update-delayed-work-header.ng-enter.ng-enter-active,
+.update-delayed-work-header.ng-leave {
+  max-height: 200px;
+}
+
+/**
+ * Margin is set to button and not to header itself to prevent animation flick in the end.
+ */
+.update-delayed-work-header .btn-update-cancel {
+  margin-bottom: 15px;
+}
+
+/**
+ * Creator mode containers slide animation using flexbox and 'hidden' class.
+ */
+.container-mode-wrap {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.container-mode {
+  width: 100%;
+  flex-shrink: 0;
+  transition: transform 0.5s ease-out;
+}
+
+/**
+ * Display 'block' with 'important' flag is needed here to override bootstrap's 'hidden' class.
+ * Visibility 'hidden' instead display 'none' is needed to prevent blocks shifting after animation finish.
+ */
+.container-mode.hidden {
+  display: block !important;
+  visibility: hidden;
+}
+
+/**
+ * Classes added by angularjs animate during class change animation.
+ */
+.container-mode.hidden-add-active,
+.container-mode.hidden-remove-active {
+  visibility: visible;
+}
+
+.container-mode-jobs {
+  transform: translateX(0);
+}
+
+.container-mode-jobs.hidden {
+  transform: translateX(-100%) translateX(-15px);
+}
+
+.container-mode-delayed-works {
+  transform: translateX(-100%);
+}
+
+.container-mode-delayed-works.hidden {
+  transform: translateX(0) translateX(15px);
 }

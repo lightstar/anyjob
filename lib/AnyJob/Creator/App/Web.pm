@@ -6,7 +6,7 @@ package AnyJob::Creator::App::Web;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  06.01.2019
+# Last update:  11.01.2019
 #
 
 use strict;
@@ -138,12 +138,15 @@ post '/delay' => http_basic_auth required => sub {
     my $data = request->data;
     my $delay = $data->{delay};
     my $jobs = $data->{jobs};
-    $delay->{action} = defined($delay->{id}) ? DELAY_ACTION_UPDATE : DELAY_ACTION_CREATE;
 
-    my $web = creator->addon('web');
-    $web->preprocessJobs($jobs);
-
-    my ($user) = http_basic_auth_login;
+    my $dateTime = parseDateTime($delay->{time});
+    unless (defined($dateTime)) {
+        return {
+            success => 0,
+            error   => 'wrong delayed work time'
+        };
+    }
+    $delay->{time} = $dateTime->{unixTime};
 
     if (defined($delay->{id}) and $delay->{id} !~ /^\d+$/) {
         return {
@@ -151,6 +154,13 @@ post '/delay' => http_basic_auth required => sub {
             error   => 'wrong delayed work id'
         };
     }
+
+    $delay->{action} = defined($delay->{id}) ? DELAY_ACTION_UPDATE : DELAY_ACTION_CREATE;
+
+    my $web = creator->addon('web');
+    $web->preprocessJobs($jobs);
+
+    my ($user) = http_basic_auth_login;
 
     unless ($web->checkJobsAccess($user, $jobs) and $web->checkDelayAccess($user, $delay) and
         $web->checkJobsDelayAccess($user, $delay, $jobs)

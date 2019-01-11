@@ -3,16 +3,15 @@
  * and for action button.
  * It has attributes:
  *   config  - config object.
- *   control - control object where properties 'reset' and 'jobsChanged' will be created with functions which may be
- *             called from outside.
+ *   control - control object where properties 'delayChanged' and 'jobsChanged' will be created with functions which
+ *             may be called from outside.
  *   flags   - object with shared status flags.
- *   label   - string label with default (non-delay) submit button label.
  *   delay   - model object where delay data will be stored.
  *   action  - function called when action button is clicked.
  *
  * Author:       LightStar
  * Created:      21.12.2018
- * Last update:  27.12.2018
+ * Last update:  11.01.2019
  */
 
 app.directive('submit', function () {
@@ -22,43 +21,56 @@ app.directive('submit', function () {
             config: '<config',
             control: '=control',
             flags: '<flags',
-            label: '<label',
             delay: '=delay',
             action: '&action'
         },
 
         link: function ($scope) {
             $scope.id = guidGenerator();
-            $scope.delay.action = DELAY_ACTION_CREATE;
-            $scope.delay.isRestricted = !!$scope.config.delayRestricted[$scope.delay.action];
-            $scope.delay.isValid = true;
 
-            var label = $scope.label;
-
-            $scope.date = dateContext($scope.delay.time, function () {
+            /**
+             * Callback called when current delay datetime is changed.
+             */
+            function changeDate() {
                 var isDelayValid = true;
                 var date = $scope.date.date;
 
                 if (date instanceof Date) {
-                    $scope.delay.time = Math.floor(date.getTime() / 1000);
+                    $scope.delay.time = formatDateTime(date);
                 } else {
                     $scope.delay.time = null;
-                    isDelayValid = date === null;
+                    isDelayValid = date === null && $scope.delay.action === DELAY_ACTION_CREATE;
                 }
 
-                $scope.label = date === null ? label : $scope.delay.label;
+                $scope.label = (date === null && $scope.delay.action === DELAY_ACTION_CREATE) ? 'Create' : 'Delay';
 
                 if ($scope.delay.isValid !== isDelayValid) {
                     $scope.delay.isValid = isDelayValid;
                 }
-            });
+            }
 
             /**
-             * Reset delay data to its initial state.
+             * Initialize delay data.
              */
-            $scope.control.reset = function () {
-                $scope.date.date = null;
+            function initDelay() {
+                $scope.delay.action = $scope.delay.id === undefined ? DELAY_ACTION_CREATE : DELAY_ACTION_UPDATE;
+                $scope.delay.isRestricted = !!$scope.config.delayRestricted[$scope.delay.action];
+                $scope.delay.isValid = true;
+
+                var initialDate = null;
+                if ($scope.delay.time !== undefined && $scope.delay.time !== null) {
+                    initialDate = $scope.delay.time;
+                }
+
+                $scope.date = dateContext(initialDate, changeDate);
                 $scope.date.change();
+            }
+
+            /**
+             * Callback called when delay data is changed.
+             */
+            $scope.control.delayChanged = function () {
+                initDelay();
             };
 
             /**
@@ -82,6 +94,8 @@ app.directive('submit', function () {
                     $scope.delay.isRestricted = isDelayRestricted;
                 }
             };
+
+            initDelay();
         },
 
         templateUrl: 'app/components/submit/template.html'

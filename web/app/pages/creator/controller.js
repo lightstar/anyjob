@@ -9,17 +9,15 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  08.01.2019
+ * Last update:  11.01.2019
  */
 
-app.controller('creatorController', ['$scope', '$http', '$compile', '$uibModal', 'creatorService',
-    function ($scope, $http, $compile, $uibModal, creatorService) {
+app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', '$animate', '$uibModal',
+    'creatorService', function ($scope, $http, $compile, $timeout, $animate, $uibModal, creatorService) {
         $scope.jobs = [];
-        $scope.delay = {
-            label: 'Delay'
-        };
+        $scope.delay = {};
         $scope.eventListeners = [];
-        $scope.control = {reset: EMPTY_FN};
+        $scope.jobsControl = {reset: EMPTY_FN, editDelayedWork: EMPTY_FN};
 
         $scope.mode = CREATOR_MODE_JOBS;
 
@@ -62,6 +60,21 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$uibModal',
          */
         $scope.error = function (message) {
             $scope.alert('Error: ' + message, 'danger', true);
+        };
+
+        /**
+         * Edit choosen delayed work.
+         *
+         * @param {object} delay - delay data.
+         * @param {array} jobs   - array with job data objects.
+         */
+        $scope.editDelayedWork = function (delay, jobs) {
+            $animate.enabled(false);
+            $timeout(function () {
+                $animate.enabled(true);
+                $scope.goToJobsMode();
+            });
+            $scope.jobsControl.editDelayedWork(delay, jobs);
         };
 
         /**
@@ -110,14 +123,19 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$uibModal',
             }
 
             var delay = {
-                time: $scope.delay.time
+                time: $scope.delay.time,
+                summary: $scope.delay.summary !== undefined ? $scope.delay.summary : jobs[0].type
             };
+
+            if ($scope.delay.id !== undefined) {
+                delay.id = $scope.delay.id;
+            }
 
             $uibModal.open({
                 component: 'summaryDialog',
                 resolve: {
                     summary: function () {
-                        return jobs[0].type;
+                        return delay.summary;
                     }
                 }
             }).result.then(function (summary) {
@@ -144,7 +162,7 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$uibModal',
                     $scope.error(error);
                 } else {
                     $scope.alert(message, 'success');
-                    $scope.control.reset();
+                    $scope.jobsControl.reset();
                 }
                 isWaiting = false;
             };

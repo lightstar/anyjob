@@ -3,7 +3,7 @@ Template for creator controller.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  07.01.2019
+Last update:  11.01.2019
 -->
 
 <div data-alerts data-control="rootAlerts"></div>
@@ -15,21 +15,28 @@ Last update:  07.01.2019
 <div data-ng-if="config && config.jobs.length > 0">
   <div data-observer data-config="config" data-add-event-listener="addEventListener(callback)"></div>
 
-  <div data-jobs data-config="config" data-control="control" data-label="Create" data-action="processJobs()"
-       data-delay="delay" data-result="jobs" data-ng-show="isJobsMode()"></div>
+  <div class="container-mode-wrap">
+    <div class="container-mode container-mode-jobs" data-ng-class="{ 'hidden': !isJobsMode() }">
+      <div data-jobs data-config="config" data-control="jobsControl" data-action="processJobs()"
+           data-delay="delay" data-result="jobs"></div>
 
-  <div data-ng-if="!config.delayRestricted.get">
-    <div data-delayed-works data-config="config" data-error="error(message)"
-         data-add-event-listener="addEventListener(callback)" data-ng-show="isDelayedWorksMode()"></div>
+      <div class="bottom-nav-buttons" data-ng-if="!config.delayRestricted.get">
+        <a href role="button" data-ng-click="goToDelayedWorksMode()">
+          Show delayed works
+        </a>
+      </div>
+    </div>
 
-    <div class="bottom-nav-buttons">
-      <a href role="button" data-ng-if="isJobsMode()" data-ng-click="goToDelayedWorksMode()">
-        Show delayed works
-      </a>
+    <div class="container-mode container-mode-delayed-works" data-ng-class="{ 'hidden': !isDelayedWorksMode() }">
+      <div data-delayed-works data-config="config" data-error="error(message)"
+           data-add-event-listener="addEventListener(callback)"
+           data-edit-delayed-work="editDelayedWork(delay, jobs)"></div>
 
-      <a href role="button" data-ng-if="isDelayedWorksMode()" data-ng-click="goToJobsMode()">
-        &lt;&lt; Back
-      </a>
+      <div class="bottom-nav-buttons">
+        <a href role="button" data-ng-click="goToJobsMode()">
+          &lt;&lt; Back
+        </a>
+      </div>
     </div>
   </div>
 </div>

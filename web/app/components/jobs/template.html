@@ -3,8 +3,16 @@ Template for 'jobs' directive.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  07.01.2019
+Last update:  11.01.2019
 -->
+
+<div class="update-delayed-work-header" data-ng-if="delay.summary">
+  <h3>Update delayed work ({{delay.summary}}).</h3>
+
+  <div class="btn-update-cancel">
+    <a href role="button" data-ng-click="control.reset()">Cancel</a>
+  </div>
+</div>
 
 <form>
   <div class="panel-group" role="tablist">
@@ -34,7 +42,7 @@ Last update:  07.01.2019
     </div>
 
     <div class="pull-left submit-container">
-      <div data-submit data-config="config" data-control="submitControl" data-label="label" data-flags="flags"
+      <div data-submit data-config="config" data-control="submitControl" data-flags="flags"
            data-delay="delay" data-action="action()"></div>
     </div>
   </div>

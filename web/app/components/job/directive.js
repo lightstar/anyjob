@@ -10,7 +10,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  08.01.2019
+ * Last update:  11.01.2019
  */
 
 app.directive('job', function () {
@@ -31,7 +31,7 @@ app.directive('job', function () {
              *
              * @return {boolean} valid flag. If true, nodes are valid.
              */
-            var validateNodes = function () {
+            function validateNodes () {
                 var isAnyNode = false;
 
                 angular.forEach($scope.job.nodes, function (value) {
@@ -42,7 +42,7 @@ app.directive('job', function () {
 
                 $scope.isAnyNode = isAnyNode;
                 return isAnyNode;
-            };
+            }
 
             /**
              * Validate job parameters (or properties). Parameters are valid when all required ones are non-empty
@@ -54,7 +54,7 @@ app.directive('job', function () {
              * @param {object} errorParams - object where key is parameter name and value - error message.
              * @return {boolean} valid flag. If true, parameters are valid.
              */
-            var validateParams = function (protoParams, jobParams, validParams, errorParams) {
+            function validateParams (protoParams, jobParams, validParams, errorParams) {
                 var isAllValid = true;
 
                 angular.forEach(protoParams, function (param) {
@@ -85,18 +85,18 @@ app.directive('job', function () {
                 });
 
                 return isAllValid;
-            };
+            }
 
             /**
              * Inject default nodes into job model. Called when job first initialized or reseted.
              */
-            var setDefaultNodes = function () {
+            function setDefaultNodes () {
                 angular.forEach($scope.job.proto.nodes.available, function (node) {
                     if ($scope.job.proto.nodes['default'][node]) {
                         $scope.job.nodes[node] = true;
                     }
                 });
-            };
+            }
 
             /**
              * Inject default parameters (or properties) into job model. Called when job first initialized or reseted.
@@ -104,7 +104,7 @@ app.directive('job', function () {
              * @param {array} protoParams - array of objects with available parameters from configuration.
              * @param {object} jobParams  - object with current job parameters.
              */
-            var setDefaultParams = function (protoParams, jobParams) {
+            function setDefaultParams (protoParams, jobParams) {
                 angular.forEach(protoParams, function (param) {
                     if (param['default'] !== undefined) {
                         if (param.type === 'flag') {
@@ -114,17 +114,25 @@ app.directive('job', function () {
                         }
                     }
                 });
-            };
+            }
 
             /**
-             * Reset job to its initial state (its group and type are preserved).
+             * Reset variables related to validation. They are populated during validation and must be reseted
+             * when job type is changed or its parameters are reseted.
              */
-            $scope.reset = function () {
+            function resetValidateData() {
                 $scope.isAnyNode = false;
                 $scope.validParams = {};
                 $scope.validProps = {};
                 $scope.errorParams = {};
                 $scope.errorProps = {};
+            }
+
+            /**
+             * Reset job to its initial state (its group and type are preserved).
+             */
+            $scope.reset = function () {
+                resetValidateData();
 
                 $scope.job.nodes = {};
                 $scope.job.params = {};
@@ -164,10 +172,15 @@ app.directive('job', function () {
                 }
             };
 
-            $scope.job.isValid = false;
-            $scope.job.group = null;
-            $scope.job.proto = null;
-            $scope.reset();
+            if ($scope.job.proto === undefined) {
+                $scope.job.isValid = false;
+                $scope.job.group = null;
+                $scope.job.proto = null;
+                $scope.reset();
+            } else {
+                resetValidateData();
+                $scope.validate();
+            }
         },
 
         templateUrl: 'app/components/job/template.html'

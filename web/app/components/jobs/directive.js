@@ -4,16 +4,15 @@
  * (for example, to send jobs to server). Directive 'job' is used internally.
  * Directive has attributes:
  *   config  - config object.
- *   control - control object where property 'reset' will be created with function used reset jobs array
- *             to its initial state.
- *   label   - string label for action button.
+ *   control - control object where properties 'reset' and 'editDelayedWork' will be created with functions which
+ *             may be called from outside.
  *   action  - function called when action button is clicked.
- *   delay   - model object where delay data will be stored. Also it contains delay button label.
+ *   delay   - model object where delay data will be stored.
  *   jobs    - model array of objects where result will be stored.
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  27.12.2018
+ * Last update:  11.01.2019
  */
 
 app.directive('jobs', function () {
@@ -22,7 +21,6 @@ app.directive('jobs', function () {
         scope: {
             config: '<config',
             control: '=control',
-            label: '@label',
             action: '&action',
             delay: '=delay',
             jobs: '=result'
@@ -31,7 +29,7 @@ app.directive('jobs', function () {
         link: function ($scope) {
             $scope.id = guidGenerator();
             $scope.flags = {isValid: false};
-            $scope.submitControl = {reset: EMPTY_FN, jobsChanged: EMPTY_FN};
+            $scope.submitControl = {delayChanged: EMPTY_FN, jobsChanged: EMPTY_FN};
 
             /**
              * Add new empty job.
@@ -42,7 +40,7 @@ app.directive('jobs', function () {
                 if ($scope.flags.isValid) {
                     $scope.flags.isValid = false;
                 }
-                $scope.submitControl.jobsChanged($scope.jobs);
+                $scope.jobsChanged();
             };
 
             /**
@@ -68,7 +66,7 @@ app.directive('jobs', function () {
                     $scope.jobs.splice(index, 1);
                 }
                 $scope.validate();
-                $scope.submitControl.jobsChanged($scope.jobs);
+                $scope.jobsChanged();
             };
 
             /**
@@ -94,15 +92,40 @@ app.directive('jobs', function () {
             };
 
             /**
-             * Reset jobs array and submit component to its initial state.
+             * Reset jobs array and delay data to their initial state.
              */
             $scope.control.reset = function () {
+                delete $scope.delay.id;
+                delete $scope.delay.time;
+                delete $scope.delay.summary;
+                $scope.submitControl.delayChanged();
+
                 $scope.jobs.splice(0, $scope.jobs.length);
-                $scope.submitControl.reset();
                 $scope.add();
             };
 
-            $scope.control.reset();
+            /**
+             * Edit choosen delayed work.
+             *
+             * @param {object} delay - delay data.
+             * @param {array} jobs   - array with job data objects.
+             */
+            $scope.control.editDelayedWork = function (delay, jobs) {
+                $scope.delay.id = delay.id;
+                $scope.delay.time = delay.time;
+                $scope.delay.summary = delay.summary;
+
+                $scope.jobs.splice(0, $scope.jobs.length);
+                Array.prototype.push.apply($scope.jobs, jobs);
+
+                $scope.collapse(0);
+                $scope.submitControl.delayChanged();
+                $scope.submitControl.jobsChanged($scope.jobs);
+            };
+
+            if ($scope.jobs.length === 0) {
+                $scope.control.reset();
+            }
         },
 
         templateUrl: 'app/components/jobs/template.html'
