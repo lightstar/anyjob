@@ -3,7 +3,7 @@ Template for 'submit' directive.
 
 Author:       LightStar
 Created:      21.12.2018
-Last update:  11.01.2019
+Last update:  12.01.2019
 -->
 
 <div class="submit-group">
@@ -19,7 +19,7 @@ Last update:  11.01.2019
       <input id="time-{{id}}" type="text" class="form-control"
              data-ng-model="date.date" data-ng-change="date.change()"
              data-uib-datepicker-popup="dd-MM-yyyy HH:mm:ss" data-is-open="date.opened"
-             data-datepicker-options="date.options">
+             data-datepicker-options="date.options" data-datepicker-append-to-body="true">
 
       <span class="input-group-btn">
         <button type="button" class="btn btn-default" data-ng-click="date.open()">

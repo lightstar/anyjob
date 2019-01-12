@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      07.01.2019
- * Last update:  07.01.2019
+ * Last update:  12.01.2019
  */
 
 /**
@@ -32,4 +32,66 @@
  */
 .table-cell-actions {
   width: 1%;
+}
+
+/**
+ * Overlay shown when app is waiting when server request will be complete.
+ */
+.overlay {
+  position: fixed;
+  display: none;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.1);
+  z-index: 2;
+}
+
+/**
+ * Creator mode containers slide animation using flexbox and 'hidden' class.
+ */
+.container-mode-wrap {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.container-mode {
+  width: 100%;
+  flex-shrink: 0;
+  transition: transform 0.5s ease-out;
+}
+
+/**
+ * Display 'block' with 'important' flag is needed here to override bootstrap's 'hidden' class.
+ * Visibility 'hidden' instead display 'none' is needed to prevent blocks shifting after animation finish.
+ */
+.container-mode.hidden {
+  display: block !important;
+  height: 0;
+}
+
+/**
+ * Classes added by angularjs animate during class change animation.
+ */
+.container-mode.hidden-add.hidden-add-active,
+.container-mode.hidden-remove.hidden-remove-active {
+  height: auto;
+}
+
+.container-mode-jobs {
+  transform: translateX(0);
+}
+
+.container-mode-jobs.hidden {
+  transform: translateX(-100%) translateX(-15px);
+}
+
+.container-mode-delayed-works {
+  transform: translateX(-100%);
+}
+
+.container-mode-delayed-works.hidden {
+  transform: translateX(0) translateX(15px);
 }

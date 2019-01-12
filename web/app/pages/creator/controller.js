@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  11.01.2019
+ * Last update:  12.01.2019
  */
 
 app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', '$animate', '$uibModal',
@@ -18,6 +18,7 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
         $scope.delay = {};
         $scope.eventListeners = [];
         $scope.jobsControl = {reset: EMPTY_FN, editDelayedWork: EMPTY_FN};
+        $scope.overlayControl = {show: EMPTY_FN, hide: EMPTY_FN};
 
         $scope.mode = CREATOR_MODE_JOBS;
 
@@ -146,17 +147,10 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
             });
         }
 
-        var isWaiting = false;
-
         /**
          * Create or delay jobs.
          */
         $scope.processJobs = function () {
-            if (isWaiting) {
-                return;
-            }
-            isWaiting = true;
-
             var callback = function (message, error) {
                 if (error !== '') {
                     $scope.error(error);
@@ -164,15 +158,17 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
                     $scope.alert(message, 'success');
                     $scope.jobsControl.reset();
                 }
-                isWaiting = false;
+
+                $scope.overlayControl.hide();
             };
 
             prepareJobs(function (jobs) {
                 prepareDelay(jobs, function (delay) {
                     if (delay === null) {
-                        isWaiting = false;
                         return;
                     }
+
+                    $scope.overlayControl.show();
 
                     if (delay.time !== undefined) {
                         creatorService.delay(delay, jobs, function (error) {
