@@ -11,7 +11,7 @@
  *
  * Author:       LightStar
  * Created:      06.01.2019
- * Last update:  11.01.2019
+ * Last update:  16.01.2019
  */
 
 app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModal, creatorService) {
@@ -56,10 +56,15 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
              * @param {int} id - delayed work id.
              */
             $scope.deleteDelayedWork = function (id) {
+                var work = worksById[id];
+                if (work === undefined) {
+                    return null;
+                }
+
                 $uibModal.open({
                     component: 'confirmDialog'
                 }).result.then(function () {
-                    creatorService.deleteDelayedWork({id: id}, requestCompleteCallback);
+                    creatorService.deleteDelayedWork({id: id}, work.update, requestCompleteCallback);
                 }, EMPTY_FN);
             };
 
@@ -131,7 +136,8 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
                 var delay = {
                     id: id,
                     time: work.time,
-                    summary: work.summary
+                    summary: work.summary,
+                    updateCount: work.update
                 };
 
                 return {
@@ -192,6 +198,10 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
                         preprocessDelayedWorks();
                         break;
                     case EVENT_STATUS:
+                        if (!event.success) {
+                            $scope.error({message: event.message});
+                            updateDelayedWorks();
+                        }
                         break;
                 }
             }
@@ -200,7 +210,9 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
                 callback: receiveEvent
             });
 
-            updateDelayedWorks();
+            if (!$scope.config.delayRestricted['get']) {
+                updateDelayedWorks();
+            }
         },
 
         templateUrl: 'app/components/delayed_works/template.html'

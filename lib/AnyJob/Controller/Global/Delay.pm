@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  16.12.2018
+# Last update:  16.01.2019
 #
 
 use strict;
@@ -210,13 +210,13 @@ sub processUpdateAction {
     my $oldDelayedWork = $self->getDelayedWork($id);
     unless (defined($oldDelayedWork)) {
         $self->error('No delayed work with id \'' . $id . '\' to update');
-        $self->sendStatusEvent($event, 0, 'Error: delayed work not found');
+        $self->sendStatusEvent($event, 0, 'Delayed work not found');
         return;
     }
 
     if (exists($event->{opts}->{check_update}) and $event->{opts}->{check_update} != $oldDelayedWork->{update}) {
         $self->error('Update count for delayed work with id \'' . $id . '\' was changed');
-        $self->sendStatusEvent($event, 0, 'Error: update count was changed');
+        $self->sendStatusEvent($event, 0, 'Update count was changed');
         return;
     }
 
@@ -273,13 +273,13 @@ sub processDeleteAction {
     my $delayedWork = $self->getDelayedWork($id);
     unless (defined($delayedWork)) {
         $self->error('No delayed work with id \'' . $id . '\' to delete');
-        $self->sendStatusEvent($event, 0, 'Error: delayed work not found');
+        $self->sendStatusEvent($event, 0, 'Delayed work not found');
         return;
     }
 
     if (exists($event->{opts}->{check_update}) and $event->{opts}->{check_update} != $delayedWork->{update}) {
         $self->error('Update count for delayed work with id \'' . $id . '\' was changed');
-        $self->sendStatusEvent($event, 0, 'Error: update count was changed');
+        $self->sendStatusEvent($event, 0, 'Update count was changed');
         return;
     }
 

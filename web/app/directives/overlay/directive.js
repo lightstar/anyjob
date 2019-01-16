@@ -13,7 +13,7 @@
  *
  * Author:       LightStar
  * Created:      12.01.2019
- * Last update:  12.01.2019
+ * Last update:  15.01.2019
  */
 
 app.directive('overlay', function () {
@@ -36,8 +36,6 @@ app.directive('overlay', function () {
                 element[0].style.display = 'none';
                 spinner.stop(element[0]);
             };
-        },
-
-        template: ''
+        }
     };
 });

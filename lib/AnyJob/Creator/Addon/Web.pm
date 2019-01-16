@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Web;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  24.12.2018
+# Last update:  16.01.2019
 #
 
 use strict;
@@ -15,8 +15,10 @@ use utf8;
 use File::Spec;
 use Scalar::Util qw(reftype refaddr weaken);
 
+use AnyJob::Constants::Events qw(EVENT_STATUS);
 use AnyJob::Utils qw(getFileContent);
 use AnyJob::Creator::Observer;
+use AnyJob::Creator::Builder::Web;
 
 use base 'AnyJob::Creator::Addon::Base';
 
@@ -38,6 +40,23 @@ sub new {
     $self->{observersByUser} = {};
 
     return $self;
+}
+
+###############################################################################
+# Get builder object responsible for performing multi-step operations.
+#
+# Returns:
+#     AnyJob::Creator::Builder::Web object.
+#
+sub builder {
+    my $self = shift;
+
+    if (exists($self->{builder})) {
+        return $self->{builder};
+    }
+
+    $self->{builder} = AnyJob::Creator::Builder::Web->new(parent => $self->{parent});
+    return $self->{builder};
 }
 
 ###############################################################################
@@ -253,13 +272,50 @@ sub receivePrivateEvent {
     my $event = shift;
 
     $self->parent->setBusy(1);
-    if ($self->eventFilter($event) and defined(my $user = $event->{props}->{author})) {
+    if ($self->eventFilter($event)) {
+        $self->directEvent($event);
+    }
+    $self->parent->setBusy(0);
+}
+
+###############################################################################
+# Method which will be called by AnyJob::Creator::Observer when new service event arrives.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub receiveServiceEvent {
+    my $self = shift;
+    my $event = shift;
+
+    $self->parent->setBusy(1);
+
+    if ($event->{event} eq EVENT_STATUS) {
+        delete $event->{props}->{service};
+        $self->directEvent($event);
+    }
+
+    $self->builder->receiveServiceEvent($event);
+
+    $self->parent->setBusy(0);
+}
+
+###############################################################################
+# Direct event to the user connection if it exists.
+#
+# Arguments:
+#     event - hash with event data.
+#
+sub directEvent {
+    my $self = shift;
+    my $event = shift;
+
+    if (defined(my $user = $event->{props}->{author})) {
         if (exists($self->{connsByUser}->{$user})) {
             $self->preprocessEvent($event);
             $self->{connsByUser}->{$user}->send($event);
         }
     }
-    $self->parent->setBusy(0);
 }
 
 ###############################################################################

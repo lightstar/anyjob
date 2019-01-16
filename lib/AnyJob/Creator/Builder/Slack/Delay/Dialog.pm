@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Delay::Dialog;
 #
 # Author:       LightStar
 # Created:      09.12.2018
-# Last update:  24.12.2018
+# Last update:  16.01.2019
 #
 
 use strict;
@@ -65,7 +65,7 @@ sub command {
     }
 
     if ($delay->{action} eq DELAY_ACTION_UPDATE) {
-        $self->createGetDelayedWorkBuild($delay, $job, $userId, $responseUrl, $triggerId, $userName);
+        $self->startDelayedWorkAction($delay, $job, $userId, $responseUrl, $triggerId, $userName);
         return undef;
     }
 
@@ -78,20 +78,30 @@ sub command {
 }
 
 ###############################################################################
-# Method which will be called when new service event arrives.
+# Start multi-step delayed work update action.
 #
 # Arguments:
-#     event - hash with event data.
+#     delay       - hash with delay data.
+#     job         - hash with job data.
+#     userId      - string user id.
+#     responseUrl - string response url.
+#     triggerId   - string trigger id.
+#     userName    - string user name.
 #
-sub receiveServiceEvent {
+sub startDelayedWorkAction {
     my $self = shift;
-    my $event = shift;
+    my $delay = shift;
+    my $job = shift;
+    my $userId = shift;
+    my $responseUrl = shift;
+    my $triggerId = shift;
+    my $userName = shift;
 
-    if ($event->{event} eq EVENT_STATUS) {
-        $self->sendResponse({ text => $event->{message} }, $event->{props}->{response_url});
-    } elsif ($event->{event} eq EVENT_GET_DELAYED_WORKS) {
-        $self->continueDelayedWorkAction($event);
-    }
+    $self->debug('Start delayed work action using slack app dialog build by user \'' . $userId . '\' (\'' . $userName .
+        '\') with response url \'' . $responseUrl . '\', trigger \'' . $triggerId . '\', job: ' . encode_json($job) .
+        ' and delay: ' . encode_json($delay));
+
+    $self->SUPER::startDelayedWorkAction($delay, $job, $userId, $responseUrl, $triggerId, $userName);
 }
 
 ###############################################################################
@@ -109,25 +119,32 @@ sub continueDelayedWorkAction {
     unless (defined($id) and defined($build = $self->getBuild($id))) {
         return;
     }
-    my $response = undef;
+
+    $self->debug('Continue delayed work action using slack app dialog build by user \'' . $build->{userId} .
+        '\' (\'' . $build->{userName} . '\') with response url \'' . $build->{responseUrl} . '\', trigger \'' .
+        $build->{triggerId} . '\', job: ' . encode_json($build->{job}) . ', delay: ' . encode_json($build->{delay}) .
+        ' and event: ' . encode_json($event));
+
+    my $error = undef;
     if (scalar(@{$event->{works}}) != 1) {
-        $response = 'Error: delayed work not found';
+        $error = 'delayed work not found';
     } else {
         my $action = $build->{delay}->{action};
         my $work = $event->{works}->[0];
 
         unless ($self->parentAddon->checkDelayedWorkAccess($build->{userId}, $action, $work)) {
-            $response = 'Error: access denied';
+            $error = 'access denied';
         } elsif ($action eq DELAY_ACTION_UPDATE) {
-            $response = $self->createAndShowDialog($build->{delay}, $build->{job}, $build->{userId},
+            $error = $self->createAndShowDialog($build->{delay}, $build->{job}, $build->{userId},
                 $build->{responseUrl}, $build->{trigger}, $build->{userName}, $work->{update});
         }
     }
 
     $self->cleanBuild($id);
 
-    if (defined($response)) {
-        $self->sendResponse({ text => $response }, $build->{responseUrl});
+    if (defined($error)) {
+        $self->debug('Delayed work action failed: ' . $error);
+        $self->sendResponse({ text => 'Error: ' . $error }, $build->{responseUrl});
     }
 }
 
@@ -141,7 +158,7 @@ sub continueDelayedWorkAction {
 #     responseUrl - string response url.
 #     triggerId   - string trigger id.
 #     userName    - string user name.
-#     updateCount - update count which must be checked for permanence before updating.
+#     updateCount - update count which must be checked for permanence before updating or undef.
 # Returns:
 #     string error to show to user or undef.
 #
@@ -164,9 +181,10 @@ sub createAndShowDialog {
         return $error;
     }
 
-    $self->debug('Create slack app dialog build \'' . $id . '\' by user \'' . $userId . '\' (\'' . $userName .
-        '\') with response url \'' . $responseUrl . '\', trigger \'' . $triggerId . '\', job: ' . encode_json($job) .
-        ' and delay: ' . encode_json($delay));
+    $self->debug('Create slack app dialog build \'' . $id . '\' by user \'' . $userId . '\' (\'' .
+        $userName . '\') with response url \'' . $responseUrl . '\', trigger \'' . $triggerId . '\'' .
+        (defined($updateCount) ? ', update count: ' . $updateCount : '') .
+        ', job: ' . encode_json($job) . ' and delay: ' . encode_json($delay));
 
     $self->showDialog($triggerId, $dialog);
 

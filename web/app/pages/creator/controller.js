@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  12.01.2019
+ * Last update:  16.01.2019
  */
 
 app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', '$animate', '$uibModal',
@@ -60,7 +60,7 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
          * @param {string} message - error message.
          */
         $scope.error = function (message) {
-            $scope.alert('Error: ' + message, 'danger', true);
+            $scope.alert('Error: ' + message.charAt(0).toLowerCase() + message.slice(1), 'danger', true);
         };
 
         /**
@@ -171,7 +171,8 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
                     $scope.overlayControl.show();
 
                     if (delay.time !== undefined) {
-                        creatorService.delay(delay, jobs, function (error) {
+                        var updateCount = $scope.delay.updateCount || 0;
+                        creatorService.delay(delay, jobs, updateCount, function (error) {
                             callback(jobs.length > 1 ? 'Jobs delayed' : 'Job delayed', error);
                         });
                     } else {
@@ -187,7 +188,7 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
          * Observing begins only after config is loaded and observer panel with delayed works are initialized.
          */
         function tryObserve() {
-            if ($scope.config.auth.user === '' || $scope.eventListeners.length === 2) {
+            if ($scope.config.auth.user === '' || $scope.eventListeners.length !== 2) {
                 return;
             }
 

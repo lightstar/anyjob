@@ -12,7 +12,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  11.01.2019
+ * Last update:  15.01.2019
  */
 
 app.directive('jobs', function () {
@@ -98,6 +98,7 @@ app.directive('jobs', function () {
                 delete $scope.delay.id;
                 delete $scope.delay.time;
                 delete $scope.delay.summary;
+                delete $scope.delay.updateCount;
                 $scope.submitControl.delayChanged();
 
                 $scope.jobs.splice(0, $scope.jobs.length);
@@ -114,6 +115,7 @@ app.directive('jobs', function () {
                 $scope.delay.id = delay.id;
                 $scope.delay.time = delay.time;
                 $scope.delay.summary = delay.summary;
+                $scope.delay.updateCount = delay.updateCount;
 
                 $scope.jobs.splice(0, $scope.jobs.length);
                 Array.prototype.push.apply($scope.jobs, jobs);

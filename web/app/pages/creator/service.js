@@ -4,7 +4,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  08.01.2019
+ * Last update:  15.01.2019
  */
 
 app.service('creatorService', ['$http', function ($http) {
@@ -28,14 +28,34 @@ app.service('creatorService', ['$http', function ($http) {
         /**
          * Delay jobs.
          *
-         * @param {object}   delay    - object with delay data.
-         * @param {array}    jobs     - array of objects with job data to delay.
-         * @param {function} callback - function which will be called when operation completes. It will receive
-         *                              one argument containing string error message or empty string if there were
-         *                              no errors.
+         * @param {object}   delay       - object with delay data.
+         * @param {array}    jobs        - array of objects with job data to delay.
+         * @param {int}      updateCount - current update count of delayed work if it is updated.
+         *                                 Ignored if delayed work is created anew.
+         * @param {function} callback    - function which will be called when operation completes. It will receive
+         *                                 one argument containing string error message or empty string if there were
+         *                                 no errors.
          */
-        function delay(delay, jobs, callback) {
-            $http.post('delay', {delay: delay, jobs: jobs})
+        function delay(delay, jobs, updateCount, callback) {
+            $http.post('delay', {delay: delay, jobs: jobs, update: updateCount})
+                .then(function (response) {
+                    callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
+                }, function (response) {
+                    callback(serverError(response.data, response.status));
+                });
+        }
+
+        /**
+         * Send 'delete delayed work' request.
+         *
+         * @param {object}   delay       - object with delay data.
+         * @param {int}      updateCount - current update count of delayed work.
+         * @param {function} callback    - function which will be called when operation completes. It will receive
+         *                                 one argument containing string error message or empty string if there were
+         *                                 no errors.
+         */
+        function deleteDelayedWork(delay, updateCount, callback) {
+            $http.post('delete_delayed_work', {delay: delay, update: updateCount})
                 .then(function (response) {
                     callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
                 }, function (response) {
@@ -53,23 +73,6 @@ app.service('creatorService', ['$http', function ($http) {
          */
         function getDelayedWorks(delay, callback) {
             $http.post('get_delayed_works', delay)
-                .then(function (response) {
-                    callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
-                }, function (response) {
-                    callback(serverError(response.data, response.status));
-                });
-        }
-
-        /**
-         * Send 'delete delayed work' request.
-         *
-         * @param {object}   delay    - object with delay data.
-         * @param {function} callback - function which will be called when operation completes. It will receive
-         *                              one argument containing string error message or empty string if there were
-         *                              no errors.
-         */
-        function deleteDelayedWork(delay, callback) {
-            $http.post('delete_delayed_work', delay)
                 .then(function (response) {
                     callback(response.data.success === 1 ? '' : (response.data.error || 'unknown error'));
                 }, function (response) {

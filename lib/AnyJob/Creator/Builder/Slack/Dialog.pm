@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Dialog;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  09.12.2018
+# Last update:  15.01.2019
 #
 
 use strict;
@@ -56,7 +56,7 @@ sub command {
 
     my ($dialog, $id, $error) = $self->createDialogAndBuild($userId, $responseUrl, $triggerId, $userName, $job);
     if (defined($error)) {
-        return $error;
+        return 'Error: ' . $error;
     }
 
     $self->debug('Create slack app dialog build \'' . $id . '\' by user \'' . $userId . '\' (\'' . $userName .
@@ -112,7 +112,7 @@ sub dialogSubmission {
 
     my ($build, $error) = $self->finishBuild($payload);
     if (defined($error)) {
-        return $error;
+        return ref($error) eq 'HASH' ? $error : 'Error: ' . $error;
     }
 
     $self->debug('Create jobs using slack app dialog build: ' . encode_json($build));
@@ -158,7 +158,6 @@ sub createDialogAndBuild {
     my $extraParams = shift;
 
     my $params = {
-        type        => 'slack_dialog',
         userId      => $userId,
         userName    => $userName,
         job         => $job,
@@ -178,7 +177,7 @@ sub createDialogAndBuild {
     my $dialog = $self->getDialog($job, $id);
     if (scalar(@{$dialog->{elements}}) == 0) {
         $self->cleanBuild($id);
-        return +(undef, undef, 'Error: job has no parameters to show in dialog');
+        return +(undef, undef, 'job has no parameters to show in dialog');
     }
 
     return +($dialog, $id, undef);
@@ -200,14 +199,14 @@ sub finishBuild {
     my ($id, $build);
     (undef, $id) = split(/:/, $payload->{callback_id});
     unless (defined($id) and defined($build = $self->getBuild($id))) {
-        return +(undef, 'Error: no build');
+        return +(undef, 'no build');
     }
 
     unless (defined($payload->{user}) and
         $payload->{user}->{id} eq $build->{userId} and
         $payload->{user}->{name} eq $build->{userName}
     ) {
-        return +(undef, 'Error: access denied');
+        return +(undef, 'access denied');
     }
 
     my $errors = $self->applySubmission($build->{job}, $payload->{submission});

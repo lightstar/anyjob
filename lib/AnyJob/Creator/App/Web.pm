@@ -6,7 +6,7 @@ package AnyJob::Creator::App::Web;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  11.01.2019
+# Last update:  16.01.2019
 #
 
 use strict;
@@ -138,6 +138,9 @@ post '/delay' => http_basic_auth required => sub {
     my $data = request->data;
     my $delay = $data->{delay};
     my $jobs = $data->{jobs};
+    my $updateCount = $data->{update};
+    my $isUpdate = defined($delay->{id}) ? 1 : 0;
+    $delay->{action} = $isUpdate ? DELAY_ACTION_UPDATE : DELAY_ACTION_CREATE;
 
     my $dateTime = parseDateTime($delay->{time});
     unless (defined($dateTime)) {
@@ -148,14 +151,21 @@ post '/delay' => http_basic_auth required => sub {
     }
     $delay->{time} = $dateTime->{unixTime};
 
-    if (defined($delay->{id}) and $delay->{id} !~ /^\d+$/) {
-        return {
-            success => 0,
-            error   => 'wrong delayed work id'
-        };
-    }
+    if ($isUpdate) {
+        unless (defined($delay->{id}) and $delay->{id} =~ /^\d+$/) {
+            return {
+                success => 0,
+                error   => 'wrong delayed work id'
+            };
+        }
 
-    $delay->{action} = defined($delay->{id}) ? DELAY_ACTION_UPDATE : DELAY_ACTION_CREATE;
+        unless (defined($updateCount) and $updateCount =~ /^\d+$/) {
+            return {
+                success => 0,
+                error   => 'wrong delayed work update count'
+            };
+        }
+    }
 
     my $web = creator->addon('web');
     $web->preprocessJobs($jobs);
@@ -171,22 +181,27 @@ post '/delay' => http_basic_auth required => sub {
         };
     }
 
-    debug('Delay jobs using web app by user \'' . $user . '\': ' . encode_json($jobs) .
-        ', delay data: ' . encode_json($delay));
-
     my $observer = $web->hasIndividualObserver($user) ? 'u' . $user : 'web';
-    my $error = creator->delayJobs($delay, $jobs, {
-        creator  => 'web',
-        author   => $user,
-        observer => $observer
-    });
 
-    if (defined($error)) {
-        debug('Delaying failed: ' . $error);
-        return {
-            success => 0,
-            error   => $error
-        };
+    if ($isUpdate) {
+        $web->builder->startDelayedWorkAction($delay, $jobs, $user, $observer, $updateCount);
+    } else {
+        debug('Delay jobs using web app by user \'' . $user . '\': ' . encode_json($jobs) .
+            ', delay: ' . encode_json($delay));
+
+        my $error = creator->delayJobs($delay, $jobs, {
+            creator  => 'web',
+            author   => $user,
+            observer => $observer
+        });
+
+        if (defined($error)) {
+            debug('Delaying failed: ' . $error);
+            return {
+                success => 0,
+                error   => $error
+            };
+        }
     }
 
     return {
@@ -201,7 +216,9 @@ post '/delete_delayed_work' => http_basic_auth required => sub {
     # Hack required because of strange bug in Dancer2.
     # In theory serializer in request object should be set automatically but it doesn't.
     request->{serializer} = app->config->{serializer};
-    my $delay = request->data;
+    my $data = request->data;
+    my $delay = $data->{delay};
+    my $updateCount = $data->{update};
     $delay->{action} = DELAY_ACTION_DELETE;
 
     my $web = creator->addon('web');
@@ -222,14 +239,15 @@ post '/delete_delayed_work' => http_basic_auth required => sub {
         };
     }
 
-    debug('Delete delayed work using web app by user \'' . $user . ', delay data: ' . encode_json($delay));
+    unless (defined($updateCount) and $updateCount =~ /^\d+$/) {
+        return {
+            success => 0,
+            error   => 'wrong delayed work update count'
+        };
+    }
 
     my $observer = $web->hasIndividualObserver($user) ? 'u' . $user : 'web';
-    creator->deleteDelayedWork($delay->{id}, {
-        creator      => 'web',
-        author       => $user,
-        observer     => $observer,
-    });
+    $web->builder->startDelayedWorkAction($delay, undef, $user, $observer, $updateCount);
 
     return {
         success => 1
@@ -266,7 +284,7 @@ post '/get_delayed_works' => http_basic_auth required => sub {
         };
     }
 
-    debug('Get delayed works using web app by user \'' . $user . ', delay data: ' . encode_json($delay));
+    debug('Get delayed works using web app by user \'' . $user . ', delay: ' . encode_json($delay));
 
     my $observer = $web->hasIndividualObserver($user) ? 'u' . $user : 'web';
     creator->getDelayedWorks($observer, $delay->{id}, {

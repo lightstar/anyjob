@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Console;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  15.12.2018
+# Last update:  16.01.2019
 #
 
 use strict;
@@ -109,7 +109,7 @@ sub delayJob {
     my $delay = shift;
     my $job = shift;
 
-    $self->debug('Delay job using console creator: ' . encode_json($job) . ', delay data: ' . encode_json($delay));
+    $self->debug('Delay job using console creator: ' . encode_json($job) . ', delay: ' . encode_json($delay));
 
     if (exists($delay->{id})) {
         if (defined(my $error = $self->checkDelayedWork($delay->{id}))) {
