@@ -261,10 +261,10 @@ sub processParamArg {
                 field => 'params',
                 param => $name,
                 value => $value,
-                text  => 'wrong param \'' . $name . '\' = \'' . (defined($value) ? $value : '<undef>') . '\''
+                text  => 'wrong param \'' . $name . '\' = ' . (defined($value) ? '\'' . $value . '\'' : '<undef>')
             };
         } else {
-            $self->job->{params}->{$name} = $value;
+            $self->{job}->{params}->{$name} = $value;
         }
 
         return 1;
@@ -299,10 +299,10 @@ sub processPropArg {
                 field => 'props',
                 param => $name,
                 value => $value,
-                text  => 'wrong prop \'' . $name . '\' = \'' . (defined($value) ? $value : '<undef>') . '\''
+                text  => 'wrong prop \'' . $name . '\' = ' . (defined($value) ? '\'' . $value . '\'' : '<undef>')
             };
         } else {
-            $self->job->{props}->{$name} = $value;
+            $self->{job}->{props}->{$name} = $value;
         }
 
         return 1;
@@ -354,7 +354,7 @@ sub processNodesArg {
     }
 
     if ($isAllValid) {
-        $self->job->{nodes} = \@nodes;
+        $self->{job}->{nodes} = \@nodes;
     }
 
     return 1;
@@ -375,7 +375,7 @@ sub processImplicitNodesArg {
     my $name = shift;
     my $value = shift;
 
-    if (defined($value)) {
+    if (defined($value) or scalar(@{$self->{job}->{nodes}}) > 0) {
         return undef;
     }
 
@@ -386,7 +386,7 @@ sub processImplicitNodesArg {
         }
     }
 
-    $self->job->{nodes} = \@nodes;
+    $self->{job}->{nodes} = \@nodes;
     return 1;
 }
 
@@ -433,9 +433,11 @@ sub processImplicitParamArg {
     }
 
     foreach my $param (grep {$_->{implicit}} @{$self->{params}}) {
-        if ($self->parent->checkJobParamType($param->{type}, $name, $param->{options})) {
-            $self->job->{params}->{$param->{name}} = $name;
-            return 1;
+        unless (exists($self->{job}->{params}->{$param->{name}})) {
+            if ($self->parent->checkJobParamType($param->{type}, $name, $param->{options})) {
+                $self->{job}->{params}->{$param->{name}} = $name;
+                return 1;
+            }
         }
     }
 
@@ -462,9 +464,11 @@ sub processImplicitPropArg {
     }
 
     foreach my $prop (grep {$_->{implicit}} @{$self->{props}}) {
-        if ($self->parent->checkJobParamType($prop->{type}, $name, $prop->{options})) {
-            $self->job->{props}->{$prop->{name}} = $name;
-            return 1;
+        unless (exists($self->{job}->{props}->{$prop->{name}})) {
+            if ($self->parent->checkJobParamType($prop->{type}, $name, $prop->{options})) {
+                $self->{job}->{props}->{$prop->{name}} = $name;
+                return 1;
+            }
         }
     }
 
@@ -500,14 +504,14 @@ sub processUnknownArg {
 sub injectDefaultNodes {
     my $self = shift;
 
-    if (defined($self->{defaultNodes}) and scalar(@{$self->job->{nodes}}) == 0) {
-        $self->job->{nodes} = [
+    if (defined($self->{defaultNodes}) and scalar(@{$self->{job}->{nodes}}) == 0) {
+        $self->{job}->{nodes} = [
             grep {exists($self->{nodes}->{$_})}
                 split(/\s*,\s*/, $self->{defaultNodes})
         ];
 
-        if (scalar(@{$self->job->{nodes}}) > 0) {
-            my $nodes = join(',', @{$self->job->{nodes}});
+        if (scalar(@{$self->{job}->{nodes}}) > 0) {
+            my $nodes = join(',', @{$self->{job}->{nodes}});
             push @{$self->{errors}}, {
                 type  => 'warning',
                 field => 'nodes',
@@ -517,7 +521,7 @@ sub injectDefaultNodes {
         }
     }
 
-    if (scalar(@{$self->job->{nodes}}) == 0) {
+    if (scalar(@{$self->{job}->{nodes}}) == 0) {
         push @{$self->{errors}}, {
             type  => 'error',
             field => 'nodes',
@@ -533,7 +537,7 @@ sub injectDefaultNodes {
 sub injectDefaultParams {
     my $self = shift;
 
-    my $jobParams = $self->job->{params};
+    my $jobParams = $self->{job}->{params};
 
     foreach my $param (@{$self->{params}}) {
         my $name = $param->{name};
@@ -568,7 +572,7 @@ sub injectDefaultParams {
 sub injectDefaultProps {
     my $self = shift;
 
-    my $jobProps = $self->job->{props};
+    my $jobProps = $self->{job}->{props};
 
     foreach my $prop (@{$self->{props}}) {
         my $name = $prop->{name};
