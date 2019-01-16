@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Base;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  27.12.2018
+# Last update:  16.01.2019
 #
 
 use strict;
@@ -153,7 +153,7 @@ sub getUserJobs {
             }
         }
 
-        if (scalar(%delayRestricted) != 0) {
+        if (scalar(keys(%delayRestricted)) != 0) {
             $jobCopy->{delayRestricted} = \%delayRestricted;
         }
 

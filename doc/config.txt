@@ -479,7 +479,10 @@ Debian linux use 'mkpasswd' utility included in 'whois' package like this: 'mkpa
 Command 'openssl passwd' can be used too, but for some reasons it can't generate passwords with secure sha-based
 algorithms, only crypt and md5 ones.
 
-Usually it is located in 'creators/web/auth.cfg' file relative to main configuration file base path.
+If you use basic authentication in the intermediate server (such as nginx), you can set string '<any>' as password
+to skip password check.
+
+Usually this section is located in 'creators/web/auth.cfg' file relative to main configuration file base path.
 
 16. Web creator access section.
 

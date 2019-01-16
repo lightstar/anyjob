@@ -5,7 +5,7 @@ package AnyJob::Creator::Builder::Slack::Base;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  15.01.2019
+# Last update:  16.01.2019
 #
 
 use strict;
@@ -77,7 +77,8 @@ sub sendResponse {
         my ($body, $headers) = @_;
         if (defined($self) and $headers->{Status} !~ /^2/) {
             $self->parent->setBusy(1);
-            $self->error('Slack request failed, url: ' . $url . ', response: ' . $body);
+            $self->error('Slack request failed, url: ' . $url . ', response status: ' . $headers->{Status} .
+                (defined($body) ? ', response body: ' . $body : ''));
             $self->parent->setBusy(0);
         }
     });
@@ -122,7 +123,8 @@ sub callApiMethod {
             my $result;
             $self->parent->setBusy(1);
             if ($headers->{Status} !~ /^2/) {
-                $self->error('Slack method failed, url: ' . $url . ', response: ' . $body);
+                $self->error('Slack method failed, url: ' . $url . ', response status: ' . $headers->{Status} .
+                    (defined($body) ? ', response body: ' . $body : ''));
             } else {
                 my $response;
                 eval {

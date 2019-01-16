@@ -24,6 +24,8 @@ RUN cpanm File::Copy::Recursive --force
 RUN cpanm JavaScript::Duktape
 RUN cpanm AnyEvent::RipeRedis
 RUN cpanm AnyEvent::HTTP
+RUN cpanm String::MkPasswd
+RUN cpanm Authen::OATH
 
 RUN mkdir -p /opt/anyjob
 COPY . /opt/anyjob/

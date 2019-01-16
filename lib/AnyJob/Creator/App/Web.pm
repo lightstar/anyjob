@@ -69,7 +69,7 @@ get '/' => http_basic_auth required => sub {
 # Retrieve hash with config data needed by client-side of web application.
 #
 get '/config' => http_basic_auth required => sub {
-    my ($user, $pass) = http_basic_auth_login;
+    my ($user) = http_basic_auth_login;
     my $web = creator->addon('web');
     return {
         jobs            => $web->getUserJobs($user),
@@ -80,7 +80,7 @@ get '/config' => http_basic_auth required => sub {
         },
         auth            => {
             user => $user,
-            pass => $pass
+            pass => $web->generateOneTimePassword($user)
         }
     };
 };
@@ -314,7 +314,7 @@ websocket_on_open sub {
     my $pass = $query->{pass} || '';
     my $web = creator->addon('web');
 
-    unless ($web->checkAuth($user, $pass)) {
+    unless ($web->checkOneTimePassword($user, $pass)) {
         return;
     }
 

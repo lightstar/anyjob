@@ -23,7 +23,7 @@ package AnyJob::Creator::Parser::Job;
 #
 # Author:       LightStar
 # Created:      29.05.2018
-# Last update:  20.06.2018
+# Last update:  16.01.2019
 #
 
 use strict;
@@ -205,7 +205,7 @@ sub parse {
     while (my $arg = shift(@{$self->{args}})) {
         my ($name, $value) = ($arg =~ /^([^=]+)(?:\=(.+))?$/);
 
-        if ($name eq '') {
+        unless (defined($name) and $name ne '') {
             next;
         }
 
@@ -240,7 +240,7 @@ sub parse {
 #
 # Arguments:
 #     name  - string parameter name.
-#     value - string parameter value.
+#     value - string parameter value or undef.
 # Returns:
 #     1/undef on success/error accordingly. In case of error current argument is not job parameter at all, and
 #     on success it is, but not necessarily correct one.
@@ -261,7 +261,7 @@ sub processParamArg {
                 field => 'params',
                 param => $name,
                 value => $value,
-                text  => 'wrong param \'' . $name . '\' = \'' . $value . '\''
+                text  => 'wrong param \'' . $name . '\' = \'' . (defined($value) ? $value : '<undef>') . '\''
             };
         } else {
             $self->job->{params}->{$name} = $value;
@@ -278,7 +278,7 @@ sub processParamArg {
 #
 # Arguments:
 #     name  - string parameter name.
-#     value - string parameter value.
+#     value - string parameter value or undef.
 # Returns:
 #     1/undef on success/error accordingly. In case of error current argument is not job property at all, and
 #     on success it is, but not necessarily correct one.
@@ -299,7 +299,7 @@ sub processPropArg {
                 field => 'props',
                 param => $name,
                 value => $value,
-                text  => 'wrong prop \'' . $name . '\' = \'' . $value . '\''
+                text  => 'wrong prop \'' . $name . '\' = \'' . (defined($value) ? $value : '<undef>') . '\''
             };
         } else {
             $self->job->{props}->{$name} = $value;
@@ -316,7 +316,7 @@ sub processPropArg {
 #
 # Arguments:
 #     name  - string parameter name.
-#     value - string parameter value.
+#     value - string parameter value or undef.
 # Returns:
 #     1/undef on success/error accordingly. In case of error current argument is not 'nodes' parameter, and
 #     on success it is, but not necessarily have correct value.
@@ -365,7 +365,7 @@ sub processNodesArg {
 #
 # Arguments:
 #     name  - string parameter name.
-#     value - string parameter value.
+#     value - string parameter value or undef.
 # Returns:
 #     1/undef on success/error accordingly. In case of error current argument is not implicit nodes, and
 #     on success it is.
@@ -395,7 +395,7 @@ sub processImplicitNodesArg {
 #
 # Arguments:
 #     name  - string parameter name.
-#     value - string parameter value.
+#     value - string parameter value or undef.
 # Returns:
 #     1/undef on success/error accordingly. In case of error current argument is not extra parameter, and
 #     on success it is.
@@ -418,7 +418,7 @@ sub processExtraArg {
 #
 # Arguments:
 #     name  - string parameter name.
-#     value - string parameter value.
+#     value - string parameter value or undef.
 # Returns:
 #     1/undef on success/error accordingly. In case of error current argument is not implicit parameter, and
 #     on success it is.
@@ -447,7 +447,7 @@ sub processImplicitParamArg {
 #
 # Arguments:
 #     name  - string parameter name.
-#     value - string parameter value.
+#     value - string parameter value or undef.
 # Returns:
 #     1/undef on success/error accordingly. In case of error current argument is not implicit property, and
 #     on success it is.
@@ -476,7 +476,7 @@ sub processImplicitPropArg {
 #
 # Arguments:
 #     name  - string parameter name.
-#     value - string parameter value.
+#     value - string parameter value or undef.
 # Returns:
 #     always 1.
 #

@@ -5,7 +5,7 @@ package AnyJob::Creator::Addon::Slack;
 #
 # Author:       LightStar
 # Created:      21.11.2017
-# Last update:  24.12.2018
+# Last update:  16.01.2019
 #
 
 use strict;
@@ -253,7 +253,8 @@ sub receivePrivateEvent {
             my ($body, $headers) = @_;
             if (defined($self) and $headers->{Status} !~ /^2/) {
                 $self->parent->setBusy(1);
-                $self->error('Error sending event to ' . $url . ', response: ' . $body);
+                $self->error('Error sending event to ' . $url . ', response status: ' . $headers->{Status} .
+                    (defined($body) ? ', response body: ' . $body : ''));
                 $self->parent->setBusy(0);
             }
         });
