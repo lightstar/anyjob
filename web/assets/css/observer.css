@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  11.01.2019
+ * Last update:  17.01.2019
  */
 
 /**
@@ -27,7 +27,7 @@
 .panel-observer .panel-body {
   padding: 0;
   overflow: auto;
-  height: 150px;
+  height: 160px;
   transition: height 0.5s ease-out;
 }
 
@@ -35,7 +35,7 @@
  * When observer will receive enough events it will have this class which set bigger height.
  */
 .panel-observer .panel-body.big {
-  height: 250px;
+  height: 280px;
 }
 
 /**
