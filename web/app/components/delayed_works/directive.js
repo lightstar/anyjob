@@ -3,6 +3,8 @@
  * Also delete and update operations are supported.
  * Directive has attributes:
  *   config           - config object.
+ *   control          - control object where property 'load' will be created with function which may be called from
+ *                      outside.
  *   error            - function used to show error message.
  *   addEventListener - function used to add event listener which will receive new events.
  *                      That listener takes object with event data as argument.
@@ -11,7 +13,7 @@
  *
  * Author:       LightStar
  * Created:      06.01.2019
- * Last update:  16.01.2019
+ * Last update:  21.01.2019
  */
 
 app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModal, creatorService) {
@@ -19,6 +21,7 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
         restrict: 'A',
         scope: {
             config: '<config',
+            control: '=control',
             error: '&error',
             addEventListener: '&addEventListener',
             editDelayedWork: '&editDelayedWork'
@@ -26,6 +29,8 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
 
         link: function ($scope) {
             $scope.id = guidGenerator();
+            $scope.isLoadAllowed = false;
+            $scope.isLoaded = false;
             $scope.works = [];
             var worksById = {};
 
@@ -38,17 +43,6 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
             ], function (event) {
                 updateEvents[event] = true;
             });
-
-            /**
-             * Called on server request finish.
-             *
-             * @param {string} error - error text. It will be empty if request finished successfully.
-             */
-            function requestCompleteCallback(error) {
-                if (error !== '') {
-                    $scope.error({message: error});
-                }
-            }
 
             /**
              * Delete delayed work.
@@ -147,10 +141,24 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
             };
 
             /**
-             * Update delayed works. Soon after calling this method event 'get delayed works' will come.
+             * Called on server request finish.
+             *
+             * @param {string} error - error text. It will be empty if request finished successfully.
+             */
+            function requestCompleteCallback(error) {
+                if (error !== '') {
+                    $scope.error({message: error});
+                }
+            }
+
+            /**
+             * Update delayed works if it is allowed. In that case soon after calling this method event
+             * 'get delayed works' will come.
              */
             function updateDelayedWorks() {
-                creatorService.getDelayedWorks(null, requestCompleteCallback);
+                if ($scope.isLoadAllowed) {
+                    creatorService.getDelayedWorks(null, requestCompleteCallback);
+                }
             }
 
             /**
@@ -194,6 +202,7 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
 
                 switch (event.event) {
                     case EVENT_GET_DELAYED_WORKS:
+                        $scope.isLoaded = true;
                         $scope.works = event.works;
                         preprocessDelayedWorks();
                         break;
@@ -206,13 +215,23 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
                 }
             }
 
+            /**
+             * Load delayed works if they are not loaded yet.
+             */
+            $scope.control.load = function () {
+                if ($scope.isLoadAllowed) {
+                    return;
+                }
+
+                $scope.isLoadAllowed = true;
+                if (!$scope.config.delayRestricted['get']) {
+                    updateDelayedWorks();
+                }
+            };
+
             $scope.addEventListener({
                 callback: receiveEvent
             });
-
-            if (!$scope.config.delayRestricted['get']) {
-                updateDelayedWorks();
-            }
         },
 
         templateUrl: 'app/components/delayed_works/template.html'

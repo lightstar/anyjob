@@ -3,7 +3,7 @@ Template for creator controller.
 
 Author:       LightStar
 Created:      15.11.2017
-Last update:  12.01.2019
+Last update:  21.01.2019
 -->
 
 <div data-overlay data-control="overlayControl"></div>
@@ -30,7 +30,7 @@ Last update:  12.01.2019
     </div>
 
     <div class="container-mode container-mode-delayed-works" data-ng-class="{ 'hidden': !isDelayedWorksMode() }">
-      <div data-delayed-works data-config="config" data-error="error(message)"
+      <div data-delayed-works data-config="config" data-error="error(message)" data-control="delayedWorksControl"
            data-add-event-listener="addEventListener(callback)"
            data-edit-delayed-work="editDelayedWork(delay, jobs)"></div>
 

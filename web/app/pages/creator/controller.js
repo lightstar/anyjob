@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  16.01.2019
+ * Last update:  21.01.2019
  */
 
 app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', '$animate', '$uibModal',
@@ -19,6 +19,7 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
         $scope.eventListeners = [];
         $scope.jobsControl = {reset: EMPTY_FN, editDelayedWork: EMPTY_FN};
         $scope.overlayControl = {show: EMPTY_FN, hide: EMPTY_FN};
+        $scope.delayedWorksControl = {load: EMPTY_FN};
 
         $scope.mode = CREATOR_MODE_JOBS;
 
@@ -201,10 +202,21 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
             });
         }
 
+        /**
+         * Add listener to receive private events.
+         *
+         * @param {Function} callback - listener function.
+         */
         $scope.addEventListener = function (callback) {
             $scope.eventListeners.push(callback);
             tryObserve();
         };
 
         $scope.$watch('config.auth', tryObserve);
+
+        $scope.$watch('mode', function () {
+            if ($scope.mode === CREATOR_MODE_DELAYED_WORKS) {
+                $scope.delayedWorksControl.load();
+            }
+        });
     }]);
