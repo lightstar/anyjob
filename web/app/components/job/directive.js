@@ -10,7 +10,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  11.01.2019
+ * Last update:  21.01.2019
  */
 
 app.directive('job', function () {
@@ -170,6 +170,16 @@ app.directive('job', function () {
                     $scope.job.isValid = isValid;
                     $scope.validChanged();
                 }
+            };
+
+            /**
+             * Get key used for group in jobsByGroup configuration object.
+             *
+             * @param {string} group - group name.
+             * @return {string} key.
+             */
+            $scope.jobGroupKey = function(group) {
+                return group !== null ? group : '';
             };
 
             if ($scope.job.proto === undefined) {

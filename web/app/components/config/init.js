@@ -5,7 +5,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  08.01.2019
+ * Last update:  21.01.2019
  */
 
 app.run(['$http', '$rootScope', function ($http, $rootScope) {
@@ -24,7 +24,7 @@ app.run(['$http', '$rootScope', function ($http, $rootScope) {
 
         angular.forEach(config.jobs, function (job) {
             if (job.group === undefined || job.group === '') {
-                job.group = '';
+                job.group = null;
             }
 
             if (job.props === undefined) {
@@ -37,7 +37,7 @@ app.run(['$http', '$rootScope', function ($http, $rootScope) {
             }
 
             config.jobsByType[job.type] = job;
-            config.jobsByGroup[job.group].push(job);
+            config.jobsByGroup[job.group !== null ? job.group : ''].push(job);
         });
 
         $rootScope.config = config;
