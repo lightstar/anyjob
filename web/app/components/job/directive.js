@@ -10,7 +10,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  21.01.2019
+ * Last update:  22.01.2019
  */
 
 app.directive('job', function () {
@@ -31,7 +31,7 @@ app.directive('job', function () {
              *
              * @return {boolean} valid flag. If true, nodes are valid.
              */
-            function validateNodes () {
+            function validateNodes() {
                 var isAnyNode = false;
 
                 angular.forEach($scope.job.nodes, function (value) {
@@ -54,7 +54,7 @@ app.directive('job', function () {
              * @param {object} errorParams - object where key is parameter name and value - error message.
              * @return {boolean} valid flag. If true, parameters are valid.
              */
-            function validateParams (protoParams, jobParams, validParams, errorParams) {
+            function validateParams(protoParams, jobParams, validParams, errorParams) {
                 var isAllValid = true;
 
                 angular.forEach(protoParams, function (param) {
@@ -90,7 +90,7 @@ app.directive('job', function () {
             /**
              * Inject default nodes into job model. Called when job first initialized or reseted.
              */
-            function setDefaultNodes () {
+            function setDefaultNodes() {
                 angular.forEach($scope.job.proto.nodes.available, function (node) {
                     if ($scope.job.proto.nodes['default'][node]) {
                         $scope.job.nodes[node] = true;
@@ -104,7 +104,7 @@ app.directive('job', function () {
              * @param {array} protoParams - array of objects with available parameters from configuration.
              * @param {object} jobParams  - object with current job parameters.
              */
-            function setDefaultParams (protoParams, jobParams) {
+            function setDefaultParams(protoParams, jobParams) {
                 angular.forEach(protoParams, function (param) {
                     if (param['default'] !== undefined) {
                         if (param.type === 'flag') {
@@ -178,7 +178,7 @@ app.directive('job', function () {
              * @param {string} group - group name.
              * @return {string} key.
              */
-            $scope.jobGroupKey = function(group) {
+            $scope.jobGroupKey = function (group) {
                 return group !== null ? group : '';
             };
 
