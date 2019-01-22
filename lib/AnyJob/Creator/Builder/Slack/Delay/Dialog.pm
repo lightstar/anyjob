@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Delay::Dialog;
 #
 # Author:       LightStar
 # Created:      09.12.2018
-# Last update:  16.01.2019
+# Last update:  22.01.2019
 #
 
 use strict;
@@ -216,7 +216,7 @@ sub dialogSubmission {
 
     my ($build, $error) = $self->finishBuild($payload);
     if (defined($error)) {
-        return $error;
+        return ref($error) eq 'HASH' ? $error : 'Error: ' . $error;
     }
 
     $self->debug('Delay jobs using slack app dialog build: ' . encode_json($build));
@@ -229,7 +229,7 @@ sub dialogSubmission {
         };
     }
 
-    my $error = $self->parent->delayJobs($build->{delay}, [ $build->{job} ], {
+    $error = $self->parent->delayJobs($build->{delay}, [ $build->{job} ], {
         creator      => 'slack',
         author       => $build->{userName},
         observer     => 'slack',

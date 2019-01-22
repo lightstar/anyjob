@@ -6,7 +6,7 @@ package AnyJob::Creator::Builder::Slack::Dialog;
 #
 # Author:       LightStar
 # Created:      22.11.2017
-# Last update:  15.01.2019
+# Last update:  22.01.2019
 #
 
 use strict;
@@ -117,7 +117,7 @@ sub dialogSubmission {
 
     $self->debug('Create jobs using slack app dialog build: ' . encode_json($build));
 
-    my $error = $self->parent->createJobs([ $build->{job} ], {
+    $error = $self->parent->createJobs([ $build->{job} ], {
         creator      => 'slack',
         author       => $build->{userName},
         observer     => 'slack',
