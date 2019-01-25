@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  16.01.2019
+# Last update:  25.01.2019
 #
 
 use strict;
@@ -18,8 +18,25 @@ use JSON::XS;
 use AnyJob::Constants::Events;
 use AnyJob::Constants::Delay;
 use AnyJob::DateTime qw(formatDateTime);
+use AnyJob::Crontab::Factory;
 
 use base 'AnyJob::Controller::Base';
+
+###############################################################################
+# Construct new AnyJob::Controller::Global::Delay object.
+#
+# Arguments:
+#     parent - parent component which is usually AnyJob::Daemon object.
+# Returns:
+#     AnyJob::Controller::Global::Delay object.
+#
+sub new {
+    my $class = shift;
+    my %args = @_;
+    my $self = $class->SUPER::new(%args);
+    $self->{crontab} = AnyJob::Crontab::Factory->new();
+    return $self;
+}
 
 ###############################################################################
 # Method which will be called one time before beginning of processing.
