@@ -15,7 +15,7 @@ package AnyJob::Creator::Parser;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  08.12.2018
+# Last update:  29.01.2019
 #
 
 use strict;
@@ -170,6 +170,10 @@ sub parse {
         $self->{jobParser}->parse();
 
         push @{$self->{errors}}, @{$self->{jobParser}->errors()};
+    }
+
+    if ($isDelay) {
+        $self->{delayParser}->normalizeAction();
     }
 }
 

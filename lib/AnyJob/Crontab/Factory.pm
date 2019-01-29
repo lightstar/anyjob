@@ -7,7 +7,7 @@ package AnyJob::Crontab::Factory;
 #
 # Author:       LightStar
 # Created:      25.01.2019
-# Last update:  25.01.2019
+# Last update:  29.01.2019
 #
 
 use strict;
@@ -40,7 +40,8 @@ sub new {
 # Arguments:
 #     spec - crontab specification string.
 # Returns:
-#     AnyJob::Crontab::Scheduler object.
+#     AnyJob::Crontab::Scheduler object or undef in case of error.
+#     string error or undef.
 #
 sub getScheduler {
     my $self = shift;
@@ -50,13 +51,21 @@ sub getScheduler {
         return $self->{schedulers}->{$spec};
     }
 
-    my $scheduler = AnyJob::Crontab::Scheduler->new(factory => $self, spec => $spec);
+    my $scheduler;
+    eval {
+        $scheduler = AnyJob::Crontab::Scheduler->new(factory => $self, spec => $spec);
+    };
+    if ($@) {
+        return +(undef, 'wrong crontab specification');
+    }
+
     $self->{schedulers}->{$spec} = $scheduler;
-    return $scheduler;
+    return +($scheduler, undef);
 }
 
 ###############################################################################
 # Get instance of one of crontab set classes.
+# Throws exception in case of error.
 #
 # Arguments:
 #     type      - string with last part of set module name.

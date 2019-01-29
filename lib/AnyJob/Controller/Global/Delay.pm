@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  25.01.2019
+# Last update:  29.01.2019
 #
 
 use strict;
@@ -81,7 +81,11 @@ sub getProcessDelay {
 # Method called for each received event from delay queue.
 # There can be four types of events. All of them are sent by creator component.
 # 1. 'Create delayed work' event. Field 'summary' here is arbitrary string needed to describe this delayed work.
-# Field 'time' is integer time in unix timestamp format identifying when to run provided jobs.
+# Field 'time' is integer time in unix timestamp format identifying when to run provided jobs. This field is optional
+# and will have value '0' by default.
+# Field 'crontab' is string crontab specification. This field is optional. If it exists, field 'time' is ignored.
+# Field 'skip' is used together with 'crontab' field and it is integer skip count before actual work processing.
+# Field 'pause' is used together with 'crontab' field and it is 0/1 flag. If it is set, work will not be processed.
 # Field 'jobs' is array of hashes where each element is either jobset with inner jobs or just one individual job.
 # Field 'props' is optional hash with arbitrary properties binded to work.
 # Field 'opts' is optional hash with options impacting the operation.
@@ -89,6 +93,9 @@ sub getProcessDelay {
 #     action => 'create',
 #     summary => '...',
 #     time => ...,
+#     crontab => '...',
+#     skip => ...,
+#     pause => ...,
 #     jobs => [
 #         {
 #             jobset => '1',
@@ -106,12 +113,17 @@ sub getProcessDelay {
 #     opts => { opt1 => '...', opt2 => '...', ... }
 # }
 # 2. 'Update delayed work' event. Field 'id' here is id of updated delayed work. All other fields are identical to
-# 'create delayed work' event.
+# 'create delayed work' event. Fields 'summary', 'time', 'crontab', 'skip', 'pause' and 'jobs' are optional and
+# will not be changed if not present. If field 'time' is present, then 'crontab', 'skip' and 'pause' fields are
+# ignored altogether. If field 'jobs' is not present, field 'props' is ignored.
 # {
 #     action => 'update',
 #     id => ...,
 #     summary => '...',
 #     time => ...,
+#     crontab => '...',
+#     skip => ...,
+#     pause => ...,
 #     jobs => [
 #         {
 #             jobset => '1',
@@ -180,9 +192,22 @@ sub processCreateAction {
     my $event = shift;
 
     my $id = $self->getNextDelayedWorkId();
+
+    my $time = $event->{time} || 0;
+    my $crontab = $event->{crontab};
+
+    if (defined($crontab)) {
+        $time = undef;
+    }
+
     my $delayedWork = {
         summary => $event->{summary},
-        time    => $event->{time},
+        (defined($time) ? (time => $time) : ()),
+        (defined($crontab) ? (
+            crontab => $crontab,
+            skip    => $event->{skip} || 0,
+            pause   => $event->{pause} || 0
+        ) : ()),
         update  => 1,
         jobs    => $event->{jobs},
         props   => $event->{props} || {}
@@ -191,25 +216,18 @@ sub processCreateAction {
     $delayedWork->{props}->{author} ||= DELAY_AUTHOR_UNKNOWN;
     $delayedWork->{props}->{time} = time();
 
-    $self->debug('Create delayed work \'' . $id . '\' with summary \'' . $delayedWork->{summary} . '\', time \'' .
-        formatDateTime($delayedWork->{time}) . '\', jobs ' . encode_json($delayedWork->{jobs}) . ' and props ' .
-        encode_json($delayedWork->{props}));
+    $self->debug('Create delayed work \'' . $id . '\' with summary \'' . $delayedWork->{summary} . '\'' .
+        (exists($delayedWork->{time}) ? ', time \'' . formatDateTime($delayedWork->{time}) . '\'' : '') .
+        (exists($delayedWork->{crontab}) ? ', crontab \'' . $delayedWork->{crontab} . '\'' .
+            ($delayedWork->{skip} ? ', skip \'' . $delayedWork->{skip} . '\'' : '') .
+            ($delayedWork->{pause} ? ', paused' : '') : '') .
+        ', jobs ' . encode_json($delayedWork->{jobs}) . ' and props ' . encode_json($delayedWork->{props}));
 
-    my $time = $self->getNextTime($delayedWork);
     $self->redis->set('anyjob:delayed:' . $id, encode_json($delayedWork));
-    $self->redis->zadd('anyjob:delayed', $time, $id);
 
-    $self->sendEvent(EVENT_CREATE_DELAYED_WORK, {
-        id        => $id,
-        summary   => $delayedWork->{summary},
-        delayTime => $delayedWork->{time},
-        workJobs  => $delayedWork->{jobs},
-        props     => $delayedWork->{props}
-    });
+    $self->sendEvent(EVENT_CREATE_DELAYED_WORK, $self->getDelayedWorkEventData($id, $delayedWork));
 
-    if (not defined($self->{nextDelayedWork}) or $self->{nextDelayedWork}->{time} > $time) {
-        $self->updateNextDelayedWork($id, $time);
-    }
+    $self->scheduleDelayedWork($id, $delayedWork);
 }
 
 ###############################################################################
@@ -237,42 +255,61 @@ sub processUpdateAction {
         return;
     }
 
+    my $summary = exists($event->{summary}) ? $event->{summary} : $oldDelayedWork->{summary};
+    my $time = exists($event->{time}) ? $event->{time} : $oldDelayedWork->{time};
+    my $crontab = exists($event->{crontab}) ? $event->{crontab} : $oldDelayedWork->{crontab};
+    my $skip = exists($event->{skip}) ? $event->{skip} : $oldDelayedWork->{skip};
+    my $isPaused = exists($event->{pause}) ? $event->{pause} : $oldDelayedWork->{pause};
+
+    if (exists($event->{crontab})) {
+        $time = undef;
+    } elsif (exists($event->{time})) {
+        $crontab = undef;
+    }
+
+    $time ||= 0;
+    if (defined($crontab)) {
+        $time = undef;
+    }
+
+    my $jobs = $oldDelayedWork->{jobs};
+    my $props = $oldDelayedWork->{props};
+    if (exists($event->{jobs})) {
+        $jobs = $event->{jobs};
+        $props = $event->{props};
+    }
+
     my $delayedWork = {
-        summary => $event->{summary},
-        time    => $event->{time},
+        summary => $summary,
+        (defined($time) ? (time => $time) : ()),
+        (defined($crontab) ? (
+            crontab => $crontab,
+            skip    => $skip || 0,
+            pause   => $isPaused || 0
+        ) : ()),
         update  => $oldDelayedWork->{update} + 1,
-        jobs    => $event->{jobs},
-        props   => $event->{props} || {}
+        jobs    => $jobs,
+        props   => $props || {}
     };
 
     $delayedWork->{props}->{author} ||= DELAY_AUTHOR_UNKNOWN;
     $delayedWork->{props}->{time} = time();
 
-    $self->debug('Update delayed work \'' . $id . '\' with summary \'' . $delayedWork->{summary} . '\', time \'' .
-        formatDateTime($delayedWork->{time}) . '\', update count \'' . $delayedWork->{update} . '\', jobs ' .
-        encode_json($delayedWork->{jobs}) . ' and props ' . encode_json($delayedWork->{props})
+    $self->debug('Update delayed work \'' . $id . '\' with summary \'' . $delayedWork->{summary} . '\'' .
+        (exists($delayedWork->{time}) ? ', time \'' . formatDateTime($delayedWork->{time}) . '\'' : '') .
+        (exists($delayedWork->{crontab}) ? ', crontab \'' . $delayedWork->{crontab} . '\'' .
+            ($delayedWork->{skip} ? ', skip \'' . $delayedWork->{skip} . '\'' : '') .
+            ($delayedWork->{pause} ? ', paused' : '') : '') .
+        ', update count \'' . $delayedWork->{update} . '\', jobs ' . encode_json($delayedWork->{jobs}) .
+        ' and props ' . encode_json($delayedWork->{props})
     );
 
-    my $time = $self->getNextTime($delayedWork);
     $self->redis->set('anyjob:delayed:' . $id, encode_json($delayedWork));
-    $self->redis->zadd('anyjob:delayed', $time, $id);
 
     $self->sendStatusEvent($event, 1, 'Delayed work updated');
+    $self->sendEvent(EVENT_UPDATE_DELAYED_WORK, $self->getDelayedWorkEventData($id, $delayedWork));
 
-    $self->sendEvent(EVENT_UPDATE_DELAYED_WORK, {
-        id        => $id,
-        summary   => $delayedWork->{summary},
-        delayTime => $delayedWork->{time},
-        workJobs  => $delayedWork->{jobs},
-        props     => $delayedWork->{props}
-    });
-
-    my $nextDelayedWork = $self->{nextDelayedWork};
-    if (defined($nextDelayedWork) and $nextDelayedWork->{id} == $id and $nextDelayedWork->{time} < $time) {
-        $self->updateNextDelayedWork();
-    } elsif (not defined($nextDelayedWork) or $nextDelayedWork->{time} > $time) {
-        $self->updateNextDelayedWork($id, $time);
-    }
+    $self->scheduleDelayedWork($id, $delayedWork);
 }
 
 ###############################################################################
@@ -309,16 +346,10 @@ sub processDeleteAction {
         my @keys = keys(%{$event->{props}});
         @{$props}{@keys} = @{$event->{props}}{@keys};
     }
+    $delayedWork->{props} = $props;
 
     $self->sendStatusEvent($event, 1, 'Delayed work removed');
-
-    $self->sendEvent(EVENT_DELETE_DELAYED_WORK, {
-        id        => $id,
-        summary   => $delayedWork->{summary},
-        delayTime => $delayedWork->{time},
-        workJobs  => $delayedWork->{jobs},
-        props     => $props
-    });
+    $self->sendEvent(EVENT_DELETE_DELAYED_WORK, $self->getDelayedWorkEventData($id, $delayedWork));
 }
 
 ###############################################################################
@@ -413,15 +444,14 @@ sub process {
         return;
     }
 
+    if (exists($delayedWork->{crontab}) and ($delayedWork->{skip} > 0 or $delayedWork->{pause})) {
+        $self->skipDelayedWork($id, $delayedWork);
+        return;
+    }
+
     $self->debug('Process delayed work \'' . $id . '\': ' . encode_json($delayedWork->{jobs}));
 
-    $self->sendEvent(EVENT_PROCESS_DELAYED_WORK, {
-        id        => $id,
-        summary   => $delayedWork->{summary},
-        delayTime => $delayedWork->{time},
-        workJobs  => $delayedWork->{jobs},
-        props     => $delayedWork->{props}
-    });
+    $self->sendEvent(EVENT_PROCESS_DELAYED_WORK, $self->getDelayedWorkEventData($id, $delayedWork));
 
     foreach my $job (@{$delayedWork->{jobs}}) {
         if (exists($job->{jobset})) {
@@ -437,7 +467,74 @@ sub process {
         }
     }
 
-    $self->cleanDelayedWork($id);
+    if (exists($delayedWork->{crontab})) {
+        $self->scheduleDelayedWork($id, $delayedWork);
+    } else {
+        $self->cleanDelayedWork($id);
+    }
+}
+
+###############################################################################
+# Skip processing delayed work. Processing is skipped if skip counter is greater than zero or pause flag is set.
+# Skip counter is decreased only if pause flag is not set.
+#
+# Arguments:
+#     id          - integer delayed work id.
+#     delayedWork - hash with delayed work data.
+#
+sub skipDelayedWork {
+    my $self = shift;
+    my $id = shift;
+    my $delayedWork = shift;
+
+    $self->debug('Skip delayed work \'' . $id . '\'' .
+        ($delayedWork->{skip} > 0 ? ', skip \'' . $delayedWork->{skip} . '\'' : '') .
+        ($delayedWork->{pause} ? ', paused' : '') . ', jobs : ' . encode_json($delayedWork->{jobs}));
+
+    if ($delayedWork->{skip} > 0 and not $delayedWork->{pause}) {
+        $delayedWork->{skip}--;
+        $self->redis->set('anyjob:delayed:' . $id, encode_json($delayedWork));
+    }
+
+    $self->scheduleDelayedWork($id, $delayedWork);
+}
+
+###############################################################################
+# Schedule delayed work processing. In case of error delayed work is automatically removed, so scheduling data
+# should be previously checked for correctness.
+#
+# Arguments:
+#     id          - integer delayed work id.
+#     delayedWork - hash with delayed work data.
+#
+sub scheduleDelayedWork {
+    my $self = shift;
+    my $id = shift;
+    my $delayedWork = shift;
+
+    my $nextDelayedWork = $self->{nextDelayedWork};
+
+    my ($nextTime, $error) = $self->getNextTime($delayedWork);
+    if (defined($error)) {
+        $self->error('Error scheduling delayed work \'' . $id . '\', work will be removed: ' . $error);
+
+        $self->redis->zrem('anyjob:delayed', $id);
+        $self->redis->del('anyjob:delayed:' . $id);
+
+        if (defined($nextDelayedWork) and $nextDelayedWork->{id} == $id) {
+            $self->updateNextDelayedWork();
+        }
+
+        return;
+    }
+
+    $self->redis->zadd('anyjob:delayed', $nextTime, $id);
+
+    if (not defined($nextDelayedWork) or $nextDelayedWork->{time} >= $nextTime) {
+        $self->updateNextDelayedWork($id, $nextTime);
+    } elsif (defined($nextDelayedWork) and $nextDelayedWork->{id} == $id) {
+        $self->updateNextDelayedWork();
+    }
 }
 
 ###############################################################################
@@ -446,12 +543,22 @@ sub process {
 # Arguments:
 #     delayedWork - hash with delayed work data.
 # Returns:
-#     integer time in unix timestamp format.
+#     integer time in unix timestamp format or undef in case of error.
+#     string error or undef.
 #
 sub getNextTime {
     my $self = shift;
     my $delayedWork = shift;
-    return $delayedWork->{time};
+
+    if (exists($delayedWork->{time})) {
+        return +($delayedWork->{time}, undef);
+    } else {
+        my ($scheduler, $error) = $self->{crontab}->getScheduler($delayedWork->{crontab});
+        if (defined($error)) {
+            return +(undef, $error);
+        }
+        return +($scheduler->schedule(), undef);
+    }
 }
 
 ###############################################################################
@@ -493,7 +600,40 @@ sub cleanDelayedWork {
 
     $self->redis->zrem('anyjob:delayed', $id);
     $self->redis->del('anyjob:delayed:' . $id);
-    $self->updateNextDelayedWork();
+
+    my $nextDelayedWork = $self->{nextDelayedWork};
+    if (defined($nextDelayedWork) and $nextDelayedWork->{id} == $id) {
+        $self->updateNextDelayedWork();
+    }
+}
+
+###############################################################################
+# Generate hash with data used in delayed work events.
+#
+# Arguments:
+#     id          - integer delayed work id.
+#     delayedWork - hash with delayed work data.
+# Returns:
+#     hash with generated data.
+#
+sub getDelayedWorkEventData {
+    my $self = shift;
+    my $id = shift;
+    my $delayedWork = shift;
+
+    return {
+        id       => $id,
+        summary  => $delayedWork->{summary},
+        (exists($delayedWork->{time}) ? (
+            delayTime => $delayedWork->{time}) : ()),
+        (exists($delayedWork->{crontab}) ? (
+            crontab => $delayedWork->{crontab},
+            skip    => $delayedWork->{skip},
+            pause   => $delayedWork->{pause}
+        ) : ()),
+        workJobs => $delayedWork->{jobs},
+        props    => $delayedWork->{props}
+    };
 }
 
 ###############################################################################

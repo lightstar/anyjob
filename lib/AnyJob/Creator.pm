@@ -9,7 +9,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  16.12.2018
+# Last update:  29.01.2019
 #
 
 use strict;
@@ -20,6 +20,7 @@ use JSON::XS;
 
 use AnyJob::Utils qw(getModuleName requireModule);
 use AnyJob::DateTime qw(parseDateTime);
+use AnyJob::Crontab::Factory;
 use AnyJob::Creator::Parser;
 
 use base 'AnyJob::Base';
@@ -36,6 +37,7 @@ sub new {
     $args{type} = 'creator';
     my $self = $class->SUPER::new(%args);
     $self->{addons} = {};
+    $self->{crontab} = AnyJob::Crontab::Factory->new();
     return $self;
 }
 
@@ -66,6 +68,17 @@ sub addon {
 
     $self->{addons}->{$name} = $module->new(parent => $self);
     return $self->{addons}->{$name};
+}
+
+###############################################################################
+# Get crontab factory object.
+#
+# Returns:
+#     AnyJob::Crontab::Factory object.
+#
+sub crontab {
+    my $self = shift;
+    return $self->{crontab};
 }
 
 ###############################################################################
@@ -256,9 +269,7 @@ sub checkJobParamType {
 # Check delay data used to delay jobs.
 #
 # Arguments:
-#     delay - hash with delay data. It should contain 'summary' field with string delayed work summary,
-#             optional 'time' field with integer delay time in unix timestamp format and optional 'id' field with
-#             integer delayed work id.
+#     delay - hash with delay data.
 # Returns:
 #     string error message or undef if there are no any errors.
 #
@@ -270,20 +281,58 @@ sub checkDelay {
         return 'wrong delay data';
     }
 
-    unless (defined($delay->{summary}) and $delay->{summary} ne '') {
-        return 'wrong delayed work summary';
-    }
-
-    if (defined($delay->{time}) and ($delay->{time} !~ /^\d+$/o or $delay->{time} <= 0)) {
-        return 'wrong delay time';
-
-    }
-
     if (defined($delay->{id}) and ($delay->{id} !~ /^\d+$/o or $delay->{id} <= 0)) {
         return 'wrong delayed work id';
     }
 
+    if ((not defined($delay->{id}) and not defined($delay->{summary})) or
+        (defined($delay->{summary}) and $delay->{summary} eq '')
+    ) {
+        return 'wrong delayed work summary';
+    }
+
+    if (not defined($delay->{id}) and not defined($delay->{time}) and not defined($delay->{crontab})) {
+        return 'no delayed work scheduling information';
+    }
+
+    if (defined($delay->{time}) and ($delay->{time} !~ /^\d+$/o or $delay->{time} <= 0)) {
+        return 'wrong delay time';
+    }
+
+    if (defined($delay->{crontab}) and ($delay->{crontab} eq '' or not $self->checkCrontab($delay->{crontab}))) {
+        return 'wrong delay crontab';
+    }
+
+    if (defined($delay->{skip}) and $delay->{skip} !~ /^\d+$/o) {
+        return 'wrong delay skip count';
+    }
+
+    if (defined($delay->{pause}) and $delay->{pause} !~ /^(?:0|1)$/o) {
+        return 'wrong delay pause flag';
+    }
+
     return undef;
+}
+
+###############################################################################
+# Check if given crontab specification is valid.
+#
+# Arguments:
+#     crontab - crontab specification string to check.
+# Returns:
+#     0/1 flag. If set, crontab specification is valid, otherwise it is not.
+#
+sub checkCrontab {
+    my $self = shift;
+    my $crontab = shift;
+
+    my $error;
+    (undef, $error) = $self->{crontab}->getScheduler($crontab);
+    if (defined($error)) {
+        return 0;
+    }
+
+    return 1;
 }
 
 ###############################################################################
@@ -419,9 +468,9 @@ sub delayJobs {
     }
 
     if (defined($delay->{id})) {
-        $self->updateDelayedWork($delay->{id}, $delay->{summary}, $delay->{time}, \@delayedJobs, $props, $opts);
+        $self->updateDelayedWork($delay, \@delayedJobs, $props, $opts);
     } else {
-        $self->createDelayedWork($delay->{summary}, $delay->{time}, \@delayedJobs, $props, $opts);
+        $self->createDelayedWork($delay, \@delayedJobs, $props, $opts);
     }
 
     return undef;
@@ -557,24 +606,30 @@ sub createJobSet {
 # Almost nothing is checked here so better use higher level method 'delayJobs' instead.
 #
 # Arguments:
-#     summary - string delayed work summary.
-#     time    - integer delay time in unix timestamp format.
-#     jobs    - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
-#               individual job.
-#     props   - optional hash with delayed work properties.
-#     opts    - optional hash with operation options.
+#     delay - hash with delay data.
+#     jobs  - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
+#             individual job.
+#     props - optional hash with delayed work properties.
+#     opts  - optional hash with operation options.
 #
 sub createDelayedWork {
     my $self = shift;
-    my $summary = shift;
-    my $time = shift;
+    my $delay = shift;
     my $jobs = shift;
     my $props = shift;
     my $opts = shift;
 
-    unless (defined($summary) and $summary ne '' and defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
-        defined($time) and $time =~ /^\d+$/o and $time > 0 and (not defined($props) or ref($props) eq 'HASH') and
-        (not defined($opts) or ref($opts) eq 'HASH')
+    my $summary = $delay->{summary};
+    my $time = $delay->{time};
+    my $crontab = $delay->{crontab};
+    my $skip = $delay->{skip};
+    my $pause = $delay->{pause};
+
+    unless (defined($summary) and $summary ne '' and (defined($time) or defined($crontab)) and
+        (not defined($time) or ($time =~ /^\d+$/o and $time > 0)) and (not defined($crontab) or $crontab ne '') and
+        (not defined($skip) or $skip =~ /^\d+$/) and (not defined($pause) or $pause =~ /^(?:0|1)$/) and
+        defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
+        (not defined($props) or ref($props) eq 'HASH') and (not defined($opts) or ref($opts) eq 'HASH')
     ) {
         $self->error('Called createDelayedWork with wrong parameters');
         return;
@@ -583,7 +638,12 @@ sub createDelayedWork {
     $self->redis->rpush('anyjob:delayq', encode_json({
         action  => 'create',
         summary => $summary,
-        time    => $time,
+        (defined($time) ? (time => $time) : ()),
+        (defined($crontab) ? (
+            crontab => $crontab,
+            (defined($skip) ? (skip => $skip) : ()),
+            (defined($pause) ? (pause => $pause) : ())
+        ) : ()),
         jobs    => $jobs,
         (defined($props) ? (props => $props) : ()),
         (defined($opts) ? (opts => $opts) : ())
@@ -592,29 +652,34 @@ sub createDelayedWork {
 
 ###############################################################################
 # Update delayed work.
-# Almost nothing is checked here so better use higher level method 'delayJobs' instead.
+# Almost nothing is checked here so better use higher level method 'delayJobs' instead or call
+# 'checkDelay' method before if there are no jobs to update.
 #
 # Arguments:
-#     id      - integer delayed work id to update.
-#     summary - string delayed work summary.
-#     time    - integer delay time in unix timestamp format.
-#     jobs    - arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
-#               individual job.
-#     props   - optional hash with delayed work properties.
-#     opts    - optional hash with operation options.
+#     delay - hash with delay data. All fields except 'id' are optional inside.
+#     jobs  - optional arrays of hashes with jobs to delay. Each element is either jobset with inner jobs array or
+#             individual job.
+#     props - optional hash with delayed work properties.
+#     opts  - optional hash with operation options.
 #
 sub updateDelayedWork {
     my $self = shift;
-    my $id = shift;
-    my $summary = shift;
-    my $time = shift;
+    my $delay = shift;
     my $jobs = shift;
     my $props = shift;
     my $opts = shift;
 
-    unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and defined($summary) and $summary ne '' and
-        defined($jobs) and ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0 and
-        defined($time) and $time =~ /^\d+$/o and $time > 0 and
+    my $id = $delay->{id};
+    my $summary = $delay->{summary};
+    my $time = $delay->{time};
+    my $crontab = $delay->{crontab};
+    my $skip = $delay->{skip};
+    my $pause = $delay->{pause};
+
+    unless (defined($id) and $id =~ /^\d+$/o and $id > 0 and (not defined($summary) or $summary ne '') and
+        (not defined($time) or ($time =~ /^\d+$/o and $time > 0)) and (not defined($crontab) or $crontab ne '') and
+        (not defined($skip) or $skip =~ /^\d+$/) and (not defined($pause) or $pause =~ /^(?:0|1)$/) and
+        (not defined($jobs) or (ref($jobs) eq 'ARRAY' and scalar(@$jobs) > 0)) and
         (not defined($props) or ref($props) eq 'HASH') and (not defined($opts) or ref($opts) eq 'HASH')
     ) {
         $self->error('Called updateDelayedWork with wrong parameters');
@@ -622,11 +687,14 @@ sub updateDelayedWork {
     }
 
     $self->redis->rpush('anyjob:delayq', encode_json({
-        action  => 'update',
-        id      => $id,
-        summary => $summary,
-        time    => $time,
-        jobs    => $jobs,
+        action => 'update',
+        id     => $id,
+        (defined($summary) ? (summary => $summary) : ()),
+        (defined($time) ? (time => $time) : ()),
+        (defined($crontab) ? (crontab => $crontab) : ()),
+        (defined($skip) ? (skip => $skip) : ()),
+        (defined($pause) ? (pause => $pause) : ()),
+        (defined($jobs) ? (jobs => $jobs) : ()),
         (defined($props) ? (props => $props) : ()),
         (defined($opts) ? (opts => $opts) : ())
     }));

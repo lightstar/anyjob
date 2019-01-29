@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  13.12.2018
+# Last update:  28.01.2019
 #
 
 use strict;
@@ -20,7 +20,7 @@ use AnyJob::Constants::Defaults qw(
     DEFAULT_WORKER_WORK_DIR DEFAULT_WORKER_EXEC DEFAULT_WORKER_DAEMON_EXEC DEFAULT_TEMPLATES_PATH
     injectPathIntoConstant
 );
-use AnyJob::Constants::Delay qw(DELAY_ALL_ACTIONS);
+use AnyJob::Constants::Delay qw(DELAY_REAL_ACTIONS);
 use AnyJob::Access::Resource;
 
 use base 'AnyJob::Config::Base';
@@ -582,7 +582,7 @@ sub getJobDelayAccess {
     $self->{jobDelayAccess}->{$type} = {};
 
     foreach my $action (keys(%$delayAccess)) {
-        if (exists(DELAY_ALL_ACTIONS()->{$action})) {
+        if (exists(DELAY_REAL_ACTIONS()->{$action})) {
             $self->{jobDelayAccess}->{$type}->{$action} =
                 AnyJob::Access::Resource->new(input => $delayAccess->{$action});
         }
@@ -1042,7 +1042,7 @@ sub getDelayAccess {
     $self->{delayAccess} = {};
 
     foreach my $action (keys(%$delayAccess)) {
-        if (exists(DELAY_ALL_ACTIONS()->{$action})) {
+        if (exists(DELAY_REAL_ACTIONS()->{$action})) {
             $self->{delayAccess}->{$action} = AnyJob::Access::Resource->new(input => $delayAccess->{$action});
         }
     }

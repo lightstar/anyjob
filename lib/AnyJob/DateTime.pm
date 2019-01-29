@@ -5,14 +5,14 @@ package AnyJob::DateTime;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  27.02.2018
+# Last update:  28.01.2019
 #
 
 use strict;
 use warnings;
 use utf8;
 
-use Time::Local;
+use POSIX qw(mktime);
 
 use base 'Exporter';
 
@@ -155,7 +155,7 @@ sub parseDateTime {
         hour     => $hour,
         minute   => $minute,
         second   => $second,
-        unixTime => timelocal($second, $minute, $hour, $day, $month - 1, $year - 1900),
+        unixTime => mktime($second, $minute, $hour, $day, $month - 1, $year - 1900),
         dateTime => sprintf('%.2d-%.2d-%.4d %.2d:%.2d:%.2d', $day, $month, $year, $hour, $minute, $second),
         date     => sprintf('%.2d-%.2d-%.4d', $day, $month, $year),
         time     => sprintf('%.2d.:%.2d:%.2d', $hour, $minute, $second)

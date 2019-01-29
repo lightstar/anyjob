@@ -237,6 +237,9 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "id": <integer delayed work id>,
     "summary": "<string delayed work summary>",
     "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
+    "crontab": "<crontab specification string>",
+    "skip": <integer skip count, used along with crontab specification string>,
+    "pause": <0/1 pause flag, used along with crontab specification string>,
     "workJobs": [
         {
             "node": "<string node name>",
@@ -289,6 +292,9 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "id": <integer delayed work id>,
     "summary": "<string delayed work summary>",
     "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
+    "crontab": "<crontab specification string>",
+    "skip": <integer skip count, used along with crontab specification string>,
+    "pause": <0/1 pause flag, used along with crontab specification string>,
     "workJobs": [
         ...
     ],
@@ -306,6 +312,9 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "id": <integer delayed work id>,
     "summary": "<string delayed work summary>",
     "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
+    "crontab": "<crontab specification string>",
+    "skip": <integer skip count, used along with crontab specification string>,
+    "pause": <0/1 pause flag, used along with crontab specification string>,
     "workJobs": [
         ...
     ],
@@ -323,6 +332,9 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     "id": <integer delayed work id>,
     "summary": "<string delayed work summary>",
     "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
+    "crontab": "<crontab specification string>",
+    "skip": <integer skip count, used along with crontab specification string>,
+    "pause": <0/1 pause flag, used along with crontab specification string>,
     "workJobs": [
         ...
     ],
@@ -341,6 +353,9 @@ specific one).
             "id": <integer delayed work id>,
             "summary": "<string delayed work summary>",
             "time": <integer time in unix timestamp format indicating when this delayed work will be processed>,
+            "crontab": "<crontab specification string>",
+            "skip": <integer skip count, used along with crontab specification string>,
+            "pause": <0/1 pause flag, used along with crontab specification string>,
             "jobs": [
                 {
                     "node": "<string node name>",

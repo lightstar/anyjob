@@ -5,8 +5,12 @@ package AnyJob::Creator::Parser::Delay;
 # methods like 'delayJobs'. If there are any errors in arguments, they are returned in very detailed form.
 #
 # Command-line can be one of these variants:
-# <time>
-# update <id> <time>
+# <time/crontab> [@skip <count>] [@paused]
+# update <id>
+# schedule <id> <time/crontab> [@skip <count>] [@paused]
+# skip <id> <count>
+# pause <id>
+# resume <id>
 # delete <id>
 # get [id]
 #
@@ -15,11 +19,12 @@ package AnyJob::Creator::Parser::Delay;
 # (such as AnyJob::Creator::Parser::Job).
 #
 # Parameter 'time' here is string with date and time in any format supported by AnyJob::DateTime::parseDateTime method.
+# Parameter 'crontab' here is crontab specification string in format supported by AnyJob::Crontab::Scheduler module.
 # Parameter 'id' is integer id of already created delayed work.
 #
 # Author:       LightStar
 # Created:      29.05.2018
-# Last update:  12.12.2018
+# Last update:  29.01.2019
 #
 
 use strict;
@@ -143,18 +148,24 @@ sub parse {
     }
 
     my $action = $self->parseDelayAction();
-    if ($action eq DELAY_ACTION_CREATE) {
-        $self->processCreateAction();
-    } elsif ($action eq DELAY_ACTION_UPDATE) {
-        $self->processUpdateAction();
-    } elsif ($action eq DELAY_ACTION_DELETE) {
-        $self->processDeleteAction();
-    } elsif ($action eq DELAY_ACTION_GET) {
-        $self->processGetAction();
+    my $methodName = 'process' . ucfirst($action) . 'Action';
+    if ($self->can($methodName)) {
+        $self->$methodName();
     }
 
     if (scalar(@{$self->{errors}}) == 0) {
         $self->generateSummary();
+    }
+}
+
+###############################################################################
+# Normalize delay action. After that delay action will be set to supported by delay controller one.
+#
+sub normalizeAction {
+    my $self = shift;
+
+    if (exists(DELAY_META_ACTIONS()->{$self->{delay}->{action}})) {
+        $self->{delay}->{action} = DELAY_META_ACTIONS()->{$self->{delay}->{action}};
     }
 }
 
@@ -164,10 +175,16 @@ sub parse {
 sub processCreateAction {
     my $self = shift;
 
-    if (defined(my $time = $self->parseDelayTime())) {
+    my ($time, $crontab, $skip, $isPaused) = $self->parseDelayScheduling();
+    if (defined($time) or defined($crontab)) {
         $self->{delay} = {
             action => DELAY_ACTION_CREATE,
-            time   => $time
+            (defined($time) ? (time => $time) : ()),
+            (defined($crontab) ? (
+                crontab => $crontab,
+                ($skip > 0 ? (skip => $skip) : ()),
+                ($isPaused ? (pause => $isPaused) : ())
+            ) : ())
         };
     }
 }
@@ -178,11 +195,80 @@ sub processCreateAction {
 sub processUpdateAction {
     my $self = shift;
 
-    if (defined(my $id = $self->parseDelayId()) and defined(my $time = $self->parseDelayTime())) {
+    if (defined(my $id = $self->parseDelayId())) {
         $self->{delay} = {
             action => DELAY_ACTION_UPDATE,
             id     => $id,
-            time   => $time
+        };
+    }
+}
+
+###############################################################################
+# Parse parameters of 'schedule delayed work' action.
+#
+sub processScheduleAction {
+    my $self = shift;
+
+    if (defined(my $id = $self->parseDelayId())) {
+        my ($time, $crontab, $skip, $isPaused) = $self->parseDelayScheduling();
+        if (defined($time) or defined($crontab)) {
+            $self->{delay} = {
+                action => DELAY_ACTION_SCHEDULE,
+                id     => $id,
+                (defined($time) ? (time => $time) : ()),
+                (defined($crontab) ? (
+                    crontab => $crontab,
+                    skip    => $skip,
+                    pause   => $isPaused
+                ) : ())
+            };
+        }
+    }
+}
+
+###############################################################################
+# Parse parameters of 'skip delayed work' action.
+#
+sub processSkipAction {
+    my $self = shift;
+
+    if (defined(my $id = $self->parseDelayId())) {
+        if (defined(my $skip = $self->parseDelaySkip())) {
+            $self->{delay} = {
+                action => DELAY_ACTION_SKIP,
+                id     => $id,
+                skip   => $skip
+            };
+        }
+    }
+}
+
+###############################################################################
+# Parse parameters of 'pause delayed work' action.
+#
+sub processPauseAction {
+    my $self = shift;
+
+    if (defined(my $id = $self->parseDelayId())) {
+        $self->{delay} = {
+            action => DELAY_ACTION_PAUSE,
+            id     => $id,
+            pause  => 1
+        };
+    }
+}
+
+###############################################################################
+# Parse parameters of 'resume delayed work' action.
+#
+sub processResumeAction {
+    my $self = shift;
+
+    if (defined(my $id = $self->parseDelayId())) {
+        $self->{delay} = {
+            action => DELAY_ACTION_RESUME,
+            id     => $id,
+            pause  => 0
         };
     }
 }
@@ -220,7 +306,7 @@ sub processGetAction {
 sub generateSummary {
     my $self = shift;
 
-    if (exists(DELAY_ACTIONS_WITH_NAME()->{$self->{delay}->{action}})) {
+    if (exists(DELAY_ACTIONS_WITH_SUMMARY()->{$self->{delay}->{action}})) {
         my $escapeRe = qr/[\s\'\"]/;
         my $escapeSub = sub {
             my $arg = shift;
@@ -251,28 +337,6 @@ sub generateSummary {
 }
 
 ###############################################################################
-# Check if current argument is delay time and return it. Otherwise error is reported.
-#
-# Returns:
-#     integer time in unix timestamp format or undef in case of error.
-#
-sub parseDelayTime {
-    my $self = shift;
-
-    my $dateTime = parseDateTime(shift(@{$self->{args}}));
-    unless (defined($dateTime)) {
-        push @{$self->{errors}}, {
-            type  => 'error',
-            field => '@delay',
-            text  => 'wrong delay time'
-        };
-        return undef;
-    }
-
-    return $dateTime->{unixTime};
-}
-
-###############################################################################
 # Check if current argument is delay action and return it. Otherwise implicit delay action is returned
 # (which is 'create').
 #
@@ -287,6 +351,89 @@ sub parseDelayAction {
     }
 
     return DELAY_ACTION_CREATE;
+}
+
+###############################################################################
+# Check if current argument is delay time or crontab specification string and return them.
+# If none of the conditions are met, error is reported.
+#
+# Returns:
+#     integer time in unix timestamp format or undef.
+#     crontab specification string or undef.
+#     skip count or undef.
+#     isPaused 0/1 flag or undef.
+#
+sub parseDelayScheduling {
+    my $self = shift;
+
+    my ($time, $crontab, $skip, $isPaused);
+    $time = $self->parseDelayTime();
+    unless (defined($time)) {
+        $crontab = $self->parseDelayCrontab();
+    }
+
+    unless (defined($time) or defined($crontab)) {
+        push @{$self->{errors}}, {
+            type  => 'error',
+            field => '@delay',
+            text  => 'wrong delay time or crontab specification'
+        };
+        return +(undef, undef, undef, undef);
+    }
+
+    if (defined($crontab)) {
+        ($skip, $isPaused) = (0, 0);
+
+        if (scalar(@{$self->{args}}) > 0 and $self->{args}->[0] eq '@skip') {
+            shift(@{$self->{args}});
+            unless (defined($skip = $self->parseDelaySkip())) {
+                return +(undef, undef, undef, undef);
+            }
+        }
+
+        if (scalar(@{$self->{args}}) > 0 and $self->{args}->[0] eq '@paused') {
+            shift(@{$self->{args}});
+            $isPaused = 1;
+        }
+    }
+
+    return +($time, $crontab, $skip, $isPaused);
+}
+
+###############################################################################
+# Check if current argument is delay time and return it.
+#
+# Returns:
+#     integer time in unix timestamp format or undef in case argument is not delay time.
+#
+sub parseDelayTime {
+    my $self = shift;
+
+    my $dateTime = parseDateTime($self->{args}->[0]);
+    unless (defined($dateTime)) {
+        return undef;
+    }
+
+    shift(@{$self->{args}});
+    return $dateTime->{unixTime};
+}
+
+###############################################################################
+# Check if current argument is crontab specification string and return it.
+#
+# Returns:
+#     crontab specification string or undef in case argument is not crontab specification.
+#
+sub parseDelayCrontab {
+    my $self = shift;
+
+    my $crontab = $self->{args}->[0];
+    unless ($self->parent->checkCrontab($crontab)) {
+        return undef;
+    }
+
+    shift(@{$self->{args}});
+    return $crontab;
 }
 
 ###############################################################################
@@ -314,6 +461,28 @@ sub parseDelayId {
     }
 
     return $id;
+}
+
+###############################################################################
+# Check if current argument is integer skip count and return it. Otherwise error is reported.
+#
+# Returns:
+#     integer skip count of delayed work or undef in case of error.
+#
+sub parseDelaySkip {
+    my $self = shift;
+
+    my $skip = shift(@{$self->{args}});
+    unless (defined($skip) and $skip =~ /^\d+$/o) {
+        push @{$self->{errors}}, {
+            type  => 'error',
+            field => '@delay',
+            text  => 'wrong delay skip count'
+        };
+        return undef;
+    }
+
+    return $skip;
 }
 
 1;
