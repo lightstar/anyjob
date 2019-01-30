@@ -47,6 +47,13 @@
         Delay time: <b>[% delayTime %]</b><br>
     [% END %]
 
+    [% IF crontab %]
+        Crontab spec: <b>[% crontab %]</b>
+        [%- IF skip %], skip <b>[% skip %]</b>[% END %]
+        [%- IF pause %], paused[% END %]
+        <br>
+    [% END %]
+
     <br>
 
     [% IF job && node %]

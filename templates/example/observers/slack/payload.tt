@@ -41,6 +41,14 @@
                 },
             [% END %]
 
+            [% IF crontab %]
+                {
+                    "title": "Crontab spec",
+                    "value": "[% crontab %][% IF skip %], skip [% skip %][% END %][% IF pause %], paused[% END %]",
+                    "short": true
+                },
+            [% END %]
+
             [% IF job && node %]
                 {
                     "title": "[% job.label || type %] ([% node %][% redirect ? ' -> ' _ redirect : '' %])",

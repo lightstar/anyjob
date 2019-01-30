@@ -3,7 +3,7 @@
         "title": "
             [% IF job && node %]
                 [% job.label || type %] ([% node %][% redirect ? ' -> ' _ redirect : '' %])
-            [% ELSIF summary && delayTime %]
+            [% ELSIF summary && (delayTime || crontab) %]
                 Delayed work
             [% ELSIF event == 'getDelayedWorks' %]
                 Delayed works
