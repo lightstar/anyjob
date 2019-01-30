@@ -290,6 +290,9 @@ nodes                 - list of node names separated by comma on which this job 
                         job can be executed on all nodes. Default: 'all'.
 except                - list of node names separated by comma on which this job can't be executed. Default: none.
 default_nodes         - list of node names separated by comma on which this job will execute by default. Default: none.
+min_nodes             - minimum required nodes. If set to 0, no minimum is set, but node list can't be empty anyway.
+                        Default: 0.
+max_nodes             - maximum allowed nodes. If set to 0, no maximum is set. Default: 0.
 access                - string with accesses required to create this job.
 nodes_access          - JSON hash where keys are node names and values are strings with accesses needed to create job
                         on these nodes. Missing nodes here means no required access.

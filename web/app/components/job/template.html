@@ -25,12 +25,12 @@ Last update:  21.01.2019
   </select>
 </div>
 <div data-ng-if="job.proto != null">
-  <div class="form-group" data-ng-class="{'has-error': !isAnyNode}">
+  <div class="form-group" data-ng-class="{'has-error': !isNodesValid}">
     <span>Run on:</span>
     <label class="checkbox-inline" data-ng-repeat="node in job.proto.nodes.available">
       <input type="checkbox" data-ng-model="job.nodes[node]" data-ng-change="validate()"> {{node}}
     </label>
-    <span class="help-block has-error" data-ng-show="!isAnyNode">Choose at least one node</span>
+    <span class="help-block has-error" data-ng-show="!isNodesValid">{{errorNodes}}</span>
   </div>
   <div class="form-group"
        data-ng-repeat="param in job.proto.params track by param.name"

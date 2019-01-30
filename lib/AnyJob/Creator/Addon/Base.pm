@@ -143,7 +143,9 @@ sub getUserJobs {
 
         $jobCopy->{nodes} = {
             available => $nodes,
-            default   => $defaultNodes
+            default   => $defaultNodes,
+            min       => $job->{nodes}->{min},
+            max       => $job->{nodes}->{max}
         };
 
         my %delayRestricted;

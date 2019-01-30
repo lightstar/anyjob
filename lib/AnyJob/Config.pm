@@ -149,6 +149,8 @@ sub getAllNodes {
 #         nodes => {
 #             available => [ 'node1', 'node2', node3', ... ],
 #             default   => { 'node1' => 1, 'node2' => 1, ... },
+#             min       => ...,
+#             max       => ...,
 #             access    => { 'node1' => ..., 'node2' => ..., ... },
 #         },
 #         access => ...,
@@ -189,6 +191,8 @@ sub getAllJobs {
                 nodes       => {
                     available => $nodes,
                     default   => $defaultNodes,
+                    min       => $self->{data}->{$section}->{min_nodes} || 0,
+                    max       => $self->{data}->{$section}->{max_nodes} || 0,
                     access    => $self->getJobNodesAccess($type)
                 },
                 access      => $self->getJobAccess($type),
@@ -400,6 +404,46 @@ sub getJobNodes {
     }
 
     return \@nodes;
+}
+
+###############################################################################
+# Get minimum allowed nodes for job with given type.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     integer minimum nodes count. In case of 0, minimum is not set.
+#
+sub getJobMinNodes {
+    my $self = shift;
+    my $type = shift;
+
+    my $config = $self->getJobConfig($type);
+    unless (defined($config) and exists($config->{min_nodes})) {
+        return 0;
+    }
+
+    return $config->{min_nodes};
+}
+
+###############################################################################
+# Get maximum allowed nodes for job with given type.
+#
+# Arguments:
+#     type - string job type.
+# Returns:
+#     integer maximum nodes count. In case of 0, maximum is not set.
+#
+sub getJobMaxNodes {
+    my $self = shift;
+    my $type = shift;
+
+    my $config = $self->getJobConfig($type);
+    unless (defined($config) and exists($config->{max_nodes})) {
+        return 0;
+    }
+
+    return $config->{max_nodes};
 }
 
 ###############################################################################

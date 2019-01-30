@@ -9,7 +9,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  29.01.2019
+# Last update:  30.01.2019
 #
 
 use strict;
@@ -180,6 +180,16 @@ sub checkJobNodes {
         unless ($self->config->isJobSupported($job->{type}, $node)) {
             return 'job with type \'' . $job->{type} . '\' is not supported on node \'' . $node . '\'';
         }
+    }
+
+    my $minNodes = $self->config->getJobMinNodes($job->{type}) || 0;
+    if ($minNodes > 0 and scalar(@{$job->{nodes}}) < $minNodes) {
+        return 'too few nodes for job with type \'' . $job->{type} . '\' (minimum ' . $minNodes . ' required)';
+    }
+
+    my $maxNodes = $self->config->getJobMaxNodes($job->{type}) || 0;
+    if ($maxNodes > 0 and scalar(@{$job->{nodes}}) > $maxNodes) {
+        return 'too many nodes for job with type \'' . $job->{type} . '\' (maximum ' . $maxNodes . ' allowed)';
     }
 
     return undef;

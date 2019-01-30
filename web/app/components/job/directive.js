@@ -10,7 +10,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  22.01.2019
+ * Last update:  30.01.2019
  */
 
 app.directive('job', function () {
@@ -27,21 +27,37 @@ app.directive('job', function () {
             $scope.id = guidGenerator();
 
             /**
-             * Validate job nodes. Nodes are valid if they are not empty.
+             * Validate job nodes. Nodes are valid if they are not empty and within bounds specified in configuration.
              *
              * @return {boolean} valid flag. If true, nodes are valid.
              */
             function validateNodes() {
-                var isAnyNode = false;
+                var count = 0;
 
                 angular.forEach($scope.job.nodes, function (value) {
                     if (value) {
-                        isAnyNode = true;
+                        count++;
                     }
                 });
 
-                $scope.isAnyNode = isAnyNode;
-                return isAnyNode;
+                var minNodes = $scope.job.proto.nodes.min;
+                var maxNodes = $scope.job.proto.nodes.max;
+
+                if (count === 0) {
+                    $scope.isNodesValid = false;
+                    $scope.errorNodes = 'Choose at least one node';
+                } else if (minNodes > 0 && count < minNodes) {
+                    $scope.isNodesValid = false;
+                    $scope.errorNodes = 'Too few nodes (minimum ' + minNodes + ' required)';
+                } else if (maxNodes > 0 && count > maxNodes) {
+                    $scope.isNodesValid = false;
+                    $scope.errorNodes = 'Too many nodes (maximum ' + maxNodes + ' allowed)';
+                } else {
+                    $scope.isNodesValid = true;
+                    $scope.errorNodes = '';
+                }
+
+                return $scope.isNodesValid;
             }
 
             /**
@@ -121,7 +137,8 @@ app.directive('job', function () {
              * when job type is changed or its parameters are reseted.
              */
             function resetValidateData() {
-                $scope.isAnyNode = false;
+                $scope.isNodesValid = false;
+                $scope.errorNodes = '';
                 $scope.validParams = {};
                 $scope.validProps = {};
                 $scope.errorParams = {};
@@ -156,12 +173,12 @@ app.directive('job', function () {
                 if ($scope.job.proto === null) {
                     isValid = false;
                 } else {
-                    var isAnyNode = validateNodes();
+                    var isNodesValid = validateNodes();
                     var isParamsAllValid = validateParams($scope.job.proto.params, $scope.job.params,
                         $scope.validParams, $scope.errorParams);
                     var isPropsAllValid = validateParams($scope.job.proto.props, $scope.job.props,
                         $scope.validProps, $scope.errorProps);
-                    if (!isAnyNode || !isParamsAllValid || !isPropsAllValid) {
+                    if (!isNodesValid || !isParamsAllValid || !isPropsAllValid) {
                         isValid = false;
                     }
                 }

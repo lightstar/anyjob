@@ -23,7 +23,7 @@ package AnyJob::Creator::Parser::Job;
 #
 # Author:       LightStar
 # Created:      29.05.2018
-# Last update:  16.01.2019
+# Last update:  30.01.2019
 #
 
 use strict;
@@ -191,6 +191,8 @@ sub prepare {
 
     $self->{nodes} = { map {$_ => 1} @{$self->config->getJobNodes($type)} };
     $self->{defaultNodes} = $config->{default_nodes};
+    $self->{minNodes} = $config->{min_nodes} || 0;
+    $self->{maxNodes} = $config->{max_nodes} || 0;
 
     return 1;
 }
@@ -233,6 +235,7 @@ sub parse {
     $self->injectDefaultNodes();
     $self->injectDefaultParams();
     $self->injectDefaultProps();
+    $self->checkNodesCount();
 }
 
 ###############################################################################
@@ -520,14 +523,6 @@ sub injectDefaultNodes {
             };
         }
     }
-
-    if (scalar(@{$self->{job}->{nodes}}) == 0) {
-        push @{$self->{errors}}, {
-            type  => 'error',
-            field => 'nodes',
-            text  => 'no nodes'
-        };
-    }
 }
 
 ###############################################################################
@@ -597,6 +592,37 @@ sub injectDefaultProps {
                 text  => 'no required prop \'' . $name . '\''
             };
         }
+    }
+}
+
+###############################################################################
+# Check job nodes count and generate error in case it is invalid.
+#
+sub checkNodesCount {
+    my $self = shift;
+
+    if (scalar(@{$self->{job}->{nodes}}) == 0) {
+        push @{$self->{errors}}, {
+            type  => 'error',
+            field => 'nodes',
+            text  => 'no nodes'
+        };
+    }
+
+    if ($self->{minNodes} > 0 and scalar(@{$self->{job}->{nodes}}) < $self->{minNodes}) {
+        push @{$self->{errors}}, {
+            type  => 'error',
+            field => 'nodes',
+            text  => 'too few nodes (minimum ' . $self->{minNodes} . ' required)'
+        };
+    }
+
+    if ($self->{maxNodes} > 0 and scalar(@{$self->{job}->{nodes}}) > $self->{maxNodes}) {
+        push @{$self->{errors}}, {
+            type  => 'error',
+            field => 'nodes',
+            text  => 'too many nodes (maximum ' . $self->{maxNodes} . ' allowed)'
+        };
     }
 }
 
