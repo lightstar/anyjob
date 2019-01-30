@@ -31,7 +31,12 @@
             [% ELSIF event == 'getDelayedWorks' %]
                 [% IF works.size %]
                     [% FOREACH work IN works %]
-                        [% '\n\n' _ work.id %]. [% work.summary %] ([% work.time %])
+                        [% '\n\n' _ work.id %]. [% work.summary %] (
+                            [%- IF work.time %][% work.time %][% END %]
+                            [%- IF work.crontab %][% work.crontab %]
+                                [%- IF work.skip %], skip [% work.skip %][% END %]
+                                [%- IF work.pause %], paused[% END %]
+                            [%- END %])
                         [% '\n' %]Created by '[% work.props.author %]' at [% work.props.time %]
                     [% END %]
                 [% ELSE %]
