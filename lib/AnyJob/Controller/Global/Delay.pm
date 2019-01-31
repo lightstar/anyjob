@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  30.01.2019
+# Last update:  31.01.2019
 #
 
 use strict;
@@ -115,8 +115,7 @@ sub getProcessDelay {
 # 2. 'Update delayed work' event. Field 'id' here is id of updated delayed work. All other fields are identical to
 # 'create delayed work' event. Fields 'summary', 'time', 'crontab', 'skip', 'pause' and 'jobs' are optional and
 # will not be changed if not present. If field 'time' is present, then 'crontab', 'skip' and 'pause' fields are
-# ignored altogether. If field 'jobs' is not present, field 'props' is merged into current props, otherwise it is
-# fully copied.
+# ignored altogether. Field 'props' is copied into delayed work only if field 'jobs' is present.
 # {
 #     action => 'update',
 #     id => ...,
@@ -275,11 +274,13 @@ sub processUpdateAction {
 
     my $jobs = $oldDelayedWork->{jobs};
     my $props = $oldDelayedWork->{props};
+
     if (exists($event->{jobs})) {
         $jobs = $event->{jobs};
-        $props = $event->{props};
-    } elsif (exists($event->{props})) {
-        @{$props}{keys(%{$event->{props}})} = values(%{$event->{props}});
+
+        $props = $event->{props} || {};
+        $props->{author} ||= DELAY_AUTHOR_UNKNOWN;
+        $props->{time} = time();
     }
 
     my $delayedWork = {
@@ -292,11 +293,8 @@ sub processUpdateAction {
         ) : ()),
         update  => $oldDelayedWork->{update} + 1,
         jobs    => $jobs,
-        props   => $props || {}
+        props   => $props
     };
-
-    $delayedWork->{props}->{author} ||= DELAY_AUTHOR_UNKNOWN;
-    $delayedWork->{props}->{time} = time();
 
     $self->debug('Update delayed work \'' . $id . '\' with summary \'' . $delayedWork->{summary} . '\'' .
         (exists($delayedWork->{time}) ? ', time \'' . formatDateTime($delayedWork->{time}) . '\'' : '') .

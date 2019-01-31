@@ -3,7 +3,7 @@ Template for 'delayedWorks' directive.
 
 Author:       LightStar
 Created:      06.01.2019
-Last update:  21.01.2019
+Last update:  31.01.2019
 -->
 
 <h3>Delayed works</h3>
@@ -18,7 +18,7 @@ Last update:  21.01.2019
   <tr>
     <th>ID</th>
     <th>Summary</th>
-    <th>Time</th>
+    <th>Schedule</th>
     <th>Created by</th>
     <th>&nbsp;</th>
   </tr>
@@ -27,7 +27,11 @@ Last update:  21.01.2019
   <tr data-ng-repeat="work in works track by work.id">
     <td>{{work.id}}</td>
     <td>{{work.summary}}</td>
-    <td>{{work.time}}</td>
+    <td>
+      <span data-ng-if="work.time">{{work.time}}</span>
+      <span data-ng-if="work.crontab">{{work.crontab +
+        (work.skip > 0 ? ', skip ' + work.skip : '') +  (work.pause ? ', paused' : '')}}</span>
+    </td>
     <td>{{work.props.author}} at {{work.props.time}}</td>
     <td class="text-nowrap table-cell-actions">
       <span class="glyphicon glyphicon-pencil text-info" role="button"
