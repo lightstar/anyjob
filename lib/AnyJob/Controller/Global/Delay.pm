@@ -307,6 +307,11 @@ sub processUpdateAction {
 
     $self->redis->set('anyjob:delayed:' . $id, encode_json($delayedWork));
 
+    if (exists($event->{props}) and not exists($event->{jobs})) {
+        my @keys = keys(%{$event->{props}});
+        @{$delayedWork->{props}}{@keys} = @{$event->{props}}{@keys};
+    }
+
     $self->sendStatusEvent($event, 1, 'Delayed work updated');
     $self->sendEvent(EVENT_UPDATE_DELAYED_WORK, $self->getDelayedWorkEventData($id, $delayedWork));
 
@@ -341,13 +346,10 @@ sub processDeleteAction {
     $self->debug('Delete delayed work \'' . $id . '\'');
     $self->cleanDelayedWork($id);
 
-    my $props = $delayedWork->{props};
-    if (defined($event->{props})) {
-        $props = { %$props };
+    if (exists($event->{props})) {
         my @keys = keys(%{$event->{props}});
-        @{$props}{@keys} = @{$event->{props}}{@keys};
+        @{$delayedWork->{props}}{@keys} = @{$event->{props}}{@keys};
     }
-    $delayedWork->{props} = $props;
 
     $self->sendStatusEvent($event, 1, 'Delayed work removed');
     $self->sendEvent(EVENT_DELETE_DELAYED_WORK, $self->getDelayedWorkEventData($id, $delayedWork));
