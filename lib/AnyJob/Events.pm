@@ -5,7 +5,7 @@ package AnyJob::Events;
 #
 # Author:       LightStar
 # Created:      27.10.2017
-# Last update:  15.12.2018
+# Last update:  01.02.2019
 #
 
 use strict;
@@ -79,6 +79,10 @@ my @EVENTS = (
     },
     {
         event => EVENT_PROCESS_DELAYED_WORK,
+        type  => EVENT_TYPE_DELAYED_WORK
+    },
+    {
+        event => EVENT_SKIP_DELAYED_WORK,
         type  => EVENT_TYPE_DELAYED_WORK
     },
     {

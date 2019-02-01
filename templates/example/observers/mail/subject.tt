@@ -11,5 +11,6 @@
 [% ELSIF event == 'updateDelayedWork' %]Delayed work updated
 [% ELSIF event == 'deleteDelayedWork' %]Delayed work deleted
 [% ELSIF event == 'processDelayedWork' %]Delayed work processed
+[% ELSIF event == 'skipDelayedWork' %]Delayed work skipped
 [% ELSIF event == 'getDelayedWorks' %]Delayed works requested
 [% END %]

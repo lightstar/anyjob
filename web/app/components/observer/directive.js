@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  08.01.2019
+ * Last update:  01.02.2019
  */
 
 app.directive('observer', ['$timeout', function ($timeout) {
@@ -39,6 +39,7 @@ app.directive('observer', ['$timeout', function ($timeout) {
             eventClasses[EVENT_REDIRECT] = 'text-info';
             eventClasses[EVENT_PROGRESS_JOBSET] = 'text-info';
             eventClasses[EVENT_PROCESS_DELAYED_WORK] = 'text-info';
+            eventClasses[EVENT_SKIP_DELAYED_WORK] = 'text-danger';
             eventClasses[EVENT_FINISH] = function (event) {
                 return event.success ? 'text-success' : 'text-danger';
             };

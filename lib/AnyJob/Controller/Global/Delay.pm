@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  31.01.2019
+# Last update:  01.02.2019
 #
 
 use strict;
@@ -497,6 +497,7 @@ sub skipDelayedWork {
     if ($delayedWork->{skip} > 0 and not $delayedWork->{pause}) {
         $delayedWork->{skip}--;
         $self->redis->set('anyjob:delayed:' . $id, encode_json($delayedWork));
+        $self->sendEvent(EVENT_SKIP_DELAYED_WORK, $self->getDelayedWorkEventData($id, $delayedWork));
     }
 
     $self->scheduleDelayedWork($id, $delayedWork);

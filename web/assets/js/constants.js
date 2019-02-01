@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      29.11.2017
- * Last update:  06.01.2019
+ * Last update:  01.02.2019
  */
 
 /**
@@ -22,6 +22,7 @@ var EVENT_CREATE_DELAYED_WORK = 'createDelayedWork';
 var EVENT_UPDATE_DELAYED_WORK = 'updateDelayedWork';
 var EVENT_DELETE_DELAYED_WORK = 'deleteDelayedWork';
 var EVENT_PROCESS_DELAYED_WORK = 'processDelayedWork';
+var EVENT_SKIP_DELAYED_WORK = 'skipDelayedWork';
 var EVENT_GET_DELAYED_WORKS = 'getDelayedWorks';
 var EVENT_STATUS = 'status';
 

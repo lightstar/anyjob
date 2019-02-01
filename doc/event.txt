@@ -344,7 +344,27 @@ Fields "state" and "progress" are optional but at least one (and usually its onl
     }
 }
 
-14. 'Get delayed works' event. It is sent by explicit request and contains information about delayed works (all or only
+14. 'Skip delayed work' event. It indicates that some delayed work was just skipped.
+{
+    "event": "skipDelayedWork",
+    "time": <integer unix timestamp>,
+    "node": "<string node name>",
+    "id": <integer delayed work id>,
+    "summary": "<string delayed work summary>",
+    "delayTime": <time in unix timestamp format indicating when this delayed work will be processed>,
+    "crontab": "<crontab specification string>",
+    "skip": <integer skip count, used along with crontab specification string>,
+    "pause": <0/1 pause flag, used along with crontab specification string>,
+    "workJobs": [
+        ...
+    ],
+    "props": {
+        "<string property name>": "<string property value>",
+        ...
+    }
+}
+
+15. 'Get delayed works' event. It is sent by explicit request and contains information about delayed works (all or only
 specific one).
 {
     "event": "getDelayedWorks",
@@ -403,7 +423,7 @@ specific one).
     }
 }
 
-15. 'Status' event. It is sent after some operations as reply to signify success or error.
+16. 'Status' event. It is sent after some operations as reply to signify success or error.
 {
     "event": "status",
     "success": 0/1,

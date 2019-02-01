@@ -39,6 +39,7 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
                 EVENT_CREATE_DELAYED_WORK,
                 EVENT_UPDATE_DELAYED_WORK,
                 EVENT_PROCESS_DELAYED_WORK,
+                EVENT_SKIP_DELAYED_WORK,
                 EVENT_DELETE_DELAYED_WORK
             ], function (event) {
                 updateEvents[event] = true;

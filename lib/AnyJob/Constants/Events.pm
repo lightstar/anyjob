@@ -5,7 +5,7 @@ package AnyJob::Constants::Events;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  15.12.2018
+# Last update:  01.02.2019
 #
 
 use strict;
@@ -68,7 +68,6 @@ use constant EVENT_CREATE_DELAYED_WORK => 'createDelayedWork';
 # Event sent when delayed work is updated.
 #
 use constant EVENT_UPDATE_DELAYED_WORK => 'updateDelayedWork';
-
 ###############################################################################
 # Event sent when delayed work is deleted.
 #
@@ -78,6 +77,11 @@ use constant EVENT_DELETE_DELAYED_WORK => 'deleteDelayedWork';
 # Event sent when delayed work is processed.
 #
 use constant EVENT_PROCESS_DELAYED_WORK => 'processDelayedWork';
+
+###############################################################################
+# Event sent when delayed work is skipped.
+#
+use constant EVENT_SKIP_DELAYED_WORK => 'skipDelayedWork';
 
 ###############################################################################
 # Event sent when information about delayed works is requested.
@@ -123,6 +127,7 @@ our @EXPORT = qw(
     EVENT_UPDATE_DELAYED_WORK
     EVENT_DELETE_DELAYED_WORK
     EVENT_PROCESS_DELAYED_WORK
+    EVENT_SKIP_DELAYED_WORK
     EVENT_GET_DELAYED_WORKS
     EVENT_STATUS
     EVENT_TYPE_JOB
