@@ -11,7 +11,7 @@
  *
  * Author:       LightStar
  * Created:      21.12.2018
- * Last update:  11.01.2019
+ * Last update:  01.02.2019
  */
 
 app.directive('submit', function () {
@@ -43,10 +43,7 @@ app.directive('submit', function () {
                 }
 
                 $scope.label = (date === null && $scope.delay.action === DELAY_ACTION_CREATE) ? 'Create' : 'Delay';
-
-                if ($scope.delay.isValid !== isDelayValid) {
-                    $scope.delay.isValid = isDelayValid;
-                }
+                $scope.delay.isValid = isDelayValid;
             }
 
             /**
@@ -57,14 +54,64 @@ app.directive('submit', function () {
                 $scope.delay.isRestricted = !!$scope.config.delayRestricted[$scope.delay.action];
                 $scope.delay.isValid = true;
 
-                var initialDate = null;
-                if ($scope.delay.time !== undefined && $scope.delay.time !== null) {
-                    initialDate = $scope.delay.time;
+                if ($scope.delay.crontab !== undefined && $scope.delay.crontab !== null) {
+                    $scope.goToCrontabMode();
+                } else {
+                    $scope.goToTimeMode();
                 }
+            }
 
+            /**
+             * Switch to scheduling with crontab specification string.
+             */
+            $scope.goToCrontabMode = function () {
+                $scope.isCrontabMode = true;
+                $scope.isTimeMode = false;
+                delete $scope.delay.time;
+
+                $scope.isCrontabValid = true;
+                $scope.isSkipValid = true;
+                $scope.validateCrontab();
+                $scope.validateSkip();
+            };
+
+            /**
+             * Switch to scheduling with fixed datetime.
+             */
+            $scope.goToTimeMode = function () {
+                $scope.isTimeMode = true;
+                $scope.isCrontabMode = false;
+                delete $scope.delay.crontab;
+                delete $scope.delay.skip;
+                delete $scope.delay.pause;
+
+                var initialDate = $scope.delay.time || null;
                 $scope.date = dateContext(initialDate, changeDate);
                 $scope.date.change();
-            }
+            };
+
+            /**
+             * Validate crontab specification string after change. It must be non-empty.
+             */
+            $scope.validateCrontab = function () {
+                var isNoCrontab = $scope.delay.crontab === undefined || $scope.delay.crontab === null ||
+                    $scope.delay.crontab === '';
+
+                $scope.label = (isNoCrontab && $scope.delay.action === DELAY_ACTION_CREATE) ? 'Create' : 'Delay';
+                $scope.isCrontabValid = !isNoCrontab || $scope.delay.action === DELAY_ACTION_CREATE;
+
+                $scope.delay.isValid = $scope.isCrontabValid && $scope.isSkipValid;
+            };
+
+            /**
+             * Validate skip count after change. It must be empty or positive integer.
+             */
+            $scope.validateSkip = function () {
+                $scope.isSkipValid = $scope.delay.skip === undefined || $scope.delay.skip === null ||
+                    $scope.delay.skip === '' || /^[0-9]+$/.test($scope.delay.skip);
+
+                $scope.delay.isValid = $scope.isCrontabValid && $scope.isSkipValid;
+            };
 
             /**
              * Callback called when delay data is changed.

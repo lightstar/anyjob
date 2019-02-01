@@ -12,7 +12,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  15.01.2019
+ * Last update:  01.02.2019
  */
 
 app.directive('jobs', function () {
@@ -97,6 +97,9 @@ app.directive('jobs', function () {
             $scope.control.reset = function () {
                 delete $scope.delay.id;
                 delete $scope.delay.time;
+                delete $scope.delay.crontab;
+                delete $scope.delay.skip;
+                delete $scope.delay.pause;
                 delete $scope.delay.summary;
                 delete $scope.delay.updateCount;
                 $scope.submitControl.delayChanged();
@@ -114,6 +117,9 @@ app.directive('jobs', function () {
             $scope.control.editDelayedWork = function (delay, jobs) {
                 $scope.delay.id = delay.id;
                 $scope.delay.time = delay.time;
+                $scope.delay.crontab = delay.crontab;
+                $scope.delay.skip = delay.skip || null;
+                $scope.delay.pause = !!delay.pause;
                 $scope.delay.summary = delay.summary;
                 $scope.delay.updateCount = delay.updateCount;
 

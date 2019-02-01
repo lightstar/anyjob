@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      13.11.2017
- * Last update:  12.01.2019
+ * Last update:  01.02.2019
  */
 
 /**
@@ -48,8 +48,8 @@
 }
 
 /**
- * Group with 'Create/Delay' button and input field for delay time. Display 'table' is used here to make input field
- * width responsive to the viewport width.
+ * Group with 'Create/Delay' button and input fields for delay time or crontab. Display 'table' is used here to make
+ * input fields width responsive to the viewport width.
  */
 .submit-group {
   display: table;
@@ -57,7 +57,7 @@
 }
 
 .btn-submit,
-.submit-delay-time {
+.submit-delay-schedule {
   display: table-cell;
   vertical-align: top;
 }
@@ -68,6 +68,20 @@
  */
 .submit-delay-time-group {
   border-spacing: 0;
+}
+
+/**
+ * Input field with delay skip value.
+ */
+.submit-delay-skip {
+  width: 5em !important;
+}
+
+/**
+ * Labels by default have bottom margin which spoils checkbox vertical align.
+ */
+.submit-pause-label {
+  margin-bottom: 0;
 }
 
 /**

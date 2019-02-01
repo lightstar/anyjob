@@ -6,7 +6,7 @@ package AnyJob::Creator::App::Web;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  16.01.2019
+# Last update:  01.02.2019
 #
 
 use strict;
@@ -142,14 +142,9 @@ post '/delay' => http_basic_auth required => sub {
     my $isUpdate = defined($delay->{id}) ? 1 : 0;
     $delay->{action} = $isUpdate ? DELAY_ACTION_UPDATE : DELAY_ACTION_CREATE;
 
-    my $dateTime = parseDateTime($delay->{time});
-    unless (defined($dateTime)) {
-        return {
-            success => 0,
-            error   => 'wrong delayed work time'
-        };
+    if (defined(my $dateTime = parseDateTime($delay->{time}))) {
+        $delay->{time} = $dateTime->{unixTime};
     }
-    $delay->{time} = $dateTime->{unixTime};
 
     if ($isUpdate) {
         unless (defined($delay->{id}) and $delay->{id} =~ /^\d+$/) {

@@ -13,7 +13,7 @@
  *
  * Author:       LightStar
  * Created:      06.01.2019
- * Last update:  21.01.2019
+ * Last update:  01.02.2019
  */
 
 app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModal, creatorService) {
@@ -130,6 +130,9 @@ app.directive('delayedWorks', ['$uibModal', 'creatorService', function ($uibModa
                 var delay = {
                     id: id,
                     time: work.time,
+                    crontab: work.crontab,
+                    skip: work.skip,
+                    pause: work.pause,
                     summary: work.summary,
                     updateCount: work.update
                 };

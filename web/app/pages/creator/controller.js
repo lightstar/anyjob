@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  21.01.2019
+ * Last update:  01.02.2019
  */
 
 app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', '$animate', '$uibModal',
@@ -119,15 +119,30 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
          *                              argument. If user denies operation, resulting object will be null.
          */
         function prepareDelay(jobs, callback) {
-            if ($scope.delay.time === undefined || $scope.delay.time === null) {
+            if (($scope.delay.time === undefined || $scope.delay.time === null) &&
+                ($scope.delay.crontab === undefined || $scope.delay.crontab === null || $scope.delay.crontab === '')
+            ) {
                 callback({});
                 return;
             }
 
             var delay = {
-                time: $scope.delay.time,
                 summary: $scope.delay.summary !== undefined ? $scope.delay.summary : jobs[0].type
             };
+
+            if ($scope.delay.time !== undefined && $scope.delay.time !== null) {
+                delay.time = $scope.delay.time;
+            } else {
+                delay.crontab = $scope.delay.crontab;
+
+                if ($scope.delay.skip) {
+                    delay.skip = $scope.delay.skip;
+                }
+
+                if ($scope.delay.pause) {
+                    delay.pause = 1;
+                }
+            }
 
             if ($scope.delay.id !== undefined) {
                 delay.id = $scope.delay.id;
@@ -171,7 +186,7 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
 
                     $scope.overlayControl.show();
 
-                    if (delay.time !== undefined) {
+                    if (delay.time !== undefined || delay.crontab !== undefined) {
                         var updateCount = $scope.delay.updateCount || 0;
                         creatorService.delay(delay, jobs, updateCount, function (error) {
                             callback(jobs.length > 1 ? 'Jobs delayed' : 'Job delayed', error);
