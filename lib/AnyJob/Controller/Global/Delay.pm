@@ -433,23 +433,27 @@ sub sendStatusEvent {
 # Method called by daemon component on basis of provided delay.
 # Its main task is to run delayed works.
 #
+# Returns:
+#     integer delay in seconds before the next 'process' method invocation or undef if 'process' method should not be
+#     called yet.
+#
 sub process {
     my $self = shift;
 
     unless (defined($self->{nextDelayedWork})) {
-        return;
+        return undef;
     }
 
     my $id = $self->{nextDelayedWork}->{id};
     my $delayedWork = $self->getDelayedWork($id);
     unless (defined($delayedWork)) {
         $self->updateNextDelayedWork();
-        return;
+        return $self->getProcessDelay();
     }
 
     if (exists($delayedWork->{crontab}) and ($delayedWork->{skip} > 0 or $delayedWork->{pause})) {
         $self->skipDelayedWork($id, $delayedWork);
-        return;
+        return $self->getProcessDelay();
     }
 
     $self->debug('Process delayed work \'' . $id . '\': ' . encode_json($delayedWork->{jobs}));
@@ -475,6 +479,8 @@ sub process {
     } else {
         $self->cleanDelayedWork($id);
     }
+
+    return $self->getProcessDelay();
 }
 
 ###############################################################################

@@ -5,7 +5,7 @@ package AnyJob::Controller::Global::Clean;
 #
 # Author:       LightStar
 # Created:      23.10.2017
-# Last update:  02.05.2018
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -65,6 +65,10 @@ sub getProcessDelay {
 ###############################################################################
 # Method called by daemon component on basis of provided delay.
 # Its main task is to collect timeouted jobsets and clean them.
+#
+# Returns:
+#     integer delay in seconds before the next 'process' method invocation or undef if 'process' method should not be
+#     called yet.
 #
 sub process {
     my $self = shift;

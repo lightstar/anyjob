@@ -8,7 +8,7 @@ package AnyJob::Daemon;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  20.04.2018
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -259,7 +259,7 @@ sub process {
     foreach my $controller (@{$self->{controllers}}) {
         my $delay = $controller->getProcessDelay();
 
-        if (defined($delay) and $delay == 0) {
+        while (defined($delay) and $delay == 0) {
             $delay = $controller->process();
         }
 

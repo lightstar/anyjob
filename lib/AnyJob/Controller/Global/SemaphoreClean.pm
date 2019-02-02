@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::SemaphoreClean;
 #
 # Author:       LightStar
 # Created:      05.04.2018
-# Last update:  28.04.2018
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -31,6 +31,10 @@ sub getProcessDelay {
 ###############################################################################
 # Method called by daemon component on basis of provided delay.
 # Its main task is to clean timeouted enterings by semaphore clients.
+#
+# Returns:
+#     integer delay in seconds before the next 'process' method invocation or undef if 'process' method should not be
+#     called yet.
 #
 sub process {
     my $self = shift;

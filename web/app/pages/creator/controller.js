@@ -9,7 +9,7 @@
  *
  * Author:       LightStar
  * Created:      15.11.2017
- * Last update:  01.02.2019
+ * Last update:  02.02.2019
  */
 
 app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', '$animate', '$uibModal',
@@ -134,14 +134,8 @@ app.controller('creatorController', ['$scope', '$http', '$compile', '$timeout', 
                 delay.time = $scope.delay.time;
             } else {
                 delay.crontab = $scope.delay.crontab;
-
-                if ($scope.delay.skip) {
-                    delay.skip = $scope.delay.skip;
-                }
-
-                if ($scope.delay.pause) {
-                    delay.pause = 1;
-                }
+                delay.skip = $scope.delay.skip || 0;
+                delay.pause = $scope.delay.pause ? 1 : 0;
             }
 
             if ($scope.delay.id !== undefined) {

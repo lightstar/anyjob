@@ -8,7 +8,7 @@ package AnyJob::Controller::Observer;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  06.12.2018
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -172,7 +172,8 @@ sub getProcessDelay {
 # Its main task is to clean too long stayed collected logs.
 #
 # Returns:
-#     integer delay in seconds before the next 'process' method invocation.
+#     integer delay in seconds before the next 'process' method invocation or undef if 'process' method should not be
+#     called yet.
 #
 sub process {
     my $self = shift;
