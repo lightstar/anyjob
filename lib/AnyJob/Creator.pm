@@ -9,7 +9,7 @@ package AnyJob::Creator;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  30.01.2019
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -36,8 +36,8 @@ sub new {
     my %args = @_;
     $args{type} = 'creator';
     my $self = $class->SUPER::new(%args);
+    $self->{crontab} = AnyJob::Crontab::Factory->new(config => $self->config->getCrontabConfig() || {});
     $self->{addons} = {};
-    $self->{crontab} = AnyJob::Crontab::Factory->new();
     return $self;
 }
 

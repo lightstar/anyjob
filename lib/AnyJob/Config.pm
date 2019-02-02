@@ -5,7 +5,7 @@ package AnyJob::Config;
 #
 # Author:       LightStar
 # Created:      17.10.2017
-# Last update:  28.01.2019
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -382,6 +382,18 @@ sub getSemaphoreConfig {
     my $self = shift;
     my $name = shift;
     return $self->section('semaphore_' . $name);
+}
+
+###############################################################################
+# Get crontab configuration or undef. Each key inside is some name and value is corresponding crontab specification
+# string.
+#
+# Returns:
+#     hash with crontab configuration or undef.
+#
+sub getCrontabConfig {
+    my $self = shift;
+    return $self->section('crontab');
 }
 
 ###############################################################################

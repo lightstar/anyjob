@@ -12,10 +12,10 @@ key = value
 ...
 
 But you are not required to use section names at all as by default 'anyjob' section name will be used in main
-configuration file. Also you are allowed and even encouraged to use 'creator.cfg', 'daemon.cfg' and 'worker.cfg'
-files in base directory of main configuration file which will contain 'creator', 'daemon' and 'worker' sections
-respectively. File 'semaphore.cfg' is loaded too and is supposed to have explicit semaphores sections (it is used
-as alternative to separate configuration files in semaphores path).
+configuration file. Also you are allowed and even encouraged to use 'creator.cfg', 'daemon.cfg', 'worker.cfg'
+and 'crontab.cfg' files in base directory of main configuration file which will contain 'creator', 'daemon', 'worker'
+and 'crontab' sections respectively. File 'semaphore.cfg' is loaded too and is supposed to have explicit semaphores
+sections (it is used as alternative to separate configuration files in semaphores path).
 
 In addition to main configuration file configuration files are searched in some other paths. Key-value pairs
 in this files can have no explicit section name, in which case the default section name for this file is used.
@@ -193,7 +193,12 @@ delay_access          - JSON hash with accesses needed to perform operations wit
                         is one of operation name ('create', 'update', 'delete', 'get'), and value is string with
                         accesses needed to perform this operation. By default everyone has access to any operation.
 
-8. Node configuration sections.
+8. Crontab configuration section.
+
+Crontab configuration section is named 'crontab'. Each key inside is some arbitrary name and value is corresponding
+crontab specification string. You can use that names as crontab specification aliases when delaying jobs.
+
+9. Node configuration sections.
 
 Each node must have its own configuration section which should be named 'node_<name>' where '<name>' is node's name.
 Usually they are located in 'nodes/<name>.cfg' files relative to main configuration file base path. Below are all
@@ -228,7 +233,7 @@ semaphore_clean_delay   - delay in seconds between timeouted semaphore enterings
 semaphore_clean_limit   - maximum timeouted semaphores cleaned in one iteration. By default global 'clean_limit'
                           setting is used.
 
-9. Separate worker configuration sections.
+10. Separate worker configuration sections.
 
 You can define zero or more separate workers and assign jobs to them. By default jobs aren't assigned to any separate
 workers and they will run using external worker executable and configuration from global 'worker' section. Note that
@@ -278,7 +283,7 @@ delay                 - delay in seconds between worker daemon loops. You can se
                         but daemon stopping and restarting might require more time. By default corresponding option
                         in global 'worker' configuration section is used.
 
-10. Job configuration sections.
+11. Job configuration sections.
 
 Each job must have its own configuration section which should be named 'job_<type>' where '<type>' is job's type.
 Usually they are located in 'jobs/work/<type>.cfg' and 'jobs/create/<type>.cfg' files relative to main configuration
@@ -389,7 +394,7 @@ Note that there is only one specific job module included in distribution: 'AnyJo
 prefix is 'AnyJob::Worker::Job' and name is 'example'. You can use it for reference before writing your own modules
 which should extend 'AnyJob::Worker::Job::Base' module.
 
-11. Jobset configuration sections.
+12. Jobset configuration sections.
 
 Each jobset can have type and in that case it must have its own configuration section which should be named
 'jobset_<type>' where '<type>' is jobset's type. Usually they are located in 'jobsets/<type>.cfg' file relative
@@ -400,7 +405,7 @@ semaphores            - JSON hash with semaphores processed by daemon during sta
                         default semaphore client name is 'jobset' and 'entity'/'jobset' client modes are effectively
                         the same ones.
 
-12. Semaphores configuration sections.
+13. Semaphores configuration sections.
 
 Each semaphore must have its own configuration section which should be named 'semaphore_<name>' where '<name>' is
 semaphore's name. They can be located either in 'semaphore.cfg' file or in 'semaphores/<name>.cfg' files relative
@@ -412,7 +417,7 @@ local                 - 0/1 flag. If set, this observer is local to current node
                         Default: 0.
 timeout               - timeout in seconds for each entering into semaphore. Default: 3600.
 
-13. Observer configuration sections.
+14. Observer configuration sections.
 
 Each global observer must have its own configuration section which should be named 'observer_<name>' where '<name>' is
 observer's name. Usually they are located in 'observers/<name>.cfg' files relative to main configuration file base
@@ -461,7 +466,7 @@ body_template         - base file name with body template used in template toolk
 Your own observer modules should extend 'AnyJob::Controller::Observer::Base' and have prefix
 'AnyJob::Controller::Observer'.
 
-14. Web creator configuration section.
+15. Web creator configuration section.
 
 Web creator configuration section is named 'creator_web'. Usually it is located in 'creators/web.cfg' file
 relative to main configuration file base path. Below are all recognizible keys.
@@ -474,7 +479,7 @@ event_filter          - javascript code which will run for every received privat
                         event will be processed, otherwise - skipped. Object with event data is accessible as variable
                         'event'. Default: none (all events will be processed).
 
-15. Web creator authentication section.
+16. Web creator authentication section.
 
 Web creator authentication section is named 'creator_web_auth' and used for basic authentication in creator web
 application. Every key here is user login and value - its encrypted password. To generate encrypted password in
@@ -487,14 +492,14 @@ to skip password check.
 
 Usually this section is located in 'creators/web/auth.cfg' file relative to main configuration file base path.
 
-16. Web creator access section.
+17. Web creator access section.
 
 Web creator access section is named 'creator_web_access' and used for providing accesses to users in creator web
 application. Every key here is user login and value - provided accesses separated by comma.
 
 Usually it is located in 'creators/web/access.cfg' file relative to main configuration file base path.
 
-17. Slack creator configuration section.
+18. Slack creator configuration section.
 
 Slack creator configuration section is named 'creator_slack'. Usually it is located in 'creators/slack.cfg' file
 relative to main configuration file base path. Below are all recognizible keys.
@@ -519,14 +524,14 @@ event_filter          - javascript code which will run for every received privat
 build_clean_timeout   - timeout in seconds for cleaning too long existing active builds. If none specified,
                         'clean_timeout' setting from global section is used.
 
-18. Slack creator access section.
+19. Slack creator access section.
 
 Slack creator access section is named 'creator_slack_access' and used for providing accesses to users in creator slack
 application. Every key here is slack user id and value - provided accesses separated by comma.
 
 Usually it is located in 'creators/slack/access.cfg' file relative to main configuration file base path.
 
-19. Slack builder configuration sections.
+20. Slack builder configuration sections.
 
 Each slack builder must have its own configuration section which should be named 'builder_slack_<name>' where '<name>'
 is builder's name. Usually they are located in 'builders/slack/<name>.cfg' files relative to main configuration file

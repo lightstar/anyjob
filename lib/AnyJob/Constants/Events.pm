@@ -5,7 +5,7 @@ package AnyJob::Constants::Events;
 #
 # Author:       LightStar
 # Created:      29.11.2017
-# Last update:  01.02.2019
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -68,6 +68,7 @@ use constant EVENT_CREATE_DELAYED_WORK => 'createDelayedWork';
 # Event sent when delayed work is updated.
 #
 use constant EVENT_UPDATE_DELAYED_WORK => 'updateDelayedWork';
+
 ###############################################################################
 # Event sent when delayed work is deleted.
 #

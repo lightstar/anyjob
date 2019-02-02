@@ -7,7 +7,7 @@ package AnyJob::Crontab::Factory;
 #
 # Author:       LightStar
 # Created:      25.01.2019
-# Last update:  29.01.2019
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -20,6 +20,9 @@ use AnyJob::Crontab::Scheduler;
 ###############################################################################
 # Construct new AnyJob::Crontab::Factory object.
 #
+# Arguments:
+#     config - configuration hash with named crontab specification strings. Each key here is some name and value
+#              is corresponding crontab specification.
 # Returns:
 #     AnyJob::Crontab::Factory object.
 #
@@ -27,6 +30,11 @@ sub new {
     my $class = shift;
     my %args = @_;
     my $self = bless \%args, $class;
+
+    unless (defined($self->{config})) {
+        require Carp;
+        Carp::confess('No config provided');
+    }
 
     $self->{sets} = {};
     $self->{schedulers} = {};
@@ -38,7 +46,7 @@ sub new {
 # Get AnyJob::Crontab::Scheduler object by specification string.
 #
 # Arguments:
-#     spec - crontab specification string.
+#     spec - crontab specification string or some name from crontab configuration.
 # Returns:
 #     AnyJob::Crontab::Scheduler object or undef in case of error.
 #     string error or undef.
@@ -46,6 +54,10 @@ sub new {
 sub getScheduler {
     my $self = shift;
     my $spec = shift;
+
+    if (exists($self->{config}->{$spec})) {
+        $spec = $self->{config}->{$spec};
+    }
 
     if (exists($self->{schedulers}->{$spec})) {
         return $self->{schedulers}->{$spec};

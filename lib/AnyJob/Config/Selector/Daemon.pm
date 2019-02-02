@@ -5,7 +5,7 @@ package AnyJob::Config::Selector::Daemon;
 #
 # Author:       LightStar
 # Created:      06.02.2018
-# Last update:  28.04.2018
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -32,6 +32,7 @@ sub addConfig {
     $self->addConfigFromFile('daemon.cfg', 'daemon');
     $self->addConfigFromFile('worker.cfg', 'worker');
     $self->addConfigFromFile('semaphore.cfg');
+    $self->addConfigFromFile('crontab.cfg', 'crontab');
 
     $self->addConfigFromDir(($config->nodes_path || DEFAULT_NODES_CONFIG_PATH), 'node');
     $self->addConfigFromDir(File::Spec->catdir(($config->jobs_path || DEFAULT_JOBS_CONFIG_PATH), 'work'), 'job');

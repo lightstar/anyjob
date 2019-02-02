@@ -6,7 +6,7 @@ package AnyJob::Controller::Global::Delay;
 #
 # Author:       LightStar
 # Created:      23.05.2018
-# Last update:  01.02.2019
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -34,7 +34,7 @@ sub new {
     my $class = shift;
     my %args = @_;
     my $self = $class->SUPER::new(%args);
-    $self->{crontab} = AnyJob::Crontab::Factory->new();
+    $self->{crontab} = AnyJob::Crontab::Factory->new(config => $self->config->getCrontabConfig() || {});
     return $self;
 }
 

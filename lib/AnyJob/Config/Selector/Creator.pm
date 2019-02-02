@@ -5,7 +5,7 @@ package AnyJob::Config::Selector::Creator;
 #
 # Author:       LightStar
 # Created:      06.02.2018
-# Last update:  06.02.2018
+# Last update:  02.02.2019
 #
 
 use strict;
@@ -30,6 +30,7 @@ sub addConfig {
     my $config = $self->config;
 
     $self->addConfigFromFile('creator.cfg', 'creator');
+    $self->addConfigFromFile('crontab.cfg', 'crontab');
 
     $self->addConfigFromDir(($config->nodes_path || DEFAULT_NODES_CONFIG_PATH), 'node');
     $self->addConfigFromDir(File::Spec->catdir(($config->jobs_path || DEFAULT_JOBS_CONFIG_PATH), 'create'), 'job');
