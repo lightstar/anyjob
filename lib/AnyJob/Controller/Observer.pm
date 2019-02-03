@@ -8,7 +8,7 @@ package AnyJob::Controller::Observer;
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  02.02.2019
+# Last update:  03.02.2019
 #
 
 use strict;
@@ -178,7 +178,8 @@ sub getProcessDelay {
 sub process {
     my $self = shift;
     $self->cleanLogs();
-    return $self->getProcessDelay();
+    my $delay = $self->getProcessDelay();
+    return $delay > 0 ? $delay : undef;
 }
 
 ###############################################################################

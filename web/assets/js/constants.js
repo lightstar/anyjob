@@ -3,7 +3,7 @@
  *
  * Author:       LightStar
  * Created:      29.11.2017
- * Last update:  01.02.2019
+ * Last update:  03.02.2019
  */
 
 /**
@@ -55,3 +55,9 @@ var EMPTY_FN = function () {
  */
 var CREATOR_MODE_JOBS = 1;
 var CREATOR_MODE_DELAYED_WORKS = 2;
+
+/**
+ * Delay schedule modes.
+ */
+var SCHEDULE_MODE_TIME = 1;
+var SCHEDULE_MODE_CRONTAB = 2;

@@ -3,7 +3,7 @@ Template for 'submit' directive.
 
 Author:       LightStar
 Created:      21.12.2018
-Last update:  01.02.2019
+Last update:  03.02.2019
 -->
 
 <div class="submit-group">
@@ -13,51 +13,52 @@ Last update:  01.02.2019
   </button>
 
   <div class="submit-delay-schedule" data-ng-if="delay.id || !delay.isRestricted">
-    <div data-ng-if="isTimeMode">
-      <div data-ng-class="{'has-error': !delay.isValid}">
-        <label for="time-{{id}}" class="sr-only">Delay time:</label>
-        <div class="input-group submit-delay-time-group">
-          <input id="time-{{id}}" type="text" class="form-control" placeholder="Delay time"
-                 data-ng-model="date.date" data-ng-change="date.change()"
-                 data-uib-datepicker-popup="dd-MM-yyyy HH:mm:ss" data-is-open="date.opened"
-                 data-datepicker-options="date.options" data-datepicker-append-to-body="true">
+    <div data-ng-if="delay.scheduleMode === SCHEDULE_MODE_TIME" data-ng-class="{'has-error': !delay.isValid}">
+      <label for="time-{{id}}" class="sr-only">Delay time:</label>
+      <div class="input-group submit-delay-time-group">
+        <input id="time-{{id}}" type="text" class="form-control" placeholder="Delay time"
+               data-ng-model="date.date" data-ng-change="date.change()"
+               data-uib-datepicker-popup="dd-MM-yyyy HH:mm:ss" data-is-open="date.opened"
+               data-datepicker-options="date.options" data-datepicker-append-to-body="true">
 
-          <span class="input-group-btn">
+        <span class="input-group-btn">
             <button type="button" class="btn btn-default" data-ng-click="date.open()">
               <i class="glyphicon glyphicon-calendar"></i>
             </button>
           </span>
-        </div>
-      </div>
-
-      <div class="text-left small">
-        <a href role="button" data-ng-click="goToCrontabMode()">Switch to crontab</a>
       </div>
     </div>
 
-    <div data-ng-if="isCrontabMode">
-      <div class="form-inline">
-        <div class="form-group" data-ng-class="{'has-error': !isCrontabValid}">
-          <label for="crontab-{{id}}" class="sr-only">Delay crontab:</label>
-          <input id="crontab-{{id}}" type="text" class="form-control" placeholder="Delay crontab"
-                 data-ng-model="delay.crontab" data-ng-change="validateCrontab()">
-        </div>
-
-        <div class="form-group" data-ng-class="{'has-error': !isSkipValid}">
-          <label for="skip-{{id}}">Skip:</label>
-          <input id="skip-{{id}}" type="text" class="form-control submit-delay-skip" data-ng-model="delay.skip"
-                 data-ng-change="validateSkip()">
-        </div>
-
-        <div class="form-group">
-          <label for="pause-{{id}}" class="submit-pause-label">Paused:</label>
-          <input id="pause-{{id}}" type="checkbox" class="checkbox" data-ng-model="delay.pause">
-        </div>
+    <div class="form-inline" data-ng-if="delay.scheduleMode === SCHEDULE_MODE_CRONTAB">
+      <div class="form-group" data-ng-class="{'has-error': !isCrontabValid}">
+        <label for="crontab-{{id}}" class="sr-only">Delay crontab:</label>
+        <input id="crontab-{{id}}" type="text" class="form-control" placeholder="Delay crontab"
+               data-ng-model="delay.crontab" data-ng-change="validateCrontab()">
       </div>
 
-      <div class="text-left small">
-        <a href role="button" data-ng-click="goToTimeMode()">Switch to time</a>
+      <div class="form-group" data-ng-class="{'has-error': !isSkipValid}">
+        <label for="skip-{{id}}">Skip:</label>
+        <input id="skip-{{id}}" type="text" class="form-control submit-delay-skip" data-ng-model="delay.skip"
+               data-ng-change="validateSkip()">
       </div>
+
+      <div class="form-group">
+        <label for="pause-{{id}}" class="submit-pause-label">Paused:</label>
+        <input id="pause-{{id}}" type="checkbox" class="checkbox" data-ng-model="delay.pause">
+      </div>
+    </div>
+
+    <div>
+      <label class="radio-inline">
+        <input type="radio" name="delay-schedule-mode" data-ng-value="SCHEDULE_MODE_TIME"
+               data-ng-model="delay.scheduleMode" data-ng-change="scheduleModeChanged()">
+        Time
+      </label>
+      <label class="radio-inline">
+        <input type="radio" name="delay-schedule-mode" data-ng-value="SCHEDULE_MODE_CRONTAB"
+               data-ng-model="delay.scheduleMode" data-ng-change="scheduleModeChanged()">
+        Crontab
+      </label>
     </div>
   </div>
 </div>
