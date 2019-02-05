@@ -1,0 +1,55 @@
+You can delay jobs using special delay controller which manages delayed works. Delayed work is separate entity which
+consists of job list and parameters defining scheduling rules. That could be fixed date and time at which jobs are
+processed (delayed work is automatically removed after) or that could be crontab specification string with
+optional skip count and pause flag. Crontab specification defines interval at which delayed work is processed, skip
+count defines how many times delayed work will skip processing, and delayed work will suspend processing at all if
+pause flag is set.
+
+Crontab specification string has the same format as unix 'cron' utility with some peculiar properties:
+1) If both 'day of month' and 'day of week' fields are specified, scheduling time will be set to time when both
+fields are satisfied (instead of 'or' rule in traditional crontab).
+2) You can omit trailing asterisks. For example to schedule processing every 5 minutes use string '*/5' instead of
+'*/5 * * * *'.
+3) Named rules like '@monthly' are supported but must be specified in special configuration section 'crontab'
+where you can customize them all the way you want (all familiar ones plus some extra are already provided in example
+configuration).
+
+To create, update, remove and view delayed works you can use services provided by different creators included in
+anyjob: angularjs web application, slack application or console program. Web application interface is straightforward
+and slack application with console program are using command line parser. Lets describe console program syntax for
+example (slack application is almost the same but uses separate slash command for delayed work management).
+
+1. Create delayed work.
+anyjobc @delay <time> <job>
+anyjobc @delay <crontab> [@skip <skip>] [@paused] <job>
+
+Here '<time>' is date and time in format like '2019-01-01 00:00:00', '<job>' encapsulates all arguments needed to
+describe job and '<crontab>' is crontab specification string. Optionally you can define skip count and pause flag with
+crontab specification.
+
+2. Get delayed works.
+anyjobc @delay get [id]
+
+Here '<id>' is optional id of delayed work if you are interested in only one. After processing that command console
+program will wait for delay controller to send information about existing delayed works and display it. Notice here
+that all delayed works have some unique integer ids automatically attached to them. Current one and all subsequent
+commands are using them to select one specific delayed work.
+
+3. Update delayed work.
+anyjobc @delay update <id> <job>
+
+4. Re-schedule delayed work.
+anyjobc @delay schedule <id> <time>
+anyjobc @delay schedule <id> <crontab> [@skip <skip>] [@paused] <job>
+
+5. Set delayed work skip count.
+anyjobc @delay skip <id> <skip>
+
+6. Pause delayed work.
+anyjobc @delay pause <id>
+
+7. Resume delayed work.
+anyjobc @delay resume <id>
+
+8. Delete delayed work
+anyjobc @delay delete <id>

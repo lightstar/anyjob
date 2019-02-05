@@ -1,10 +1,11 @@
 # AnyJob
 
-Program system used to run arbitrary jobs on different linux nodes and observe how they run.
-By now it is on alpha testing stage, and you should not use it in production.
+Program system used to execute arbitrary jobs on some set of linux nodes and observe how they run.
+By now it is in pre-beta stage and was used in production for already quite a long time, so project
+can be considered relatively solid.
 
 AnyJob can be used to simplify automation inside your distributed project or to quickly perform some
-frequent tasks and request information from the single entry point.
+frequent administrative tasks and request information from the single entry point.
 
 For data storage and communication between different system parts *redis* server is used.
 
@@ -20,10 +21,12 @@ The following goals were pursued during system development:
 
 - Adding and deployment of new jobs should be as simple as possible.
 
-- Maximal flexibility of job starting and executioning, ability to create set of interrelated jobs which will know
+- Maximal flexibility of job executioning, ability to create set of interrelated jobs which will know
 about each other and act in a coordinated manner.
 
 - Maximal flexibility of observing how jobs are run, arbitrary ways to notify end users about it.
+
+- Maximal simplicity of job starting and receiving some result using several methods.
 
 ### Basic principles and concept
 
@@ -49,8 +52,7 @@ In addition to actual creating creator supports another interesting feature: obs
 individual observers creator observes just the jobs it created and can send notifications directly to users who
 created them. That embedded into creator observer is called *private* observer.
 
-**Builder** is a inner component of creator which is used to build jobs in several steps. By now it is used only by slack
-application.
+**Builder** is a inner component of creator which is used to build jobs in several steps.
 
 **Daemon** is a separate component which is a heart of the system, and there are one or more controllers which are run
 inside. Daemon is started on each node by bash script 'rc.anyjobd'. There should be *global* controller on one
@@ -108,8 +110,8 @@ classes (*AnyJob::Worker::Job::Base* and *AnyJob::Worker::Context::Base*) are av
 
 - configure AnyJob on each node. Read [doc/config.txt](doc/config.txt) and other documentation files for details.
 
-- to create jobs you can use console utility *bin/anyjobc.pl* or separate web application. Slack application
-(https://slack.com) is also available as part of that web application.
+- to create jobs and manage delayed works you can use console utility *bin/anyjobc.pl* or separate web application.
+Slack application (https://slack.com) is also available as part of that web application.
 
 - to understand how all works it is extremely recommended to read all documentation from the *doc* directory.
    - [doc/install.txt](doc/install.txt) - prerequisites and installation steps.
@@ -121,6 +123,7 @@ classes (*AnyJob::Worker::Job::Base* and *AnyJob::Worker::Context::Base*) are av
    - [doc/opts.txt](doc/opts.txt) - options of delay operations.
    - [doc/redis.txt](doc/redis.txt) - keys used in *redis*.
    - [doc/semaphore.txt](doc/semaphore.txt) - semaphores.
+   - [doc/delay.txt](doc/delay.txt) - delayed works.
 
 If you plan to extend AnyJob, it is recommended to study code and comments. At least you should examine
 *AnyJob::Worker::Job::Base* and *AnyJob::Worker::Job::Example* to understand how to correctly write new job modules.
@@ -144,6 +147,14 @@ And *AnyJob::Worker::Context::Base* too if you suppose to run jobs inside worker
 
 ![Screenshot](img/screenshot4.png)
 
+**Delayed works:**
+
+![Screenshot](img/screenshot5.png)
+
+**Delayed work update:**
+
+![Screenshot](img/screenshot6.png)
+
 ### Limitations and further development plans
 
 1. Full job support is implemented only for *perl* environment. For all other platforms writing specific
@@ -157,20 +168,18 @@ specify some abstract type and parameters which will be transformed by creator i
 For example one could create 'restart_all' job which will transform into 'restart' job on every node, possibly with
 some additional jobs.
 
-4. Jobs are now launched right after creation, but it would be nice to have delayed job starting.
-
-5. *Redis* is now used both for data storage and for message queuing. It performs good, but it would be better to
+4. *Redis* is now used both for data storage and for message queuing. It performs good, but it would be better to
 abstract away by using some specific modules to simplify transition to some other mechanisms in future.
 
-6. It is worth implementing some common use worker modules 'out of the box'. For example such that would execute
+5. It is worth implementing some common use worker modules 'out of the box'. For example such that would execute
 some arbitrary program and intercept its input and output, or run specific method in some perl module with defined
 parameters, etc.
 
-7. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
+6. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
 add translations for all messages and possibility to switch between languages (russian is priority of course).
 
-8. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
+7. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
 adding possibility to specify group, type and nodes using separate dialogs.
 
-9. It is worth to add support for links leading to partially created jobs in the web application to simplify job
+8. It is worth to add support for links leading to partially created jobs in the web application to simplify job
 creation.
