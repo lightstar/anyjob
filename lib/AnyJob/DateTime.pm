@@ -5,7 +5,7 @@ package AnyJob::DateTime;
 #
 # Author:       LightStar
 # Created:      21.10.2017
-# Last update:  28.01.2019
+# Last update:  10.02.2019
 #
 
 use strict;
@@ -25,43 +25,43 @@ our @EXPORT_OK = qw(
     isValidDate
     isValidTime
     isLeapYear
-    );
+);
 
 ###############################################################################
 # Hash where keys are months and values are numbers of days in corresponding month (in case this year is not leap one).
 #
 use constant DAYS_IN_MONTH => {
-        1  => 31,
-        2  => 28,
-        3  => 31,
-        4  => 30,
-        5  => 31,
-        6  => 30,
-        7  => 31,
-        8  => 31,
-        9  => 30,
-        10 => 31,
-        11 => 30,
-        12 => 31
-    };
+    1  => 31,
+    2  => 28,
+    3  => 31,
+    4  => 30,
+    5  => 31,
+    6  => 30,
+    7  => 31,
+    8  => 31,
+    9  => 30,
+    10 => 31,
+    11 => 30,
+    12 => 31
+};
 
 ###############################################################################
 # Hash where keys are months and values are numbers of days in corresponding month (in case this year is leap one).
 #
 use constant DAYS_IN_MONTH_LEAP => {
-        1  => 31,
-        2  => 29,
-        3  => 31,
-        4  => 30,
-        5  => 31,
-        6  => 30,
-        7  => 31,
-        8  => 31,
-        9  => 30,
-        10 => 31,
-        11 => 30,
-        12 => 31
-    };
+    1  => 31,
+    2  => 29,
+    3  => 31,
+    4  => 30,
+    5  => 31,
+    6  => 30,
+    7  => 31,
+    8  => 31,
+    9  => 30,
+    10 => 31,
+    11 => 30,
+    12 => 31
+};
 
 ###############################################################################
 # Format provided unix time (or current time) using standart scheme 'DD-MM-YYYY HH:MM:SS'.
@@ -158,7 +158,7 @@ sub parseDateTime {
         unixTime => mktime($second, $minute, $hour, $day, $month - 1, $year - 1900),
         dateTime => sprintf('%.2d-%.2d-%.4d %.2d:%.2d:%.2d', $day, $month, $year, $hour, $minute, $second),
         date     => sprintf('%.2d-%.2d-%.4d', $day, $month, $year),
-        time     => sprintf('%.2d.:%.2d:%.2d', $hour, $minute, $second)
+        time     => sprintf('%.2d:%.2d:%.2d', $hour, $minute, $second)
     };
 }
 
@@ -189,7 +189,7 @@ sub parsePeriod {
         return undef;
     }
 
-    return ($dataFrom, $dataTo);
+    return +($dataFrom, $dataTo);
 }
 
 ###############################################################################
