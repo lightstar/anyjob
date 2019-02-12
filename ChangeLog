@@ -1,3 +1,16 @@
+12.02.2019
+  Add semaphores to synchronize execution of jobs and jobsets. Add jobset types to allow fine-tune it.
+  Add semclients.pl and semexit.pl tools. Add tool runners in tools directory.
+  Add delayed works controller and appropriate support to all creator types. Add corresponding accesses, etc.
+  Add overlay component to angularjs web application and show it during request to server.
+  Use one-time passwords for websocket authentication instead of real ones.
+  Add option to skip password check in basic authentication if it is checked elsewhere.
+  Add 'min_nodes' and 'max_nodes' job parameters to limit allowed nodes count for jobs in creators.
+  Upgrade angularjs library to version 1.7.7.
+  Increase perl version used in test Docker environment to 5.28.
+  Various refactorings and bug fixes.
+  Bump version to 0.0.6 Pre-beta.
+
 14.03.2018
   Add configuration selectors to optimize configuration load.
   Separate job configuration to 'work' and 'create' parts used in different components.
