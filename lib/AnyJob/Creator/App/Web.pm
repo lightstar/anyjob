@@ -6,7 +6,7 @@ package AnyJob::Creator::App::Web;
 #
 # Author:       LightStar
 # Created:      23.11.2017
-# Last update:  01.02.2019
+# Last update:  03.09.2019
 #
 
 use strict;
@@ -52,7 +52,7 @@ set plugins => {
 # Returns:
 #     0/1 flag. If set, access is permitted.
 #
-http_basic_auth_set_check_handler sub {
+http_basic_auth_handler check_login => sub {
     my $user = shift;
     my $pass = shift;
     return creator->addon('web')->checkAuth($user, $pass);

@@ -1,3 +1,9 @@
+03.09.2019
+  Upgrade angularjs library to version 1.7.8.
+  Increase perl version used in test Docker environment to 5.30.
+  No functional updates are planned now. Remove all plans from readme files.
+  Bump version to 0.1 Beta.
+
 12.02.2019
   Add semaphores to synchronize execution of jobs and jobsets. Add jobset types to allow fine-tune it.
   Add semclients.pl and semexit.pl tools. Add tool runners in tools directory.

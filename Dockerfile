@@ -4,10 +4,10 @@
 #
 # Author:       LightStar
 # Created:      19.10.2017
-# Last update:  27.11.2018
+# Last update:  03.09.2019
 #
 
-FROM perl:5.28
+FROM perl:5.30
 
 RUN cpanm JSON::XS
 RUN cpanm Redis
@@ -17,7 +17,7 @@ RUN cpanm MIME::Entity
 RUN cpanm Template
 RUN cpanm Dancer2
 RUN cpanm Dancer2::Plugin::Auth::HTTP::Basic::DWIW
-RUN cpanm Dancer2::Plugin::WebSocket
+RUN cpanm Dancer2::Plugin::WebSocket --force
 RUN cpanm Twiggy
 RUN cpanm CGI::Deurl::XS
 RUN cpanm File::Copy::Recursive --force
@@ -33,4 +33,4 @@ COPY . /opt/anyjob/
 ENV ANYJOB_LIB /opt/anyjob/lib
 ENV ANYJOB_CONF /opt/anyjob/etc/example/anyjob.cfg
 
-ENTRYPOINT ["perl5.28.0"]
+ENTRYPOINT ["perl5.30.0"]

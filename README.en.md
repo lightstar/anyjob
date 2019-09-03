@@ -1,7 +1,7 @@
 # AnyJob
 
 Program system used to execute arbitrary jobs on some set of linux nodes and observe how they run.
-By now it is in pre-beta stage and was used in production for already quite a long time, so project
+By now it is in beta stage and was used in production for already quite a long time, so project
 can be considered relatively solid.
 
 AnyJob can be used to simplify automation inside your distributed project or to quickly perform some
@@ -155,31 +155,13 @@ And *AnyJob::Worker::Context::Base* too if you suppose to run jobs inside worker
 
 ![Screenshot](img/screenshot6.png)
 
-### Limitations and further development plans
+### Limitations
 
 1. Full job support is implemented only for *perl* environment. For all other platforms writing specific
-executable, classes etc. is required. Anyway that's not planned for now.
+executable, classes etc. is required.
 
-2. There are no automatic tests implemented, all testing is performed only by hand now. It would be nice to implement
-them but that's not high priority task.
+2. There are no automatic tests implemented, all testing is performed only by hand.
 
-3. Jobs are now created only by direct specifying their type, nodes, parameters and properties. It would be nice to
-specify some abstract type and parameters which will be transformed by creator into real job or jobset data.
-For example one could create 'restart_all' job which will transform into 'restart' job on every node, possibly with
-some additional jobs.
+3. Only *Redis* is used both for data storage and for message queuing.
 
-4. *Redis* is now used both for data storage and for message queuing. It performs good, but it would be better to
-abstract away by using some specific modules to simplify transition to some other mechanisms in future.
-
-5. It is worth implementing some common use worker modules 'out of the box'. For example such that would execute
-some arbitrary program and intercept its input and output, or run specific method in some perl module with defined
-parameters, etc.
-
-6. All messages displayed by applications are only in english now. It would be nice to implement internationalization,
-add translations for all messages and possibility to switch between languages (russian is priority of course).
-
-7. By now slack application demands explicit notation of job type and nodes list in slash command text. It is worth
-adding possibility to specify group, type and nodes using separate dialogs.
-
-8. It is worth to add support for links leading to partially created jobs in the web application to simplify job
-creation.
+4. All messages displayed by applications are only in english.
